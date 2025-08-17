@@ -70,6 +70,7 @@ export interface ExternalProposal {
   hostContactEmail?: string; // Host's contact email for reverse proposals
   tableSpaceOffered?: string;
   managementFee?: number;
+  expectedAttendees?: string; // Expected number of attendees for reverse proposals
   connectedBusinessOwnerId?: string; // ID of the business owner who connected using the code
   businessOwnerConnectedAt?: string; // When business owner signs up and uses the code
 }

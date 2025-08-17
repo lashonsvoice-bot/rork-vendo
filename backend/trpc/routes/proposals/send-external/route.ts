@@ -272,6 +272,7 @@ const sendReverseExternalProposalSchema = z.object({
   hostContactEmail: z.string().email().optional(),
   tableSpaceOffered: z.string(),
   managementFee: z.number(),
+  expectedAttendees: z.string(),
   message: z.string(),
 });
 
@@ -293,6 +294,7 @@ export const sendReverseExternalProposalProcedure = publicProcedure
       hostContactEmail,
       tableSpaceOffered,
       managementFee,
+      expectedAttendees,
       message,
     } = input;
 
@@ -320,6 +322,7 @@ I'd like to invite you to participate as a remote vendor at our event. Here's wh
 • Event: ${eventTitle}
 • Date: ${eventDate}
 • Location: ${eventLocation}
+• Expected Attendees: ${expectedAttendees}
 
 💼 **What We're Offering:**
 • Table/Booth Space: ${tableSpaceOffered}
@@ -411,6 +414,7 @@ Event Host - ${eventTitle}
       businessOwnerPhone,
       tableSpaceOffered,
       managementFee,
+      expectedAttendees,
       message,
       status: 'sent',
       createdAt: new Date().toISOString(),
@@ -502,6 +506,7 @@ export const findReverseProposalByCodeProcedure = publicProcedure
           eventLocation: proposal.eventLocation,
           tableSpaceOffered: proposal.tableSpaceOffered,
           managementFee: proposal.managementFee,
+          expectedAttendees: proposal.expectedAttendees,
           message: proposal.message,
           status: proposal.status,
         },

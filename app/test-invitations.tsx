@@ -52,6 +52,7 @@ export default function TestInvitationsScreen() {
     businessOwnerPhone: '',
     tableSpaceOffered: '10x10 booth in premium location',
     managementFee: '75',
+    expectedAttendees: '1200-1500 business professionals',
     message: 'Test invitation message from event host to business owner.',
   });
 
@@ -131,6 +132,7 @@ export default function TestInvitationsScreen() {
         hostContactEmail: 'test@host.com',
         tableSpaceOffered: hostToBusinessData.tableSpaceOffered,
         managementFee: parseFloat(hostToBusinessData.managementFee),
+        expectedAttendees: hostToBusinessData.expectedAttendees,
         message: hostToBusinessData.message,
       });
 

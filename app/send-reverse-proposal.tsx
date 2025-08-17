@@ -45,6 +45,7 @@ export default function SendReverseProposalScreen() {
     hostContactEmail: '',
     tableSpaceOffered: '',
     managementFee: '',
+    expectedAttendees: '',
     message: `Greetings [Business Owner Name],
 
 I hope this message finds you well! I'm [Host Name], and I'm hosting [Event Title] on [Event Date] in [Event Location]. After researching your business, [Business Name], I believe your products/services would be a perfect fit for our event attendees.
@@ -55,6 +56,7 @@ I'd like to invite you to participate as a remote vendor at our event. Here's wh
 • Event: [Event Title]
 • Date: [Event Date]
 • Location: [Event Location]
+• Expected Attendees: [Expected Attendees]
 
 💼 **What We're Offering:**
 • Table/Booth Space: [Table Space Details]
@@ -105,7 +107,7 @@ Event Host - [Event Title]`,
     }
 
     // Validation
-    const requiredFields = ['eventTitle', 'eventDate', 'eventLocation', 'businessOwnerName', 'businessName', 'tableSpaceOffered', 'managementFee', 'message'];
+    const requiredFields = ['eventTitle', 'eventDate', 'eventLocation', 'businessOwnerName', 'businessName', 'tableSpaceOffered', 'managementFee', 'expectedAttendees', 'message'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -142,6 +144,7 @@ Event Host - [Event Title]`,
         hostContactEmail: formData.hostContactEmail || undefined,
         tableSpaceOffered: formData.tableSpaceOffered,
         managementFee,
+        expectedAttendees: formData.expectedAttendees,
         message: formData.message,
       });
 
@@ -179,6 +182,7 @@ Event Host - [Event Title]`,
       hostContactEmail: (profileQuery.data?.role === 'event_host' ? profileQuery.data.user.email : '') || '',
       tableSpaceOffered: '',
       managementFee: '',
+      expectedAttendees: '',
       message: `Greetings [Business Owner Name],
 
 I hope this message finds you well! I'm [Host Name], and I'm hosting [Event Title] on [Event Date] in [Event Location]. After researching your business, [Business Name], I believe your products/services would be a perfect fit for our event attendees.
@@ -189,6 +193,7 @@ I'd like to invite you to participate as a remote vendor at our event. Here's wh
 • Event: [Event Title]
 • Date: [Event Date]
 • Location: [Event Location]
+• Expected Attendees: [Expected Attendees]
 
 💼 **What We're Offering:**
 • Table/Booth Space: [Table Space Details]
@@ -345,6 +350,20 @@ Event Host - [Event Title]`,
               placeholderTextColor="#9CA3AF"
             />
           </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Expected Attendees *</Text>
+            <Text style={styles.inputHelper}>
+              Provide the number or range of expected attendees to help the business owner understand the opportunity
+            </Text>
+            <TextInput
+              style={styles.input}
+              value={formData.expectedAttendees}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, expectedAttendees: text }))}
+              placeholder="e.g., 500-1000 attendees, 2500+ professionals"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
         </View>
 
         <View style={styles.formSection}>
@@ -485,10 +504,11 @@ I'd like to invite you to participate as a remote vendor at our event. Here's wh
 • Event: ${formData.eventTitle || '[Event Title]'}
 • Date: ${formData.eventDate || '[Event Date]'}
 • Location: ${formData.eventLocation || '[Event Location]'}
+• Expected Attendees: ${formData.expectedAttendees || '[Expected Attendees]'}
 
 💼 **What We're Offering:**
 • Table/Booth Space: ${formData.tableSpaceOffered || '[Table Space Details]'}
-• Management Fee: $${formData.managementFee || '[Management Fee]'} (for overseeing your contractors and ensuring smooth operations)
+• Management Fee: ${formData.managementFee || '[Management Fee]'} (for overseeing your contractors and ensuring smooth operations)
 • Professional oversight of your remote vending setup
 • Direct communication throughout the event
 

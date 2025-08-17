@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
   Image,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
 import {
@@ -25,7 +26,12 @@ import {
   X,
   Star,
   MessageSquare,
+  QrCode,
+  Shield,
+  Scan,
+  Search,
 } from "lucide-react-native";
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from "expo-linear-gradient";
 import { useEvents, VendorCheckIn, VendorReview } from "@/hooks/events-store";
 import * as ImagePicker from "expo-image-picker";
@@ -54,6 +60,11 @@ export default function ManageVendorScreen() {
   const [showQuickNoteModal, setShowQuickNoteModal] = useState(false);
   const [quickNoteVendorId, setQuickNoteVendorId] = useState<string | null>(null);
   const [quickNoteText, setQuickNoteText] = useState("");
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [scanMode, setScanMode] = useState<'qr' | 'search'>('qr');
+  const searchInputRef = useRef<TextInput>(null);
 
   if (!event) {
     return (
@@ -608,11 +619,38 @@ export default function ManageVendorScreen() {
             <Text style={styles.infoInlineText}>Select how stipends are released to contractors for this event.</Text>
           </View>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderTitle}>Contractor Management</Text>
-            <View style={styles.autoPopulateInfo}>
-              <AlertCircle size={14} color="#059669" />
-              <Text style={styles.autoPopulateText}>Auto-populated from hired contractors</Text>
+            <Text style={styles.sectionHeaderTitle}>Contractor Check-In Management</Text>
+            <View style={styles.scanActions}>
+              <TouchableOpacity
+                style={styles.scanButton}
+                onPress={() => {
+                  setScanMode('qr');
+                  setShowQRScanner(true);
+                }}
+                testID="scan-qr-button"
+              >
+                <QrCode size={16} color="#FFFFFF" />
+                <Text style={styles.scanButtonText}>Scan QR</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.verifyButton}
+                onPress={() => {
+                  setScanMode('search');
+                  setShowQRScanner(true);
+                }}
+                testID="verify-id-button"
+              >
+                <Shield size={16} color="#FFFFFF" />
+                <Text style={styles.verifyButtonText}>Verify ID</Text>
+              </TouchableOpacity>
             </View>
+          </View>
+          
+          <View style={styles.infoCard}>
+            <AlertCircle size={14} color="#059669" />
+            <Text style={styles.infoCardText}>
+              Contractors auto-populate when hired. Use QR scanning + ID verification for secure check-ins.
+            </Text>
           </View>
 
           {vendors.length === 0 ? (
@@ -758,6 +796,161 @@ export default function ManageVendorScreen() {
                   </View>
                 </View>
               )}
+            </View>
+          </View>
+        </Modal>
+        
+        <Modal
+          visible={showQRScanner}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowQRScanner(false)}
+        >
+          <View style={styles.scannerModalOverlay}>
+            <View style={styles.scannerModalContent}>
+              <View style={styles.scannerHeader}>
+                <Text style={styles.scannerTitle}>
+                  {scanMode === 'qr' ? 'Scan Contractor QR Code' : 'Search & Verify ID'}
+                </Text>
+                <TouchableOpacity onPress={() => setShowQRScanner(false)}>
+                  <X size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              
+              {scanMode === 'qr' ? (
+                <View style={styles.cameraContainer}>
+                  {Platform.OS === 'web' ? (
+                    <View style={styles.webCameraPlaceholder}>
+                      <QrCode size={48} color="#6B7280" />
+                      <Text style={styles.webCameraText}>QR Scanner not available on web</Text>
+                      <TouchableOpacity
+                        style={styles.switchToSearchButton}
+                        onPress={() => setScanMode('search')}
+                      >
+                        <Search size={16} color="#6366F1" />
+                        <Text style={styles.switchToSearchText}>Use Search Instead</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    cameraPermission?.granted ? (
+                      <CameraView
+                        style={styles.camera}
+                        facing={'back' as CameraType}
+                        onBarcodeScanned={(result: { data: string; type: string }) => {
+                          console.log('QR Code scanned:', result.data);
+                          // Handle QR code scan result
+                          Alert.alert('QR Code Scanned', `Data: ${result.data}`);
+                          setShowQRScanner(false);
+                        }}
+                      >
+                        <View style={styles.scannerOverlay}>
+                          <View style={styles.scannerFrame} />
+                          <Text style={styles.scannerInstructions}>
+                            Point camera at contractor's QR code
+                          </Text>
+                        </View>
+                      </CameraView>
+                    ) : (
+                      <View style={styles.permissionContainer}>
+                        <Camera size={48} color="#6B7280" />
+                        <Text style={styles.permissionText}>Camera permission required</Text>
+                        <TouchableOpacity
+                          style={styles.permissionButton}
+                          onPress={requestCameraPermission}
+                        >
+                          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )
+                  )}
+                </View>
+              ) : (
+                <View style={styles.searchContainer}>
+                  <View style={styles.searchInputContainer}>
+                    <Search size={20} color="#6B7280" />
+                    <TextInput
+                      ref={searchInputRef}
+                      style={styles.searchInput}
+                      placeholder="Search contractor name or ID..."
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      autoFocus
+                    />
+                  </View>
+                  
+                  <ScrollView style={styles.searchResults}>
+                    {vendors
+                      .filter(v => 
+                        searchQuery.trim() === '' || 
+                        v.vendorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        v.id.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                      .map(vendor => (
+                        <TouchableOpacity
+                          key={vendor.id}
+                          style={styles.searchResultItem}
+                          onPress={() => {
+                            Alert.alert(
+                              'Verify ID',
+                              `Please verify ${vendor.vendorName}'s ID matches their digital pass before checking them in.`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                  text: 'ID Verified - Check In',
+                                  onPress: () => {
+                                    const now = new Date().toLocaleTimeString();
+                                    updateVendorCheckIn(event.id, vendor.id, {
+                                      arrivalConfirmed: true,
+                                      arrivalTime: now,
+                                      idVerified: true,
+                                    });
+                                    setShowQRScanner(false);
+                                    setSearchQuery('');
+                                    Alert.alert('Success', `${vendor.vendorName} has been checked in with ID verification.`);
+                                  }
+                                }
+                              ]
+                            );
+                          }}
+                        >
+                          <View style={styles.searchResultAvatar}>
+                            <User size={20} color="#6366F1" />
+                          </View>
+                          <View style={styles.searchResultInfo}>
+                            <Text style={styles.searchResultName}>{vendor.vendorName}</Text>
+                            <Text style={styles.searchResultStatus}>
+                              {vendor.arrivalConfirmed ? 'Already Checked In' : 'Pending Check-In'}
+                            </Text>
+                          </View>
+                          <View style={[
+                            styles.searchResultBadge,
+                            { backgroundColor: vendor.arrivalConfirmed ? '#D1FAE5' : '#FEF3C7' }
+                          ]}>
+                            <Text style={[
+                              styles.searchResultBadgeText,
+                              { color: vendor.arrivalConfirmed ? '#065F46' : '#92400E' }
+                            ]}>
+                              {vendor.arrivalConfirmed ? 'Checked In' : 'Verify ID'}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))
+                    }
+                  </ScrollView>
+                </View>
+              )}
+              
+              <View style={styles.scannerActions}>
+                <TouchableOpacity
+                  style={styles.scannerSwitchButton}
+                  onPress={() => setScanMode(scanMode === 'qr' ? 'search' : 'qr')}
+                >
+                  {scanMode === 'qr' ? <Search size={16} color="#6366F1" /> : <QrCode size={16} color="#6366F1" />}
+                  <Text style={styles.scannerSwitchText}>
+                    {scanMode === 'qr' ? 'Switch to Search' : 'Switch to QR Scan'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
@@ -1650,6 +1843,239 @@ const styles = StyleSheet.create({
   autoPopulateText: {
     fontSize: 12,
     color: "#059669",
+    fontWeight: "600",
+  },
+  scanActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  scanButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#6366F1",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  scanButtonText: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  verifyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#10B981",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  verifyButtonText: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  infoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#ECFDF5",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#D1FAE5",
+  },
+  infoCardText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#059669",
+    lineHeight: 18,
+  },
+  scannerModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+  },
+  scannerModalContent: {
+    flex: 1,
+    backgroundColor: "#000000",
+  },
+  scannerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    paddingTop: 60,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  scannerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  cameraContainer: {
+    flex: 1,
+  },
+  camera: {
+    flex: 1,
+  },
+  scannerOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+  },
+  scannerFrame: {
+    width: 250,
+    height: 250,
+    borderWidth: 2,
+    borderColor: "#10B981",
+    borderRadius: 12,
+    backgroundColor: "transparent",
+  },
+  scannerInstructions: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 20,
+    paddingHorizontal: 40,
+  },
+  webCameraPlaceholder: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    gap: 16,
+  },
+  webCameraText: {
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  switchToSearchButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  switchToSearchText: {
+    fontSize: 14,
+    color: "#6366F1",
+    fontWeight: "600",
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    gap: 16,
+  },
+  permissionText: {
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  permissionButton: {
+    backgroundColor: "#6366F1",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  permissionButtonText: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  searchContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 20,
+    gap: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#111827",
+  },
+  searchResults: {
+    flex: 1,
+  },
+  searchResultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  searchResultAvatar: {
+    width: 40,
+    height: 40,
+    backgroundColor: "#EDE9FE",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  searchResultInfo: {
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 2,
+  },
+  searchResultStatus: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  searchResultBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  searchResultBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  scannerActions: {
+    padding: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  scannerSwitchButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  scannerSwitchText: {
+    fontSize: 14,
+    color: "#6366F1",
     fontWeight: "600",
   },
 });

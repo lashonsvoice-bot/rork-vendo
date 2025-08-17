@@ -30,6 +30,7 @@ export interface VendorCheckIn {
   review?: VendorReview;
   tableLabel?: string;
   stipendReleased?: boolean;
+  checkedInBy?: 'host' | 'contractor';
 }
 
 export interface TableOption {

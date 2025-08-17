@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useEvents } from "@/hooks/events-store";
@@ -65,21 +65,56 @@ export default function OwnerCheckInsScreen() {
     );
   }
 
+  const [filter, setFilter] = useState<'all' | 'unassigned' | 'checkedin' | 'midway' | 'completed'>('all');
+
+  const FilterPill = useCallback(({ label, value }: { label: string; value: 'all' | 'unassigned' | 'checkedin' | 'midway' | 'completed' }) => {
+    const active = filter === value;
+    return (
+      <TouchableOpacity
+        onPress={() => setFilter(value)}
+        style={[styles.filterPill, active ? styles.filterPillActive : undefined]}
+        testID={`filter-${value}`}
+        accessibilityRole="button"
+        accessibilityLabel={`Filter ${label}`}
+      >
+        <Text style={[styles.filterPillText, active ? styles.filterPillTextActive : undefined]}>{label}</Text>
+      </TouchableOpacity>
+    );
+  }, [filter]);
+
   return (
     <View style={styles.container}>
       <View style={styles.headerBar}>
         <Text style={styles.headerTitle}>Check-ins Overview</Text>
         <Text style={styles.headerSub}>Monitor host progress across your events</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterRowContent}>
+          <FilterPill label="All" value="all" />
+          <FilterPill label="Unassigned" value="unassigned" />
+          <FilterPill label="Checked-in" value="checkedin" />
+          <FilterPill label="Midway" value="midway" />
+          <FilterPill label="Completed" value="completed" />
+        </ScrollView>
       </View>
 
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false} testID="owner-checkins-list">
         {myEvents.map(event => {
-          const vendors = event.vendors ?? [];
+          let vendors = event.vendors ?? [];
           const total = vendors.length;
           const checkIns = vendors.filter(v => v.arrivalConfirmed).length;
           const midway = vendors.filter(v => v.halfwayConfirmed).length;
           const completed = vendors.filter(v => v.endConfirmed).length;
           const pending = Math.max(total - checkIns, 0);
+
+          const matchesFilter = (v: import("@/hooks/events-store").VendorCheckIn) => {
+            if (filter === 'all') return true;
+            if (filter === 'unassigned') return !v.contractorId;
+            if (filter === 'checkedin') return v.arrivalConfirmed;
+            if (filter === 'midway') return v.halfwayConfirmed;
+            if (filter === 'completed') return v.endConfirmed;
+            return true;
+          };
+
+          vendors = vendors.filter(matchesFilter);
 
           const groups = vendors.reduce<Record<string, import("@/hooks/events-store").VendorCheckIn[]>>((acc, v) => {
             const key = v.tableLabel?.trim() || 'Unassigned';
@@ -204,7 +239,16 @@ export default function OwnerCheckInsScreen() {
                           </TouchableOpacity>
                         </View>
 
-                        {list.map(v => {
+                        {[...list]
+                          .sort((a, b) => {
+                            const aUn = a.contractorId ? 1 : 0;
+                            const bUn = b.contractorId ? 1 : 0;
+                            if (aUn !== bUn) return aUn - bUn;
+                            const an = a.vendorName ?? '';
+                            const bn = b.vendorName ?? '';
+                            return an.localeCompare(bn);
+                          })
+                          .map(v => {
                           const s = getVendorStatus(v);
                           return (
                             <View key={v.id} style={styles.vendorRow} testID={`vendor-row-${v.id}`}>
@@ -214,9 +258,20 @@ export default function OwnerCheckInsScreen() {
                                 </View>
                                 <View style={styles.vendorInfo}>
                                   <Text style={styles.vendorName}>{v.vendorName}</Text>
-                                  <View style={[styles.statusPill, { backgroundColor: s.bg }]}> 
+                                  <TouchableOpacity
+                                    onPress={() => {
+                                      if (!v.arrivalConfirmed) return toggleArrival(event.id, v.id, v.arrivalConfirmed);
+                                      if (!v.halfwayConfirmed) return toggleHalfway(event.id, v.id, v.halfwayConfirmed);
+                                      if (!v.endConfirmed) return toggleCompleted(event.id, v.id, v.endConfirmed);
+                                      updateVendorCheckIn(event.id, v.id, { arrivalConfirmed: false, halfwayConfirmed: false, endConfirmed: false, arrivalTime: undefined, halfwayCheckIn: undefined, endCheckIn: undefined });
+                                    }}
+                                    onLongPress={() => console.log('Long press for full actions for vendor', v.id)}
+                                    style={[styles.statusPill, { backgroundColor: s.bg }]}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Toggle status for ${v.vendorName}`}
+                                  > 
                                     <Text style={[styles.statusPillText, { color: s.color }]}>{s.label}</Text>
-                                  </View>
+                                  </TouchableOpacity>
                                 </View>
                               </View>
                               <View style={styles.vendorRight}>
@@ -305,6 +360,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6B7280",
     marginTop: 4,
+  },
+  filterRow: {
+    marginTop: 10,
+  },
+  filterRowContent: {
+    paddingRight: 20,
+    gap: 8,
+  },
+  filterPill: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  filterPillActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  filterPillText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '700' as const,
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
   },
   list: {
     flex: 1,

@@ -1,7 +1,7 @@
 import { createTRPCRouter } from "./create-context";
 import hiRoute from "./routes/example/hi/route";
 import profileRoute from "./routes/profile/get/route";
-import getProfileByIdRoute from "./routes/profile/get-by-id/route";
+import getProfileByIdRoute, { getPublicProfileByIdProcedure } from "./routes/profile/get-by-id/route";
 import updateProfileRoute from "./routes/profile/update/route";
 import searchProfilesRoute, { searchPublicProfilesProcedure } from "./routes/profile/search/route";
 import sendMessageRoute from "./routes/messages/send/route";
@@ -111,6 +111,7 @@ export const appRouter = createTRPCRouter({
   profile: createTRPCRouter({
     get: profileRoute,
     getById: getProfileByIdRoute,
+    getPublicById: getPublicProfileByIdProcedure,
     update: updateProfileRoute,
     search: searchProfilesRoute,
     searchPublic: searchPublicProfilesProcedure,

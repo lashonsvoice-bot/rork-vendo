@@ -255,12 +255,13 @@ export default function BusinessDirectoryScreen() {
 
   const distanceOptions = [5, 10, 25, 50, 100];
 
-  if (user?.role !== 'event_host' && user?.role !== 'business_owner') {
+  // Allow guests to view directory but with limited functionality
+  if (user?.role !== 'event_host' && user?.role !== 'business_owner' && user?.role !== 'guest') {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: 'Business Directory' }} />
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Access denied. Only hosts and business owners can view the directory.</Text>
+          <Text style={styles.errorText}>Please log in to view the business directory.</Text>
         </View>
       </SafeAreaView>
     );
@@ -351,15 +352,27 @@ export default function BusinessDirectoryScreen() {
             <Text style={styles.description}>{business.description}</Text>
 
             <View style={styles.contactInfo}>
-              <View style={styles.contactItem}>
-                <Mail size={16} color={theme.colors.text.secondary} />
-                <Text style={styles.contactText}>{business.email}</Text>
-              </View>
-              
-              <View style={styles.contactItem}>
-                <Phone size={16} color={theme.colors.text.secondary} />
-                <Text style={styles.contactText}>{business.phone}</Text>
-              </View>
+              {/* Only show contact info to registered users */}
+              {user?.role !== 'guest' && (
+                <>
+                  <View style={styles.contactItem}>
+                    <Mail size={16} color={theme.colors.text.secondary} />
+                    <Text style={styles.contactText}>{business.email}</Text>
+                  </View>
+                  
+                  <View style={styles.contactItem}>
+                    <Phone size={16} color={theme.colors.text.secondary} />
+                    <Text style={styles.contactText}>{business.phone}</Text>
+                  </View>
+                  
+                  {business.website && (
+                    <View style={styles.contactItem}>
+                      <ExternalLink size={16} color={theme.colors.text.secondary} />
+                      <Text style={styles.contactText}>{business.website}</Text>
+                    </View>
+                  )}
+                </>
+              )}
               
               <View style={styles.contactItem}>
                 <MapPin size={16} color={theme.colors.text.secondary} />
@@ -369,10 +382,11 @@ export default function BusinessDirectoryScreen() {
                 )}
               </View>
               
-              {business.website && (
-                <View style={styles.contactItem}>
-                  <ExternalLink size={16} color={theme.colors.text.secondary} />
-                  <Text style={styles.contactText}>{business.website}</Text>
+              {user?.role === 'guest' && (
+                <View style={styles.guestContactNotice}>
+                  <Text style={styles.guestContactNoticeText}>
+                    Sign up to view contact information
+                  </Text>
                 </View>
               )}
             </View>
@@ -390,6 +404,25 @@ export default function BusinessDirectoryScreen() {
               >
                 <Send size={16} color="#FFFFFF" />
                 <Text style={styles.inviteButtonText}>Send Invite ($1)</Text>
+              </TouchableOpacity>
+            )}
+            
+            {user?.role === 'guest' && (
+              <TouchableOpacity 
+                style={styles.guestSignUpButton}
+                onPress={() => {
+                  // Navigate to auth/signup
+                  Alert.alert(
+                    'Sign Up Required',
+                    'Create an account to contact businesses and send invitations.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Sign Up', onPress: () => console.log('Navigate to signup') }
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.guestSignUpButtonText}>Sign Up to Contact</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -1040,5 +1073,32 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.text.secondary,
     lineHeight: 18,
+  },
+  guestContactNotice: {
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  guestContactNoticeText: {
+    fontSize: 12,
+    color: '#92400E',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  guestSignUpButton: {
+    backgroundColor: '#10B981',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  guestSignUpButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

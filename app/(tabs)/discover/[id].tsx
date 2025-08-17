@@ -40,12 +40,22 @@ export default function ProfileDetailScreen() {
   const { user } = useAuth();
   const [isContacting, setIsContacting] = useState<boolean>(false);
 
-  const profileQuery = trpc.profile.getById.useQuery(
-    { profileId: id as string },
-    { 
-      enabled: !!id,
-    }
-  );
+  // Determine if user is guest
+  const isGuest = user?.role === 'guest';
+  
+  const profileQuery = isGuest 
+    ? trpc.profile.getPublicById.useQuery(
+        { profileId: id as string },
+        { 
+          enabled: !!id,
+        }
+      )
+    : trpc.profile.getById.useQuery(
+        { profileId: id as string },
+        { 
+          enabled: !!id,
+        }
+      );
 
   React.useEffect(() => {
     if (profileQuery.error) {
@@ -57,6 +67,18 @@ export default function ProfileDetailScreen() {
   const profile = profileQuery.data;
 
   const handleContact = async () => {
+    if (isGuest) {
+      Alert.alert(
+        'Sign Up Required', 
+        'Please create an account to contact other users and access full profiles.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Up', onPress: () => router.push('/auth') }
+        ]
+      );
+      return;
+    }
+    
     if (!currentUser || !profile) {
       Alert.alert('Error', 'Unable to send message');
       return;
@@ -219,6 +241,14 @@ export default function ProfileDetailScreen() {
         </LinearGradient>
 
         <View style={styles.profileBody}>
+          {isGuest && (
+            <View style={styles.guestNotice}>
+              <Text style={styles.guestNoticeText}>
+                Sign up to view full profile details and contact information
+              </Text>
+            </View>
+          )}
+          
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.profileDescription}>
@@ -238,7 +268,7 @@ export default function ProfileDetailScreen() {
 
           {profile.role === 'business_owner' && (
             <>
-              {profile.companyWebsite && (
+              {profile.companyWebsite && !isGuest && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Website</Text>
                   <View style={styles.infoRow}>
@@ -359,7 +389,7 @@ export default function ProfileDetailScreen() {
           >
             <MessageCircle size={20} color="#FFFFFF" />
             <Text style={styles.contactButtonText}>
-              {isContacting ? 'Opening...' : 'Send Message'}
+              {isGuest ? 'Sign Up to Contact' : isContacting ? 'Opening...' : 'Send Message'}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -526,5 +556,19 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 32,
+  },
+  guestNotice: {
+    backgroundColor: '#FEF3C7',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  guestNoticeText: {
+    fontSize: 14,
+    color: '#92400E',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

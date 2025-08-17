@@ -69,6 +69,44 @@ export default function MessagesScreen() {
       </View>
     );
   }
+  
+  // Prevent guests from accessing messages
+  if (userRole === 'guest') {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen 
+          options={{
+            title: 'Messages & Coordination',
+            headerStyle: { backgroundColor: '#10B981' },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: { fontWeight: 'bold' },
+          }} 
+        />
+        <View style={styles.guestAccessDenied}>
+          <MessageCircle size={64} color="#D1D5DB" />
+          <Text style={styles.guestAccessTitle}>Sign Up Required</Text>
+          <Text style={styles.guestAccessText}>
+            Create an account to access messages, send proposals, and coordinate with other users.
+          </Text>
+          <TouchableOpacity 
+            style={styles.guestSignUpButton}
+            onPress={() => {
+              Alert.alert(
+                'Sign Up Required',
+                'Create an account to access full messaging features.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Sign Up', onPress: () => console.log('Navigate to signup') }
+                ]
+              );
+            }}
+          >
+            <Text style={styles.guestSignUpButtonText}>Create Account</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   const messages = getMessagesForUser(currentUser.id);
   const proposals = getProposalsForUser(currentUser.id, userRole as 'business_owner' | 'event_host');
@@ -1250,5 +1288,38 @@ const styles = StyleSheet.create({
   },
   pendingBadgeText: {
     color: '#F59E0B',
+  },
+  guestAccessDenied: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  guestAccessTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  guestAccessText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  guestSignUpButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  guestSignUpButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

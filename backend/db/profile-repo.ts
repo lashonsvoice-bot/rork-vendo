@@ -106,6 +106,62 @@ async function findById(id: string): Promise<AnyProfile | null> {
   return all.find((p) => p?.id === id) ?? null;
 }
 
+async function findPublicById(id: string): Promise<any | null> {
+  const profile = await findById(id);
+  if (!profile) return null;
+  
+  // Return only limited public information
+  const basePublic = {
+    id: profile.id,
+    role: profile.role,
+    createdAt: profile.createdAt,
+    state: profile.role === 'business_owner' ? (profile as BusinessOwnerProfile).state : 
+           profile.role === 'event_host' ? (profile as EventHostProfile).state : null,
+  };
+
+  if (profile.role === 'business_owner') {
+    const bp = profile as BusinessOwnerProfile;
+    return {
+      ...basePublic,
+      companyName: bp.companyName,
+      companyLogoUrl: bp.companyLogoUrl,
+      description: bp.description,
+      location: bp.location,
+      companyWebsite: bp.companyWebsite,
+      needs: bp.needs,
+      isVerified: bp.isVerified,
+      // Contact info hidden for guests
+    };
+  } else if (profile.role === 'event_host') {
+    const ep = profile as EventHostProfile;
+    return {
+      ...basePublic,
+      organizationName: ep.organizationName,
+      logoUrl: ep.logoUrl,
+      bio: ep.bio,
+      location: ep.location,
+      eventsHosted: ep.eventsHosted,
+      interests: ep.interests,
+      isVerified: ep.isVerified,
+      // Contact info hidden for guests
+    };
+  } else if (profile.role === 'contractor') {
+    const cp = profile as ContractorProfile;
+    return {
+      ...basePublic,
+      bio: cp.bio,
+      location: cp.location,
+      skills: cp.skills,
+      ratePerHour: cp.ratePerHour,
+      availability: cp.availability,
+      portfolioUrl: cp.portfolioUrl,
+      // Contact info hidden for guests
+    };
+  }
+  
+  return basePublic;
+}
+
 async function upsert(profile: AnyProfile): Promise<AnyProfile> {
   const all = await readAll();
   const idx = all.findIndex((p) => p?.id === profile.id);
@@ -197,6 +253,7 @@ export const profileRepo = {
   writeAll,
   findByUserId,
   findById,
+  findPublicById,
   upsert,
   listByRole,
   listPublicByRole,

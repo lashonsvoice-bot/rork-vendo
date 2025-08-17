@@ -732,11 +732,17 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => router.push('/(tabs)/events')}
+          >
             <Calendar size={20} color="#6B7280" />
             <Text style={styles.settingText}>Event Management</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => router.push('/business-directory')}
+          >
             <User size={20} color="#6B7280" />
             <Text style={styles.settingText}>Vendor Management</Text>
           </TouchableOpacity>

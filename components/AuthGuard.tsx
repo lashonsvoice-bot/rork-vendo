@@ -40,7 +40,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
     if (isAuthRoute || isRootRoute) {
       console.log('[AuthGuard] Authenticated user, redirecting to home');
-      router.replace('/(tabs)/(home)/');
+      router.replace('/');
       return;
     }
   }, [user, isLoading, currentPath, isAuthRoute, isRootRoute, router]);

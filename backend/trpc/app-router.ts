@@ -102,6 +102,7 @@ import {
 } from "./routes/admin/dashboard/route";
 import placesAutocompleteProcedure from "./routes/maps/autocomplete/route";
 import geocodeProcedure from "./routes/maps/geocode/route";
+import { testConnectionProcedure, createSampleDataProcedure, querySampleDataProcedure } from "./routes/database/test/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -161,6 +162,11 @@ export const appRouter = createTRPCRouter({
   maps: createTRPCRouter({
     autocomplete: placesAutocompleteProcedure,
     geocode: geocodeProcedure,
+  }),
+  database: createTRPCRouter({
+    testConnection: testConnectionProcedure,
+    createSampleData: createSampleDataProcedure,
+    querySampleData: querySampleDataProcedure,
   }),
   wallet: walletRoutes,
   events: createTRPCRouter({

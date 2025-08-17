@@ -1,9 +1,9 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from "react";
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Modal, TextInput, Platform } from "react-native";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Modal, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useEvents } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
-import { CheckCircle, Clock, Camera, User, Calendar, MapPin, Eye, Plus, Check, Lock, StickyNote, Search, Scan, ListChecks, CheckSquare } from "lucide-react-native";
+import { CheckCircle, Clock, Camera, User, Calendar, MapPin, Eye, Lock, StickyNote, Search, Scan } from "lucide-react-native";
 
 export default function OwnerCheckInsScreen() {
   const router = useRouter();
@@ -155,7 +155,7 @@ export default function OwnerCheckInsScreen() {
     <View style={styles.container}>
       <View style={styles.headerBar}>
         <Text style={styles.headerTitle}>Check-ins Overview</Text>
-        <Text style={styles.headerSub}>Monitor host progress across your events</Text>
+        <Text style={styles.headerSub}>View-only: Hosts manage all check-ins</Text>
         <TextInput
           ref={searchRef}
           value={search}
@@ -263,16 +263,6 @@ export default function OwnerCheckInsScreen() {
                   <Text style={styles.kpiNumber}>{`${completed}/${total}`}</Text>
                   <Text style={styles.kpiLabel}>Completed</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.plusOneButton}
-                  onPress={() => onPlusOne(undefined)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Quick add one check-in"
-                  testID={`plus-one-${event.id}`}
-                >
-                  <Plus size={16} color="#FFFFFF" />
-                  <Text style={styles.plusOneText}>+1 Check-in</Text>
-                </TouchableOpacity>
               </View>
 
               <View style={styles.progressBar} accessibilityLabel={`progress-${event.id}`} testID={`progress-${event.id}`}>
@@ -316,17 +306,6 @@ export default function OwnerCheckInsScreen() {
                               <Text style={styles.groupKpiLabel}>Completed</Text>
                             </View>
                           </View>
-                          <TouchableOpacity
-                            style={[styles.plusOneSmall, !hasNext ? styles.plusOneDisabled : undefined]}
-                            disabled={!hasNext}
-                            onPress={() => onPlusOne(groupKey)}
-                            testID={`plus-one-${event.id}-${groupKey}`}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Quick +1 check-in for ${groupKey}`}
-                          >
-                            <Plus size={14} color="#FFFFFF" />
-                            <Text style={styles.plusOneSmallText}>+1</Text>
-                          </TouchableOpacity>
                         </TouchableOpacity>
 
                         {[...list]
@@ -367,48 +346,16 @@ export default function OwnerCheckInsScreen() {
                                     })()}
                                   </Text>
                                   <TouchableOpacity
-                                    onPress={() => {
-                                      if (!v.arrivalConfirmed) return toggleArrival(event.id, v.id, v.arrivalConfirmed);
-                                      if (!v.halfwayConfirmed) return toggleHalfway(event.id, v.id, v.halfwayConfirmed);
-                                      if (!v.endConfirmed) return toggleCompleted(event.id, v.id, v.endConfirmed);
-                                      updateVendorCheckIn(event.id, v.id, { arrivalConfirmed: false, halfwayConfirmed: false, endConfirmed: false, arrivalTime: undefined, halfwayCheckIn: undefined, endCheckIn: undefined });
-                                    }}
-                                    onLongPress={() => openNotes(event.id, v.id, v.notes)}
+                                    onPress={() => openNotes(event.id, v.id, v.notes)}
                                     style={[styles.statusPill, { backgroundColor: s.bg }]}
                                     accessibilityRole="button"
-                                    accessibilityLabel={`Toggle status for ${v.vendorName}`}
-                                  > 
+                                    accessibilityLabel={`View status for ${v.vendorName}`}
+                                  >
                                     <Text style={[styles.statusPillText, { color: s.color }]}>{s.label}</Text>
                                   </TouchableOpacity>
                                 </View>
                               </View>
                               <View style={styles.vendorRight}>
-                                <View style={styles.actionRow}>
-                                  <TouchableOpacity
-                                    style={[styles.actionBtn, v.arrivalConfirmed ? styles.actionOnCheckIn : styles.actionOff]}
-                                    onPress={() => toggleArrival(event.id, v.id, v.arrivalConfirmed)}
-                                    testID={`toggle-arrival-${v.id}`}
-                                  >
-                                    <Check size={12} color={v.arrivalConfirmed ? '#FFFFFF' : '#6366F1'} />
-                                    <Text style={[styles.actionText, v.arrivalConfirmed ? styles.actionTextOn : styles.actionTextOff]}>Check-in</Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.actionBtn, v.halfwayConfirmed ? styles.actionOnMidway : styles.actionOff]}
-                                    onPress={() => toggleHalfway(event.id, v.id, v.halfwayConfirmed)}
-                                    testID={`toggle-midway-${v.id}`}
-                                  >
-                                    <Clock size={12} color={v.halfwayConfirmed ? '#FFFFFF' : '#3B82F6'} />
-                                    <Text style={[styles.actionText, v.halfwayConfirmed ? styles.actionTextOn : styles.actionTextOff]}>Midway</Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={[styles.actionBtn, v.endConfirmed ? styles.actionOnCompleted : styles.actionOff]}
-                                    onPress={() => toggleCompleted(event.id, v.id, v.endConfirmed)}
-                                    testID={`toggle-completed-${v.id}`}
-                                  >
-                                    <CheckCircle size={12} color={v.endConfirmed ? '#FFFFFF' : '#10B981'} />
-                                    <Text style={[styles.actionText, v.endConfirmed ? styles.actionTextOn : styles.actionTextOff]}>Completed</Text>
-                                  </TouchableOpacity>
-                                </View>
 
                                 {v.arrivalTime && (
                                   <Text style={styles.timeText}>Arrived: {v.arrivalTime}</Text>
@@ -467,40 +414,24 @@ export default function OwnerCheckInsScreen() {
                 <StickyNote size={18} color="#111827" />
                 <Text style={styles.modalTitle}>Private Notes</Text>
               </View>
-              <Text style={styles.modalSub}>Only visible to hosts and used during ratings</Text>
+              <Text style={styles.modalSub}>Hosts manage notes. Owners can view only.</Text>
             </View>
             <TextInput
               testID="notes-input"
-              placeholder="Type private notes here..."
+              placeholder="No notes"
               multiline
               value={notesText}
-              onChangeText={setNotesText}
-              style={styles.textArea}
+              editable={false}
+              style={[styles.textArea, { backgroundColor: '#F3F4F6' }]}
             />
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnSecondary]}
-                onPress={closeNotes}
-                testID="notes-cancel"
-                accessibilityRole="button"
-              >
-                <Text style={styles.modalBtnSecondaryText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnDanger]}
-                onPress={clearNotes}
-                testID="notes-clear"
-                accessibilityRole="button"
-              >
-                <Text style={styles.modalBtnDangerText}>Clear</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
                 style={[styles.modalBtn, styles.modalBtnPrimary]}
-                onPress={saveNotes}
-                testID="notes-save"
+                onPress={closeNotes}
+                testID="notes-close"
                 accessibilityRole="button"
               >
-                <Text style={styles.modalBtnPrimaryText}>Save</Text>
+                <Text style={styles.modalBtnPrimaryText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -546,42 +477,6 @@ export default function OwnerCheckInsScreen() {
         >
           <Search size={18} color="#111827" />
           <Text style={styles.footerBtnText}>Scan/Find</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.footerBtn, styles.footerPrimary]}
-          onPress={footerPlusOne}
-          accessibilityRole="button"
-          accessibilityLabel="Plus one check-in"
-          testID="footer-plus-one"
-          disabled={!selectedGroup}
-        >
-          <Plus size={18} color="#FFFFFF" />
-          <Text style={styles.footerPrimaryText}>+1 Check-in</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerBtn}
-          onPress={footerMarkMidway}
-          accessibilityRole="button"
-          accessibilityLabel="Mark midway for table"
-          testID="footer-mark-midway"
-          disabled={!selectedGroup}
-        >
-          <Clock size={18} color="#111827" />
-          <Text style={styles.footerBtnText}>Mark Midway</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.footerBtn}
-          onPress={footerCompleteTable}
-          accessibilityRole="button"
-          accessibilityLabel="Complete table"
-          testID="footer-complete-table"
-          disabled={!selectedGroup}
-        >
-          <CheckSquare size={18} color="#111827" />
-          <Text style={styles.footerBtnText}>Complete</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -731,20 +626,6 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     fontWeight: "600",
   },
-  plusOneButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#6366F1',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  plusOneText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
   vendorList: {
     paddingHorizontal: 12,
     paddingBottom: 12,
@@ -788,23 +669,6 @@ const styles = StyleSheet.create({
   groupKpiLabel: {
     fontSize: 10,
     color: '#6B7280',
-  },
-  plusOneSmall: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#6366F1',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  plusOneDisabled: {
-    backgroundColor: '#A5B4FC',
-  },
-  plusOneSmallText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
   },
   progressBar: {
     flexDirection: 'row',
@@ -863,46 +727,6 @@ const styles = StyleSheet.create({
   vendorRight: {
     alignItems: "flex-end",
     gap: 6,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-  },
-  actionOff: {
-    backgroundColor: '#FFFFFF',
-  },
-  actionOnCheckIn: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
-  },
-  actionOnMidway: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  actionOnCompleted: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  actionText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  actionTextOn: {
-    color: '#FFFFFF',
-  },
-  actionTextOff: {
-    color: '#374151',
   },
   timeText: {
     fontSize: 11,

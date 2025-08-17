@@ -103,6 +103,8 @@ import {
   checkSuspensionProcedure,
   submitAppealProcedure as submitAdminAppealProcedure,
 } from "./routes/admin/dashboard/route";
+import placesAutocompleteProcedure from "./routes/maps/autocomplete/route";
+import geocodeProcedure from "./routes/maps/geocode/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -162,6 +164,10 @@ export const appRouter = createTRPCRouter({
     recordUsage: recordEventUsageProcedure,
     cancel: cancelSubscriptionProcedure,
     getVerificationDiscount: getVerificationDiscountProcedure,
+  }),
+  maps: createTRPCRouter({
+    autocomplete: placesAutocompleteProcedure,
+    geocode: geocodeProcedure,
   }),
   wallet: walletRoutes,
   events: createTRPCRouter({

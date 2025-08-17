@@ -48,6 +48,7 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import DatePickerField from "@/components/DatePickerField";
 import TimePickerField from "@/components/TimePickerField";
+import LocationAutocomplete from "@/components/LocationAutocomplete";
 import { trpcClient } from "@/lib/trpc";
 
 interface FormDataType {
@@ -443,6 +444,7 @@ export default function CreateEventScreen() {
           key: "location",
           icon: MapPin,
           required: true,
+          type: 'location' as const,
         },
         {
           label: "Date",
@@ -623,12 +625,12 @@ export default function CreateEventScreen() {
               <Text style={styles.label}>Location *</Text>
               <View style={styles.inputContainer}>
                 <MapPin size={18} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  placeholder="Event venue address, City, State"
+                <LocationAutocomplete
+                  testID="bo-location"
                   value={formData.location}
                   onChangeText={(t) => setFormData({ ...formData, location: t })}
-                  style={styles.input}
-                  placeholderTextColor="#9CA3AF"
+                  onSelect={(sel) => setFormData({ ...formData, location: sel.description })}
+                  placeholder="Event venue address, City, State"
                 />
               </View>
             </View>
@@ -1011,6 +1013,16 @@ export default function CreateEventScreen() {
                         testID={`time-${field.key}`}
                         value={field.value}
                         onChange={(t) => setFormData({ ...formData, [field.key]: t })}
+                        placeholder={field.placeholder}
+                      />
+                    ) : (field as any).type === 'location' ? (
+                      <LocationAutocomplete
+                        testID={`loc-${field.key}`}
+                        value={field.value}
+                        onChangeText={(text) => setFormData({ ...formData, [field.key]: text })}
+                        onSelect={(sel) => {
+                          setFormData({ ...formData, [field.key]: sel.description });
+                        }}
                         placeholder={field.placeholder}
                       />
                     ) : (

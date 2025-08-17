@@ -21,7 +21,7 @@ export default function SendProposalTestNow() {
   const [result, setResult] = useState<SendResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const targetEmail = useMemo(() => 'lashonsvoice@gmail.com', []);
+  const targetEmail = useMemo(() => 'lashonsvoice@gmail.com; Turnipseed930@gmail.com', []);
   const targetPhone = useMemo<string | null>(() => null, []);
 
   useEffect(() => {
@@ -40,19 +40,19 @@ export default function SendProposalTestNow() {
 
         const r = await trpcClient.proposals.sendExternal.mutate({
           businessOwnerId,
-          businessOwnerName,
-          businessName,
-          businessOwnerContactEmail: (currentUser as any)?.contactEmail ?? 'noreply@revovend.com',
+          businessOwnerName: 'Funny Bunnies Owner',
+          businessName: 'Funny Bunnies',
+          businessOwnerContactEmail: undefined,
           eventId: `external_test_${Date.now()}`,
-          eventTitle: 'Test Event (Automated) ',
+          eventTitle: 'mattress mayhem',
           hostName: 'Test Host',
           hostEmail: targetEmail,
           // Email only test: do not include hostPhone
-          proposedAmount: 500,
-          contractorsNeeded: 2,
-          message: `Greetings,\n\n${businessName} located in ${cityState} would like to RevoVend at your Test Event on ${prettyDate}. This is a test dispatch generated to validate email and SMS delivery.\n\nIf you received this message, the external proposal flow is working.`,
-          eventDate: prettyDate,
-          eventLocation: cityState,
+          proposedAmount: 250,
+          contractorsNeeded: undefined,
+          message: `Greetings,\n\nFunny Bunnies located in Atlanta ga would like to RevoVend at your mattress mayhem on may 20 2026. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.\n\nWe want to pay $250 standard table today as well as an additional fee of $75 for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.\n\nIf you accept this proposal please use the invitation code when you log into the RevoVend App. The more vendors see that you are a RevoVend Host the more your events could be filled remotely with vendors from all around the world.`,
+          eventDate: 'may 20 2026',
+          eventLocation: 'Atlanta, GA',
         });
         console.log('[SendProposalTestNow] Result:', r);
         setResult(r);
@@ -86,8 +86,10 @@ export default function SendProposalTestNow() {
             <Send size={24} color="#8B5CF6" />
             <Text style={styles.title}>One-tap Test Dispatch</Text>
           </View>
-          <Text style={styles.subtext}>Email: {targetEmail}</Text>
-          <Text style={styles.subtext}>Mode: Email only</Text>
+          <Text style={styles.subtext}>Recipients: {targetEmail}</Text>
+          <Text style={styles.subtext}>Business: Funny Bunnies</Text>
+          <Text style={styles.subtext}>Event: mattress mayhem (may 20 2026)</Text>
+          <Text style={styles.subtext}>Table Fee: $250 + $75 supervision</Text>
         </View>
 
         {isSending && (
@@ -123,19 +125,19 @@ export default function SendProposalTestNow() {
                       const cityState = 'Atlanta, GA';
                       const r = await trpcClient.proposals.sendExternal.mutate({
                         businessOwnerId,
-                        businessOwnerName,
-                        businessName,
-                        businessOwnerContactEmail: (currentUser as any)?.contactEmail ?? 'noreply@revovend.com',
+                        businessOwnerName: 'Funny Bunnies Owner',
+                        businessName: 'Funny Bunnies',
+                        businessOwnerContactEmail: undefined,
                         eventId: `external_test_${Date.now()}`,
-                        eventTitle: 'Test Event (Automated) ',
+                        eventTitle: 'mattress mayhem',
                         hostName: 'Test Host',
                         hostEmail: targetEmail,
                         // Email only test: do not include hostPhone
-                        proposedAmount: 500,
-                        contractorsNeeded: 2,
-                        message: `Greetings,\n\n${businessName} located in ${cityState} would like to RevoVend at your Test Event on ${prettyDate}. This is a test dispatch generated to validate email and SMS delivery.\n\nIf you received this message, the external proposal flow is working.`,
-                        eventDate: prettyDate,
-                        eventLocation: cityState,
+                        proposedAmount: 250,
+                        contractorsNeeded: undefined,
+                        message: `Greetings,\n\nFunny Bunnies located in Atlanta ga would like to RevoVend at your mattress mayhem on may 20 2026. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.\n\nWe want to pay $250 standard table today as well as an additional fee of $75 for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.\n\nIf you accept this proposal please use the invitation code when you log into the RevoVend App. The more vendors see that you are a RevoVend Host the more your events could be filled remotely with vendors from all around the world.`,
+                        eventDate: 'may 20 2026',
+                        eventLocation: 'Atlanta, GA',
                       });
                       setResult(r);
                       if (!r.success) setError(r.message || 'Unknown error');

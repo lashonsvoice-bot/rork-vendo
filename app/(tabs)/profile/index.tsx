@@ -44,6 +44,7 @@ import {
   Moon,
   Sun,
   Monitor,
+  XCircle,
 } from "lucide-react-native";
 import { useUser } from "@/hooks/user-store";
 import { useAuth } from "@/hooks/auth-store";
@@ -342,6 +343,17 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Emergency Actions</Text>
+          <TouchableOpacity 
+            style={styles.emergencyButton}
+            onPress={() => router.push('/event-selection-cancel')}
+          >
+            <XCircle size={24} color="#FFFFFF" />
+            <Text style={styles.emergencyButtonText}>Cancel Event</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <LogOut size={20} color="#EF4444" />
             <Text style={styles.logoutText}>Logout</Text>
@@ -522,6 +534,17 @@ export default function ProfileScreen() {
           >
             <TestTube size={20} color="#8B5CF6" />
             <Text style={styles.settingText}>Test Proposal Flow</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Emergency Actions</Text>
+          <TouchableOpacity 
+            style={styles.emergencyButton}
+            onPress={() => router.push('/event-selection-cancel')}
+          >
+            <XCircle size={24} color="#FFFFFF" />
+            <Text style={styles.emergencyButtonText}>Cancel Event</Text>
           </TouchableOpacity>
         </View>
 
@@ -716,6 +739,17 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.settingItem}>
             <User size={20} color="#6B7280" />
             <Text style={styles.settingText}>Vendor Management</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Emergency Actions</Text>
+          <TouchableOpacity 
+            style={styles.emergencyButton}
+            onPress={() => router.push('/event-selection-cancel')}
+          >
+            <XCircle size={24} color="#FFFFFF" />
+            <Text style={styles.emergencyButtonText}>Cancel Event</Text>
           </TouchableOpacity>
         </View>
 
@@ -1646,5 +1680,28 @@ const styles = StyleSheet.create({
   themeOptionTextSelected: {
     color: '#1D4ED8',
     fontWeight: '600',
+  },
+  emergencyButton: {
+    backgroundColor: '#DC2626',
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#B91C1C',
+  },
+  emergencyButtonText: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });

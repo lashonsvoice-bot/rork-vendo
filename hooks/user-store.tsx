@@ -137,6 +137,36 @@ const mockContractors: Contractor[] = [
   },
 ];
 
+const mockEventHosts: EventHost[] = [
+  {
+    id: "eh1",
+    name: "Downtown Events Co.",
+    email: "contact@downtownevents.com",
+    organizationName: "Downtown Events Co.",
+    phone: "+1 (555) 987-6543",
+    website: "https://downtownevents.com",
+    location: "Oakland, CA",
+    eventsHosted: 12,
+    rating: 4.7,
+    acceptsDeliverables: true,
+    deliveryAddress: "123 Downtown Plaza, Oakland, CA 94612",
+    createdAt: "2024-01-05T08:00:00Z",
+  },
+  {
+    id: "eh3",
+    name: "Seattle Events Group",
+    email: "info@seattleevents.org",
+    organizationName: "Seattle Events Group",
+    phone: "+1 (206) 555-0123",
+    location: "Seattle, WA",
+    eventsHosted: 8,
+    rating: 4.5,
+    acceptsDeliverables: true,
+    deliveryAddress: "456 Pike Place Market, Seattle, WA 98101",
+    createdAt: "2024-02-10T10:30:00Z",
+  },
+];
+
 const mockTrainingDocuments: TrainingDocument[] = [
   {
     id: "t1",
@@ -170,7 +200,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
   const { user: authUser } = useAuth();
   const [contractors, setContractors] = useState<Contractor[]>(mockContractors);
   const [businessOwners, setBusinessOwners] = useState<BusinessOwner[]>([]);
-  const [eventHosts, setEventHosts] = useState<EventHost[]>([]);
+  const [eventHosts, setEventHosts] = useState<EventHost[]>(mockEventHosts);
   const [trainingDocuments, setTrainingDocuments] = useState<TrainingDocument[]>(mockTrainingDocuments);
   const [trainingMaterials, setTrainingMaterials] = useState<TrainingDocument[]>([]);
   const [trainingProgress, setTrainingProgress] = useState<ContractorTrainingProgress[]>([]);
@@ -273,7 +303,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
       if (eventHostsData) {
         const parsed = JSON.parse(eventHostsData);
-        setEventHosts(parsed);
+        setEventHosts([...mockEventHosts, ...parsed]);
       }
 
       if (trainingMaterialsData) {

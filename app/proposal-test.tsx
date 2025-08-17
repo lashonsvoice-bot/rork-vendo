@@ -10,9 +10,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { 
-  Send, 
   User,
-  Building2,
   Store,
   CheckCircle,
   Clock,
@@ -28,7 +26,7 @@ import { Stack, useRouter } from 'expo-router';
 
 export default function ProposalTestScreen() {
   const router = useRouter();
-  const { currentUser, userRole, businessOwners, eventHosts } = useUser();
+  const { currentUser, userRole, eventHosts } = useUser();
   const { events } = useEvents();
   const { 
     createBusinessProposal,
@@ -172,26 +170,45 @@ export default function ProposalTestScreen() {
                   {availableEvents.length === 0 ? (
                     <Text style={styles.noEventsText}>No available events to test with</Text>
                   ) : (
-                    availableEvents.map((event) => (
-                      <TouchableOpacity
-                        key={event.id}
-                        style={[
-                          styles.eventOption,
-                          testForm.eventId === event.id && styles.selectedEventOption
-                        ]}
-                        onPress={() => setTestForm(prev => ({ ...prev, eventId: event.id }))}
-                      >
-                        <View style={styles.eventOptionHeader}>
-                          <Text style={styles.eventOptionTitle}>{event.title}</Text>
-                          <View style={styles.hostInfo}>
-                            <Store size={14} color="#F59E0B" />
-                            <Text style={styles.hostName}>{event.eventHostName}</Text>
+                    availableEvents.map((event) => {
+                      // Check if host is registered
+                      const eventHost = eventHosts.find(h => h.id === event.eventHostId);
+                      const isHostRegistered = !!eventHost;
+                      
+                      return (
+                        <TouchableOpacity
+                          key={event.id}
+                          style={[
+                            styles.eventOption,
+                            testForm.eventId === event.id && styles.selectedEventOption
+                          ]}
+                          onPress={() => setTestForm(prev => ({ ...prev, eventId: event.id }))}
+                        >
+                          <View style={styles.eventOptionHeader}>
+                            <Text style={styles.eventOptionTitle}>{event.title}</Text>
+                            <View style={styles.hostInfo}>
+                              <Store size={14} color={isHostRegistered ? "#10B981" : "#F59E0B"} />
+                              <Text style={[styles.hostName, { color: isHostRegistered ? "#10B981" : "#F59E0B" }]}>
+                                {event.eventHostName}
+                              </Text>
+                              <View style={[
+                                styles.hostStatusBadge,
+                                { backgroundColor: isHostRegistered ? "#D1FAE5" : "#FEF3C7" }
+                              ]}>
+                                <Text style={[
+                                  styles.hostStatusText,
+                                  { color: isHostRegistered ? "#065F46" : "#92400E" }
+                                ]}>
+                                  {isHostRegistered ? "INTERNAL" : "EXTERNAL"}
+                                </Text>
+                              </View>
+                            </View>
                           </View>
-                        </View>
-                        <Text style={styles.eventLocation}>{event.location}</Text>
-                        <Text style={styles.eventDate}>{event.date} at {event.time}</Text>
-                      </TouchableOpacity>
-                    ))
+                          <Text style={styles.eventLocation}>{event.location}</Text>
+                          <Text style={styles.eventDate}>{event.date} at {event.time}</Text>
+                        </TouchableOpacity>
+                      );
+                    })
                   )}
                 </View>
               </View>
@@ -233,14 +250,53 @@ export default function ProposalTestScreen() {
                 />
               </View>
 
-              <TouchableOpacity 
-                style={styles.sendButton} 
-                onPress={handleSendTestProposal}
-                disabled={!testForm.eventId}
-              >
-                <Send size={20} color="#FFFFFF" />
-                <Text style={styles.sendButtonText}>Send Test Proposal</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity 
+                  style={[
+                    styles.sendButton,
+                    styles.internalButton,
+                    !testForm.eventId && styles.disabledButton
+                  ]} 
+                  onPress={() => {
+                    const selectedEvent = events.find(e => e.id === testForm.eventId);
+                    const eventHost = eventHosts.find(h => h.id === selectedEvent?.eventHostId);
+                    const isHostRegistered = !!eventHost;
+                    
+                    if (!isHostRegistered) {
+                      Alert.alert(
+                        'Host Not Registered',
+                        'This host is not registered in the app. Please use the External Proposal button to send via email.',
+                        [{ text: 'OK' }]
+                      );
+                      return;
+                    }
+                    handleSendTestProposal();
+                  }}
+                  disabled={!testForm.eventId}
+                >
+                  <User size={20} color="#FFFFFF" />
+                  <Text style={styles.sendButtonText}>Send Internal Proposal</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[
+                    styles.sendButton,
+                    styles.externalButton,
+                    !testForm.eventId && styles.disabledButton
+                  ]} 
+                  onPress={() => {
+                    if (!testForm.eventId) {
+                      Alert.alert('Error', 'Please select an event first');
+                      return;
+                    }
+                    router.push('/send-external-proposal' as any);
+                  }}
+                  disabled={!testForm.eventId}
+                >
+                  <ExternalLink size={20} color="#FFFFFF" />
+                  <Text style={styles.sendButtonText}>Send External Proposal</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {testResults && (
@@ -313,7 +369,7 @@ export default function ProposalTestScreen() {
                 Send proposals to event hosts who are not yet using the app via email and SMS.
               </Text>
               <TouchableOpacity 
-                style={styles.externalButton} 
+                style={styles.externalProposalButton} 
                 onPress={() => router.push('/send-external-proposal' as any)}
               >
                 <ExternalLink size={20} color="#FFFFFF" />
@@ -480,20 +536,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9CA3AF',
   },
+  buttonContainer: {
+    gap: 12,
+    marginTop: 8,
+  },
   sendButton: {
-    backgroundColor: '#8B5CF6',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
     borderRadius: 8,
-    marginTop: 8,
+  },
+  internalButton: {
+    backgroundColor: '#8B5CF6',
+  },
+  externalButton: {
+    backgroundColor: '#F59E0B',
+  },
+  disabledButton: {
+    backgroundColor: '#9CA3AF',
+    opacity: 0.6,
   },
   sendButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  hostStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  hostStatusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   resultsSection: {
     backgroundColor: '#FFFFFF',
@@ -600,7 +679,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 20,
   },
-  externalButton: {
+  externalProposalButton: {
     backgroundColor: '#F59E0B',
     flexDirection: 'row',
     alignItems: 'center',

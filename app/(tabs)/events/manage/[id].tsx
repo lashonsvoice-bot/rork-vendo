@@ -76,28 +76,8 @@ export default function ManageVendorScreen() {
     }
   };
 
-  const handleCheckIn = (vendorId: string, stage: CheckInStage) => {
-    const now = new Date().toLocaleTimeString();
-    const updates: Partial<VendorCheckIn> = {};
-
-    switch (stage) {
-      case 'arrival':
-        updates.arrivalTime = now;
-        updates.arrivalConfirmed = true;
-        updates.idVerified = true;
-        break;
-      case 'halfway':
-        updates.halfwayCheckIn = now;
-        updates.halfwayConfirmed = true;
-        break;
-      case 'end':
-        updates.endCheckIn = now;
-        updates.endConfirmed = true;
-        break;
-    }
-
-    updateVendorCheckIn(event.id, vendorId, updates);
-  };
+  // Manual check-in removed to prevent host dishonesty
+  // Contractors must check in via their app with digital passes
 
   const handleReleaseFunds = (vendorId: string) => {
     Alert.alert(
@@ -343,12 +323,9 @@ export default function ManageVendorScreen() {
                 <CheckCircle size={16} color="#10B981" />
               </View>
             ) : (
-              <TouchableOpacity
-                style={styles.checkInButton}
-                onPress={() => handleCheckIn(vendor.id, 'arrival')}
-              >
-                <Text style={styles.checkInButtonText}>Check In</Text>
-              </TouchableOpacity>
+              <View style={styles.pendingBadge}>
+                <Text style={styles.pendingText}>Awaiting Check-in</Text>
+              </View>
             )}
           </View>
 
@@ -364,19 +341,15 @@ export default function ManageVendorScreen() {
                 <CheckCircle size={16} color="#10B981" />
               </View>
             ) : (
-              <TouchableOpacity
-                style={[
-                  styles.checkInButton,
-                  !vendor.arrivalConfirmed && styles.disabledButton,
-                ]}
-                onPress={() => handleCheckIn(vendor.id, 'halfway')}
-                disabled={!vendor.arrivalConfirmed}
-              >
+              <View style={[
+                styles.pendingBadge,
+                !vendor.arrivalConfirmed && styles.disabledPendingBadge,
+              ]}>
                 <Text style={[
-                  styles.checkInButtonText,
-                  !vendor.arrivalConfirmed && styles.disabledButtonText,
-                ]}>Halfway</Text>
-              </TouchableOpacity>
+                  styles.pendingText,
+                  !vendor.arrivalConfirmed && styles.disabledPendingText,
+                ]}>Awaiting Halfway</Text>
+              </View>
             )}
           </View>
 
@@ -392,19 +365,15 @@ export default function ManageVendorScreen() {
                 <CheckCircle size={16} color="#10B981" />
               </View>
             ) : (
-              <TouchableOpacity
-                style={[
-                  styles.checkInButton,
-                  !vendor.halfwayConfirmed && styles.disabledButton,
-                ]}
-                onPress={() => handleCheckIn(vendor.id, 'end')}
-                disabled={!vendor.halfwayConfirmed}
-              >
+              <View style={[
+                styles.pendingBadge,
+                !vendor.halfwayConfirmed && styles.disabledPendingBadge,
+              ]}>
                 <Text style={[
-                  styles.checkInButtonText,
-                  !vendor.halfwayConfirmed && styles.disabledButtonText,
-                ]}>End Event</Text>
-              </TouchableOpacity>
+                  styles.pendingText,
+                  !vendor.halfwayConfirmed && styles.disabledPendingText,
+                ]}>Awaiting End</Text>
+              </View>
             )}
           </View>
         </View>
@@ -1187,6 +1156,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#D1FAE5",
     padding: 6,
     borderRadius: 6,
+  },
+  pendingBadge: {
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  pendingText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#92400E",
+  },
+  disabledPendingBadge: {
+    backgroundColor: "#F3F4F6",
+  },
+  disabledPendingText: {
+    color: "#9CA3AF",
   },
   actionSection: {
     marginBottom: 16,

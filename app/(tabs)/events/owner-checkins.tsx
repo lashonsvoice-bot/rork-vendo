@@ -155,7 +155,7 @@ export default function OwnerCheckInsScreen() {
     <View style={styles.container}>
       <View style={styles.headerBar}>
         <Text style={styles.headerTitle}>Check-ins Overview</Text>
-        <Text style={styles.headerSub}>View-only: Contractors check in via app, hosts supervise</Text>
+        <Text style={styles.headerSub}>View-only: Contractors check in via app with digital passes</Text>
         <TextInput
           ref={searchRef}
           value={search}

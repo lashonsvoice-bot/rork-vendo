@@ -24,6 +24,7 @@ export type BusinessOwnerProfile = ProfileBase & {
   businessType?: "llc" | "sole_proprietor" | "corporation" | "partnership" | "other" | null;
   einNumber?: string | null;
   dunsNumber?: string | null;
+  businessStartDate?: string | null;
   isVerified?: boolean;
   verificationDate?: string | null;
   state?: string | null;
@@ -52,6 +53,7 @@ export type EventHostProfile = ProfileBase & {
   businessType?: "llc" | "sole_proprietor" | "corporation" | "partnership" | "other" | null;
   einNumber?: string | null;
   dunsNumber?: string | null;
+  businessStartDate?: string | null;
   isVerified?: boolean;
   verificationDate?: string | null;
   logoUrl?: string | null;

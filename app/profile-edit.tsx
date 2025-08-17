@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Save, User, Building2, MapPin, Phone, Globe, DollarSign, Star, Mail, Shield, FileText } from 'lucide-react-native';
+import { Save, User, Building2, MapPin, Phone, Globe, DollarSign, Star, Mail, Shield, FileText, Calendar } from 'lucide-react-native';
 import FileUpload from '@/components/FileUpload';
 import { useAuth } from '@/hooks/auth-store';
 import { trpc } from '@/lib/trpc';
@@ -21,6 +21,7 @@ type BusinessOwnerData = {
   businessType?: 'llc' | 'sole_proprietor' | 'corporation' | 'partnership' | 'other';
   einNumber?: string;
   dunsNumber?: string;
+  businessStartDate?: string;
 };
 
 type ContractorData = {
@@ -44,6 +45,7 @@ type EventHostData = {
   businessType?: 'llc' | 'sole_proprietor' | 'corporation' | 'partnership' | 'other';
   einNumber?: string;
   dunsNumber?: string;
+  businessStartDate?: string;
 };
 
 export default function ProfileEditScreen() {
@@ -81,6 +83,7 @@ export default function ProfileEditScreen() {
     businessType: undefined,
     einNumber: '',
     dunsNumber: '',
+    businessStartDate: '',
   });
 
   const [contractorData, setContractorData] = useState<ContractorData>({
@@ -104,6 +107,7 @@ export default function ProfileEditScreen() {
     businessType: undefined,
     einNumber: '',
     dunsNumber: '',
+    businessStartDate: '',
   });
 
   // Initialize form data when profile loads
@@ -125,6 +129,7 @@ export default function ProfileEditScreen() {
           businessType: profile.businessType || undefined,
           einNumber: profile.einNumber || '',
           dunsNumber: profile.dunsNumber || '',
+          businessStartDate: profile.businessStartDate || '',
         });
       } else if (user.role === 'contractor' && profile.role === 'contractor') {
         setContractorData({
@@ -148,6 +153,7 @@ export default function ProfileEditScreen() {
           businessType: profile.businessType || undefined,
           einNumber: profile.einNumber || '',
           dunsNumber: profile.dunsNumber || '',
+          businessStartDate: profile.businessStartDate || '',
         });
       }
     }
@@ -507,7 +513,7 @@ function BusinessOwnerForm({
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>DUNS Number (Optional)</Text>
+          <Text style={styles.label}>DUNS Number (Required for Verification)</Text>
           <View style={styles.inputRow}>
             <FileText size={20} color="#6B7280" />
             <TextInput
@@ -520,7 +526,24 @@ function BusinessOwnerForm({
             />
           </View>
           <Text style={styles.helperText}>
-            Data Universal Numbering System identifier
+            Data Universal Numbering System identifier (required for verification)
+          </Text>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Business Start Date (Required for Verification)</Text>
+          <View style={styles.inputRow}>
+            <Calendar size={20} color="#6B7280" />
+            <TextInput
+              style={styles.input}
+              value={data.businessStartDate}
+              onChangeText={(text) => setData(prev => ({ ...prev, businessStartDate: text }))}
+              placeholder="MM/DD/YYYY"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+          <Text style={styles.helperText}>
+            Date when your business was officially established (required for verification)
           </Text>
         </View>
       </View>
@@ -903,7 +926,7 @@ function EventHostForm({
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>DUNS Number (Optional)</Text>
+          <Text style={styles.label}>DUNS Number (Required for Verification)</Text>
           <View style={styles.inputRow}>
             <FileText size={20} color="#6B7280" />
             <TextInput
@@ -916,7 +939,24 @@ function EventHostForm({
             />
           </View>
           <Text style={styles.helperText}>
-            Data Universal Numbering System identifier
+            Data Universal Numbering System identifier (required for verification)
+          </Text>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Business Start Date (Required for Verification)</Text>
+          <View style={styles.inputRow}>
+            <Calendar size={20} color="#6B7280" />
+            <TextInput
+              style={styles.input}
+              value={data.businessStartDate}
+              onChangeText={(text) => setData(prev => ({ ...prev, businessStartDate: text }))}
+              placeholder="MM/DD/YYYY"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+          <Text style={styles.helperText}>
+            Date when your business was officially established (required for verification)
           </Text>
         </View>
       </View>

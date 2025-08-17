@@ -23,6 +23,7 @@ const BusinessOwnerSchema = BaseProfileSchema.extend({
   businessType: z.enum(["llc", "sole_proprietor", "corporation", "partnership", "other"]).optional().nullable(),
   einNumber: z.string().optional().nullable(),
   dunsNumber: z.string().optional().nullable(),
+  businessStartDate: z.string().optional().nullable(),
   isVerified: z.boolean().optional(),
   verificationDate: z.string().optional().nullable(),
 });
@@ -50,6 +51,7 @@ const EventHostSchema = BaseProfileSchema.extend({
   businessType: z.enum(["llc", "sole_proprietor", "corporation", "partnership", "other"]).optional().nullable(),
   einNumber: z.string().optional().nullable(),
   dunsNumber: z.string().optional().nullable(),
+  businessStartDate: z.string().optional().nullable(),
   isVerified: z.boolean().optional(),
   verificationDate: z.string().optional().nullable(),
 });
@@ -76,10 +78,10 @@ export const updateProfileProcedure = protectedProcedure
     if (existing) {
       profile = { ...existing, ...input, userId: ctx.user.id, updatedAt: now } as AnyProfile;
       
-      // Auto-verify if business verification info is provided
+      // Auto-verify if complete business verification info is provided
       if ((input.role === 'business_owner' || input.role === 'event_host') && 
-          'businessType' in input && 'einNumber' in input &&
-          input.businessType && input.einNumber && 
+          'businessType' in input && 'einNumber' in input && 'dunsNumber' in input && 'businessStartDate' in input &&
+          input.businessType && input.einNumber && input.dunsNumber && input.businessStartDate && 
           'isVerified' in existing && !existing.isVerified) {
         (profile as any).isVerified = true;
         (profile as any).verificationDate = now;
@@ -93,10 +95,10 @@ export const updateProfileProcedure = protectedProcedure
         updatedAt: now,
       } as AnyProfile;
       
-      // Auto-verify if business verification info is provided
+      // Auto-verify if complete business verification info is provided
       if ((input.role === 'business_owner' || input.role === 'event_host') && 
-          'businessType' in input && 'einNumber' in input &&
-          input.businessType && input.einNumber) {
+          'businessType' in input && 'einNumber' in input && 'dunsNumber' in input && 'businessStartDate' in input &&
+          input.businessType && input.einNumber && input.dunsNumber && input.businessStartDate) {
         (newProfile as any).isVerified = true;
         (newProfile as any).verificationDate = now;
       }

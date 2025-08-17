@@ -14,7 +14,6 @@ import { Check, Crown, Star, Zap } from "lucide-react-native";
 import { useSubscription, type SubscriptionTier, type BillingCycle } from "@/hooks/subscription-store";
 import { theme } from "@/constants/theme";
 import VerificationBadge from "@/components/VerificationBadge";
-import { trpc } from "@/lib/trpc";
 
 const TIER_ICONS = {
   free: Star,
@@ -34,8 +33,10 @@ export default function SubscriptionScreen() {
   const {
     subscription,
     subscriptionPlans,
+    originalPlans,
     currentPlan,
     isLoading,
+    isVerified,
     upgradeSubscription,
     isUpgrading,
     daysUntilTrialExpires,
@@ -44,16 +45,10 @@ export default function SubscriptionScreen() {
 
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<BillingCycle>("monthly");
 
-  // Get verification discount info for yearly plans
-  const verificationDiscountQuery = trpc.subscription.getVerificationDiscount.useQuery(
-    {
-      subscriptionType: selectedBillingCycle,
-      basePrice: 0, // Will be updated per plan
-    },
-    {
-      enabled: selectedBillingCycle === "yearly",
-    }
-  );
+  // Calculate savings from verification discount
+  const getDiscountSavings = (originalPrice: number, discountedPrice: number) => {
+    return originalPrice - discountedPrice;
+  };
 
   const handleUpgrade = async (tier: Exclude<SubscriptionTier, "free">) => {
     try {
@@ -192,25 +187,28 @@ export default function SubscriptionScreen() {
                     <Text style={styles.planName}>{plan.name}</Text>
                   </View>
                   <View style={styles.priceContainer}>
-                    {selectedBillingCycle === "yearly" && verificationDiscountQuery.data?.isVerified ? (
+                    {selectedBillingCycle === "yearly" && isVerified ? (
                       <View style={styles.discountPriceContainer}>
-                        <Text style={styles.originalPrice}>${price}</Text>
-                        <Text style={styles.price}>${(price * 0.95).toFixed(0)}</Text>
+                        <Text style={styles.originalPrice}>${originalPlans.find(p => p.tier === plan.tier)?.yearlyPrice}</Text>
+                        <Text style={styles.price}>${price}</Text>
                         <VerificationBadge isVerified={true} size="small" />
                       </View>
                     ) : (
                       <Text style={styles.price}>${price}</Text>
                     )}
-                    <Text style={styles.priceUnit}>/{selectedBillingCycle === "yearly" ? "month" : "month"}</Text>
+                    <Text style={styles.priceUnit}>/{selectedBillingCycle === "yearly" ? "year" : "month"}</Text>
                   </View>
                   {selectedBillingCycle === "yearly" && (
                     <View style={styles.yearlyBillingContainer}>
                       <Text style={styles.yearlyBilling}>
-                        Billed annually (${verificationDiscountQuery.data?.isVerified ? (price * 12 * 0.95).toFixed(0) : price * 12})
+                        Billed annually (${(price * 12).toFixed(0)})
                       </Text>
-                      {verificationDiscountQuery.data?.isVerified && (
+                      {isVerified && (
                         <Text style={styles.savingsText}>
-                          Save ${(price * 12 * 0.05).toFixed(0)} with verification!
+                          Save ${getDiscountSavings(
+                            (originalPlans.find(p => p.tier === plan.tier)?.yearlyPrice || 0) * 12,
+                            price * 12
+                          ).toFixed(0)} with verification!
                         </Text>
                       )}
                     </View>
@@ -234,9 +232,7 @@ export default function SubscriptionScreen() {
                   ]}
                   onPress={() => {
                     if (!isCurrentPlan) {
-                      const finalPrice = selectedBillingCycle === "yearly" && verificationDiscountQuery.data?.isVerified 
-                        ? price * 0.95 
-                        : price;
+                      const finalPrice = price;
                       confirmUpgrade(plan.tier as Exclude<SubscriptionTier, "free">, plan.name, finalPrice);
                     }
                   }}

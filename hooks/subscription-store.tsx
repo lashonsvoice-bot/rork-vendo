@@ -248,15 +248,43 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     return SUBSCRIPTION_PLANS.find(plan => plan.tier === subscription.tier) || null;
   }, [subscription]);
 
+  // Get profile to check verification status
+  const profileQuery = trpc.profile.get.useQuery(
+    { userId: authUser?.id },
+    { enabled: !!authUser?.id && authUser.role === "business_owner" }
+  );
+
+  const isVerified = useMemo(() => {
+    if (!profileQuery.data || profileQuery.data.role !== 'business_owner') return false;
+    return profileQuery.data.isVerified || false;
+  }, [profileQuery.data]);
+
+  const getDiscountedPrice = useCallback((originalPrice: number) => {
+    if (isVerified) {
+      return Math.round(originalPrice * 0.95); // 5% discount
+    }
+    return originalPrice;
+  }, [isVerified]);
+
+  const subscriptionPlansWithDiscount = useMemo(() => {
+    return SUBSCRIPTION_PLANS.map(plan => ({
+      ...plan,
+      monthlyPrice: getDiscountedPrice(plan.monthlyPrice),
+      yearlyPrice: getDiscountedPrice(plan.yearlyPrice),
+    }));
+  }, [getDiscountedPrice]);
+
   return useMemo(() => ({
     subscription,
-    subscriptionPlans: SUBSCRIPTION_PLANS,
+    subscriptionPlans: subscriptionPlansWithDiscount,
+    originalPlans: SUBSCRIPTION_PLANS,
     currentPlan,
     isLoading: isLoading || subscriptionQuery.isLoading,
     canCreateEvent,
     remainingEvents,
     isTrialExpired,
     daysUntilTrialExpires,
+    isVerified,
     upgradeSubscription,
     recordEventUsage,
     cancelSubscription,
@@ -266,6 +294,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     refetch: subscriptionQuery.refetch,
   }), [
     subscription,
+    subscriptionPlansWithDiscount,
     currentPlan,
     isLoading,
     subscriptionQuery.isLoading,
@@ -273,6 +302,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     remainingEvents,
     isTrialExpired,
     daysUntilTrialExpires,
+    isVerified,
     upgradeSubscription,
     recordEventUsage,
     cancelSubscription,

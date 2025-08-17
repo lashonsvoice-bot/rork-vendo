@@ -16,6 +16,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { WalletProvider } from "@/hooks/wallet-store";
 import { SplashProvider, useSplash } from "@/hooks/splash-store";
 import { VideoSplashScreen } from "@/components/VideoSplashScreen";
+import UpgradeSticker from "@/components/UpgradeSticker";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -72,7 +73,6 @@ function AppContent() {
       <VideoSplashScreen 
         onFinish={hideSplash}
         duration={6000}
-        videoUri="https://pro.klingai.com/h5-app/share?work_id=287215684537043&target=home"
       />
     );
   }
@@ -80,6 +80,7 @@ function AppContent() {
   return (
     <AuthGuard>
       <RootLayoutNav />
+      <UpgradeSticker />
     </AuthGuard>
   );
 }

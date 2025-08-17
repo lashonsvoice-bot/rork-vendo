@@ -78,7 +78,8 @@ export default function VerificationBadge({
                 <View style={styles.detailsList}>
                   <Text style={styles.detailItem}>• Business type (LLC, Corporation, etc.)</Text>
                   <Text style={styles.detailItem}>• Federal EIN (Employer Identification Number)</Text>
-                  <Text style={styles.detailItem}>• DUNS number (when applicable)</Text>
+                  <Text style={styles.detailItem}>• DUNS number (Data Universal Numbering System)</Text>
+                  <Text style={styles.detailItem}>• Business start date verification</Text>
                   <Text style={styles.detailItem}>• Government business registration verification</Text>
                 </View>
               </View>
@@ -86,9 +87,10 @@ export default function VerificationBadge({
               <View style={styles.benefitsSection}>
                 <Text style={styles.benefitsTitle}>Verified businesses receive:</Text>
                 <View style={styles.benefitsList}>
-                  <Text style={styles.benefitItem}>• 5% discount on yearly subscriptions</Text>
-                  <Text style={styles.benefitItem}>• Enhanced profile visibility</Text>
+                  <Text style={styles.benefitItem}>• 5% discount on all yearly subscriptions</Text>
+                  <Text style={styles.benefitItem}>• Enhanced profile visibility in directories</Text>
                   <Text style={styles.benefitItem}>• Increased trust from contractors and hosts</Text>
+                  <Text style={styles.benefitItem}>• Priority placement in search results</Text>
                 </View>
               </View>
             </View>

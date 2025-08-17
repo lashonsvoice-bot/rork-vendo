@@ -170,10 +170,10 @@ const sendExternalProposalProcedure = publicProcedure
         }
       } catch (error) {
         console.error('❌ Email sending failed:', error);
-        if (error.response) {
-          console.error('SendGrid error response:', error.response.body);
+        if (error && typeof error === 'object' && 'response' in error) {
+          console.error('SendGrid error response:', (error as any).response.body);
         }
-        results.errors.push(`Failed to send email: ${error.message}`);
+        results.errors.push(`Failed to send email: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -395,10 +395,10 @@ Event Host - ${eventTitle}
         }
       } catch (error) {
         console.error('❌ Reverse proposal email sending failed:', error);
-        if (error.response) {
-          console.error('SendGrid error response:', error.response.body);
+        if (error && typeof error === 'object' && 'response' in error) {
+          console.error('SendGrid error response:', (error as any).response.body);
         }
-        results.errors.push(`Failed to send email: ${error.message}`);
+        results.errors.push(`Failed to send email: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 

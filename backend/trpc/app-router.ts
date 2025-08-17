@@ -9,10 +9,7 @@ import getMessagesRoute from "./routes/messages/get/route";
 import markMessageAsReadRoute from "./routes/messages/mark-read/route";
 import sendExternalProposalRoute, { 
   connectHostWithInvitationCodeProcedure, 
-  findProposalByCodeProcedure,
-  sendReverseExternalProposalProcedure,
-  connectBusinessOwnerWithInvitationCodeProcedure,
-  findReverseProposalByCodeProcedure
+  findProposalByCodeProcedure
 } from "./routes/proposals/send-external/route";
 import { submitW9Procedure, getW9Procedure, updateW9StatusProcedure, checkW9RequiredProcedure } from "./routes/tax/w9/route";
 import { recordPaymentProcedure, getContractorPaymentsProcedure, getBusinessOwnerPaymentsProcedure } from "./routes/tax/payments/route";
@@ -129,10 +126,7 @@ export const appRouter = createTRPCRouter({
     sendExternal: sendExternalProposalRoute,
     connectHost: connectHostWithInvitationCodeProcedure,
     findByCode: findProposalByCodeProcedure,
-    // Reverse proposals (hosts inviting business owners)
-    sendReverseExternal: sendReverseExternalProposalProcedure,
-    connectBusinessOwner: connectBusinessOwnerWithInvitationCodeProcedure,
-    findReverseByCode: findReverseProposalByCodeProcedure,
+    // Note: Reverse proposal procedures not yet implemented in send-external route
   }),
   tax: createTRPCRouter({
     w9: createTRPCRouter({

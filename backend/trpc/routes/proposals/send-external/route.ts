@@ -257,4 +257,263 @@ ${businessName}
     };
   });
 
+// Reverse proposal schema for hosts inviting business owners
+const sendReverseExternalProposalSchema = z.object({
+  hostId: z.string(),
+  hostName: z.string(),
+  eventId: z.string(),
+  eventTitle: z.string(),
+  eventDate: z.string(),
+  eventLocation: z.string(),
+  businessOwnerName: z.string(),
+  businessName: z.string(),
+  businessOwnerEmail: z.string().email().optional(),
+  businessOwnerPhone: z.string().optional(),
+  hostContactEmail: z.string().email().optional(),
+  tableSpaceOffered: z.string(),
+  managementFee: z.number(),
+  message: z.string(),
+});
+
+// Procedure for hosts to send reverse proposals to business owners
+export const sendReverseExternalProposalProcedure = publicProcedure
+  .input(sendReverseExternalProposalSchema)
+  .mutation(async ({ input }) => {
+    const {
+      hostId,
+      hostName,
+      eventId,
+      eventTitle,
+      eventDate,
+      eventLocation,
+      businessOwnerName,
+      businessName,
+      businessOwnerEmail,
+      businessOwnerPhone,
+      hostContactEmail,
+      tableSpaceOffered,
+      managementFee,
+      message,
+    } = input;
+
+    const results = {
+      emailSent: false,
+      smsSent: false,
+      errors: [] as string[],
+    };
+
+    // Generate unique invitation code for the business owner
+    const invitationCode = `VENDOR_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    
+    // Email content with invitation code (reverse proposal template)
+    const replyToEmail = hostContactEmail || 'noreply@revovend.com';
+    const emailContent = `
+Subject: RevoVend Host Invitation - Remote Vending Opportunity at ${eventTitle}
+
+Greetings ${businessOwnerName},
+
+I hope this message finds you well! I'm ${hostName}, and I'm hosting ${eventTitle} on ${eventDate} in ${eventLocation}. After researching your business, ${businessName}, I believe your products/services would be a perfect fit for our event attendees.
+
+I'd like to invite you to participate as a remote vendor at our event. Here's what we're offering:
+
+🏢 **Event Details:**
+• Event: ${eventTitle}
+• Date: ${eventDate}
+• Location: ${eventLocation}
+
+💼 **What We're Offering:**
+• Table/Booth Space: ${tableSpaceOffered}
+• Management Fee: ${managementFee} (for overseeing your contractors and ensuring smooth operations)
+• Professional oversight of your remote vending setup
+• Direct communication throughout the event
+
+📋 **How Remote Vending Works:**
+1. You hire and assign professional contractors through RevoVend
+2. You ship your materials to our provided address
+3. We ensure your contractors arrive on time and are properly set up
+4. Your contractors handle sales and customer interactions
+5. We oversee the process and provide updates
+6. Payment is released to contractors at the end of the event
+
+**Custom Message from ${hostName}:**
+${message}
+
+If you're interested in this remote vending opportunity, please download the RevoVend App and use the following invitation code when registering as a business owner:
+
+🔑 INVITATION CODE: ${invitationCode}
+
+This code will automatically connect you to our event proposal and allow us to coordinate the details.
+
+Download the RevoVend App:
+• iOS: [App Store Link]
+• Android: [Google Play Link]
+
+I'm excited about the possibility of having ${businessName} as part of our event. Remote vending allows you to expand your market reach without the travel costs and time commitment of traditional vending.
+
+For questions, please reply to: ${replyToEmail}
+
+Best regards,
+${hostName}
+Event Host - ${eventTitle}
+    `;
+
+    // SMS content (shorter version) with invitation code
+    const smsContent = `${hostName} invites ${businessName} to remote vend at ${eventTitle} on ${eventDate}. Great opportunity! Download RevoVend app [App Link] and use invite code: ${invitationCode} when registering as business owner. Check email for details.`;
+
+    // Send email if provided
+    if (businessOwnerEmail) {
+      try {
+        console.log('📧 SENDING REVERSE PROPOSAL EMAIL:');
+        console.log('To:', businessOwnerEmail);
+        console.log('Subject:', `Remote Vending Invitation for ${eventTitle}`);
+        console.log('Content:', emailContent);
+        
+        // Simulate email sending
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        results.emailSent = true;
+        
+      } catch (error) {
+        console.error('Email sending failed:', error);
+        results.errors.push('Failed to send email notification');
+      }
+    }
+
+    // Send SMS if provided
+    if (businessOwnerPhone) {
+      try {
+        console.log('📱 SENDING REVERSE PROPOSAL SMS:');
+        console.log('To:', businessOwnerPhone);
+        console.log('Content:', smsContent);
+        
+        // Simulate SMS sending
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        results.smsSent = true;
+        
+      } catch (error) {
+        console.error('SMS sending failed:', error);
+        results.errors.push('Failed to send SMS notification');
+      }
+    }
+
+    // Store the reverse proposal in database with invitation code
+    const reverseProposalRecord = {
+      id: `reverse_proposal_${Date.now()}`,
+      hostId,
+      hostName,
+      hostContactEmail,
+      eventId,
+      eventTitle,
+      eventDate,
+      eventLocation,
+      businessOwnerName,
+      businessName,
+      businessOwnerEmail,
+      businessOwnerPhone,
+      tableSpaceOffered,
+      managementFee,
+      message,
+      status: 'sent',
+      createdAt: new Date().toISOString(),
+      emailSent: results.emailSent,
+      smsSent: results.smsSent,
+      invitationCode, // This will connect the business owner when they sign up
+      isReverseProposal: true, // Flag to identify reverse proposals
+    };
+
+    // Store in business directory as reverse external proposal
+    try {
+      await businessDirectoryRepo.storeExternalProposal(reverseProposalRecord);
+      console.log('💾 REVERSE EXTERNAL PROPOSAL STORED:', reverseProposalRecord.id);
+    } catch (error) {
+      console.error('Failed to store reverse external proposal:', error);
+      results.errors.push('Failed to store proposal record');
+    }
+
+    console.log('💾 REVERSE PROPOSAL RECORD CREATED:', reverseProposalRecord);
+
+    return {
+      success: results.emailSent || results.smsSent,
+      proposalId: reverseProposalRecord.id,
+      invitationCode,
+      emailSent: results.emailSent,
+      smsSent: results.smsSent,
+      errors: results.errors,
+      message: results.errors.length > 0 
+        ? `Reverse proposal sent with some issues: ${results.errors.join(', ')}`
+        : `Reverse proposal sent successfully! Business owner invitation code: ${invitationCode}`
+    };
+  });
+
+// Procedure to connect business owner using invitation code
+export const connectBusinessOwnerWithInvitationCodeProcedure = publicProcedure
+  .input(z.object({
+    invitationCode: z.string().min(1),
+    businessOwnerId: z.string().min(1),
+  }))
+  .mutation(async ({ input }) => {
+    console.log('[ConnectBusinessOwner] Connecting business owner with invitation code:', input.invitationCode);
+    
+    try {
+      const connectedProposal = await businessDirectoryRepo.connectBusinessOwnerToReverseProposal(
+        input.invitationCode,
+        input.businessOwnerId
+      );
+      
+      if (!connectedProposal) {
+        throw new Error('Invalid invitation code or proposal not found');
+      }
+      
+      console.log('[ConnectBusinessOwner] Business owner connected successfully:', connectedProposal.id);
+      return {
+        success: true,
+        proposal: connectedProposal,
+        message: `Successfully connected to invitation from ${connectedProposal.hostName} for ${connectedProposal.eventTitle}`,
+      };
+    } catch (error) {
+      console.error('[ConnectBusinessOwner] Error connecting business owner:', error);
+      throw error;
+    }
+  });
+
+// Procedure to find reverse proposal by invitation code (for preview)
+export const findReverseProposalByCodeProcedure = publicProcedure
+  .input(z.object({
+    invitationCode: z.string().min(1),
+  }))
+  .query(async ({ input }) => {
+    console.log('[FindReverseProposal] Looking up invitation code:', input.invitationCode);
+    
+    try {
+      const proposal = await businessDirectoryRepo.findReverseProposalByCode(input.invitationCode);
+      
+      if (!proposal) {
+        return {
+          found: false,
+          message: 'Invitation code not found or expired',
+        };
+      }
+      
+      return {
+        found: true,
+        proposal: {
+          hostName: proposal.hostName,
+          eventTitle: proposal.eventTitle,
+          eventDate: proposal.eventDate,
+          eventLocation: proposal.eventLocation,
+          tableSpaceOffered: proposal.tableSpaceOffered,
+          managementFee: proposal.managementFee,
+          message: proposal.message,
+          status: proposal.status,
+        },
+        message: `Remote vending invitation from ${proposal.hostName} for ${proposal.eventTitle}`,
+      };
+    } catch (error) {
+      console.error('[FindReverseProposal] Error finding reverse proposal:', error);
+      return {
+        found: false,
+        message: 'Error looking up invitation code',
+      };
+    }
+  });
+
 export default sendExternalProposalProcedure;

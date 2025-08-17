@@ -64,6 +64,14 @@ export interface ExternalProposal {
   isExternal: boolean;
   hostConnectedAt?: string; // When host signs up and uses the code
   connectedHostId?: string; // ID of the host who connected using the code
+  // For reverse proposals (host inviting business owner)
+  isReverseProposal?: boolean;
+  hostId?: string; // ID of the host who sent the reverse proposal
+  hostContactEmail?: string; // Host's contact email for reverse proposals
+  tableSpaceOffered?: string;
+  managementFee?: number;
+  connectedBusinessOwnerId?: string; // ID of the business owner who connected using the code
+  businessOwnerConnectedAt?: string; // When business owner signs up and uses the code
 }
 
 const DATA_DIR = path.join(process.cwd(), "backend", "data");
@@ -386,6 +394,43 @@ async function getExternalProposalsForBusiness(businessOwnerId: string): Promise
   return proposals.filter(p => p.businessOwnerId === businessOwnerId);
 }
 
+async function connectBusinessOwnerToReverseProposal(invitationCode: string, businessOwnerId: string): Promise<ExternalProposal | null> {
+  const proposals = await readExternalProposals();
+  const proposalIndex = proposals.findIndex(p => p.invitationCode === invitationCode && p.isReverseProposal);
+  
+  if (proposalIndex === -1) {
+    return null;
+  }
+  
+  const proposal = proposals[proposalIndex];
+  const updatedProposal: ExternalProposal = {
+    ...proposal,
+    connectedBusinessOwnerId: businessOwnerId,
+    businessOwnerConnectedAt: new Date().toISOString(),
+    status: 'viewed',
+  };
+  
+  proposals[proposalIndex] = updatedProposal;
+  await writeExternalProposals(proposals);
+  
+  return updatedProposal;
+}
+
+async function findReverseProposalByCode(invitationCode: string): Promise<ExternalProposal | null> {
+  const proposals = await readExternalProposals();
+  return proposals.find(p => p.invitationCode === invitationCode && p.isReverseProposal) || null;
+}
+
+async function getReverseProposalsForHost(hostId: string): Promise<ExternalProposal[]> {
+  const proposals = await readExternalProposals();
+  return proposals.filter(p => p.hostId === hostId && p.isReverseProposal);
+}
+
+async function getReverseProposalsForBusiness(businessOwnerId: string): Promise<ExternalProposal[]> {
+  const proposals = await readExternalProposals();
+  return proposals.filter(p => p.connectedBusinessOwnerId === businessOwnerId && p.isReverseProposal);
+}
+
 export const businessDirectoryRepo = {
   readBusinessDirectory,
   writeBusinessDirectory,
@@ -406,4 +451,9 @@ export const businessDirectoryRepo = {
   connectHostToExternalProposal,
   getExternalProposalsForHost,
   getExternalProposalsForBusiness,
+  // Reverse proposal methods
+  connectBusinessOwnerToReverseProposal,
+  findReverseProposalByCode,
+  getReverseProposalsForHost,
+  getReverseProposalsForBusiness,
 };

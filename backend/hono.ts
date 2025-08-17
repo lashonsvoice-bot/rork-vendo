@@ -6,6 +6,7 @@ import { createContext } from "./trpc/create-context";
 import authRoutes from "./routes/auth";
 import profileRoutes from "./routes/profile";
 import uploadsRoutes from "./routes/uploads";
+import webhooksRoutes from "./routes/webhooks";
 import { validateConfig, logConfigStatus, logSecurityRecommendations } from "./config/env";
 
 // Initialize and validate configuration
@@ -25,6 +26,7 @@ app.use("*", cors({ origin: (origin) => origin ?? "*", credentials: true }));
 app.route("/auth", authRoutes);
 app.route("/profile", profileRoutes);
 app.route("/uploads", uploadsRoutes);
+app.route("/webhooks", webhooksRoutes);
 
 app.use(
   "/trpc/*",

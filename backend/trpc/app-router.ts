@@ -86,6 +86,7 @@ import {
 import { referralRouter } from "./routes/referral/router";
 import {
   cancelEventProcedure,
+  cancelContractorProcedure,
   reportNoShowProcedure,
   getCancellationStatsProcedure,
   submitAppealProcedure as submitCancellationAppealProcedure,
@@ -204,6 +205,7 @@ export const appRouter = createTRPCRouter({
     }),
     cancellation: createTRPCRouter({
       cancel: cancelEventProcedure,
+      cancelContractor: cancelContractorProcedure,
       reportNoShow: reportNoShowProcedure,
       getStats: getCancellationStatsProcedure,
       submitAppeal: submitCancellationAppealProcedure,

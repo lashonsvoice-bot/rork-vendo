@@ -82,6 +82,7 @@ export interface EventCancellation {
   automaticRating?: number;
   penaltyAmount?: number;
   compensationAmount?: number;
+  proofFiles?: string[]; // For contractor cancellations
   status: 'pending' | 'processed' | 'appealed';
   appealReason?: string;
   appealSubmittedAt?: Date;
@@ -527,6 +528,62 @@ class EventRepository {
       cancellation.appealSubmittedAt = new Date();
       cancellation.updatedAt = new Date();
     }
+  }
+
+  async cancelContractorEvent(eventId: string, contractorId: string, reason: string, proofFiles: string[] = []): Promise<{ cancellation: EventCancellation; penalties: any; suspended: boolean }> {
+    const event = this.events.get(eventId);
+    if (!event) throw new Error('Event not found');
+    
+    const eventDateTime = new Date(`${event.date} ${event.time}`);
+    const cancellationTime = new Date();
+    const hoursNotice = Math.floor((eventDateTime.getTime() - cancellationTime.getTime()) / (1000 * 60 * 60));
+    
+    const cancellation: EventCancellation = {
+      id: Math.random().toString(36).substr(2, 9),
+      eventId,
+      cancelledBy: contractorId,
+      cancelledByRole: 'contractor',
+      reason,
+      cancellationTime,
+      eventTime: eventDateTime,
+      hoursNotice,
+      proofFiles,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    let penalties: any = {};
+    let suspended = false;
+
+    // Contractor-specific cancellation rules
+    if (hoursNotice < 12) {
+      // Immediate suspension for cancellations within 12 hours
+      suspended = true;
+      await this.suspendUser(contractorId, 'contractor', 'Cancellation within 12 hours of event');
+      cancellation.automaticRating = 1;
+      penalties.automaticRating = true;
+      penalties.paymentLoss = true;
+    } else if (hoursNotice < 24) {
+      // Penalties for cancellations within 24 hours
+      cancellation.automaticRating = 1;
+      penalties.automaticRating = true;
+      penalties.paymentLoss = true;
+    }
+
+    this.cancellations.push(cancellation);
+    await this.updateCancellationStats(contractorId, 'contractor');
+    
+    // Update event status and remove contractor
+    const updatedSelectedContractors = event.selectedContractors?.filter(id => id !== contractorId) || [];
+    await this.update(eventId, { 
+      status: 'active', // Event continues without this contractor
+      selectedContractors: updatedSelectedContractors,
+      contractorsNeeded: event.contractorsNeeded + 1, // Increase needed contractors
+      cancellation 
+    });
+
+    return { cancellation, penalties, suspended };
   }
 
   async getCancellationsByUser(userId: string): Promise<EventCancellation[]> {

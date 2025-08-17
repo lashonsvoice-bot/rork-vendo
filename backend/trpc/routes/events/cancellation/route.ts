@@ -8,6 +8,12 @@ const cancelEventSchema = z.object({
   reason: z.string().min(10, 'Cancellation reason must be at least 10 characters'),
 });
 
+const cancelContractorSchema = z.object({
+  eventId: z.string(),
+  reason: z.string().min(10, 'Cancellation reason must be at least 10 characters'),
+  proofFiles: z.array(z.string()).optional().default([]),
+});
+
 const reportNoShowSchema = z.object({
   eventId: z.string(),
   contractorId: z.string(),
@@ -163,6 +169,55 @@ export const submitAppealProcedure = protectedProcedure
     }
   });
 
+export const cancelContractorProcedure = protectedProcedure
+  .input(cancelContractorSchema)
+  .mutation(async ({ input, ctx }) => {
+    const { eventId, reason, proofFiles } = input;
+    
+    if (!ctx.user) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'User not authenticated',
+      });
+    }
+    
+    const userId = ctx.user.id;
+    const userRole = ctx.user.role as 'contractor';
+
+    console.log('Contractor cancelling event:', { eventId, userId, reason, proofFiles });
+
+    // Check if user is already suspended
+    const isSuspended = await eventRepo.isUserSuspended(userId);
+    if (isSuspended) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Account suspended. Please check your email for appeal instructions.',
+      });
+    }
+
+    try {
+      const result = await eventRepo.cancelContractorEvent(eventId, userId, reason, proofFiles);
+      
+      console.log('Contractor event cancelled successfully:', result);
+      
+      return {
+        success: true,
+        cancellation: result.cancellation,
+        penalties: result.penalties,
+        suspended: result.suspended,
+        message: result.suspended 
+          ? 'Event cancelled. Account suspended due to cancellation within 12 hours.'
+          : 'Event cancelled successfully',
+      };
+    } catch (error) {
+      console.error('Error cancelling contractor event:', error);
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to cancel event',
+      });
+    }
+  });
+
 export const checkSuspensionStatusProcedure = protectedProcedure
   .query(async ({ ctx }) => {
     if (!ctx.user) {
@@ -186,7 +241,7 @@ export const checkSuspensionStatusProcedure = protectedProcedure
           status: stats?.suspensionStatus,
           reason: stats?.suspensionReason,
           date: stats?.suspensionDate,
-          appealEmail: stats?.appealEmail,
+          appealEmail: 'support@revovend.com',
         } : null,
       };
     } catch (error) {

@@ -50,7 +50,6 @@ export default function EventDetailsScreen() {
     { icon: MapPin, label: "Location", value: event.location },
     { icon: Calendar, label: "Date", value: event.date },
     { icon: Clock, label: "Time", value: event.time },
-    { icon: Users, label: "Contractors Needed", value: `${event.contractorsNeeded} people` },
   ];
 
   type CompensationItem = { label: string; amount: number; type: 'contractor' | 'stipend' | 'host' };

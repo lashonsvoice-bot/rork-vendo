@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Appearance, ColorSchemeName } from 'react-native';
+import { Appearance, ColorSchemeName, Platform } from 'react-native';
 import createContextHook from '@nkzw/create-context-hook';
 import { AppTheme, lightTheme, darkTheme } from '@/constants/theme';
 
@@ -22,13 +22,15 @@ export const [ThemeProvider, useTheme] = createContextHook<ThemeContextType>(() 
     Appearance.getColorScheme()
   );
 
-  // Load saved theme preference on mount
   useEffect(() => {
     const loadThemePreference = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
         if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
           setThemeModeState(savedTheme as ThemeMode);
+        } else {
+          await AsyncStorage.setItem(THEME_STORAGE_KEY, 'system');
+          setThemeModeState('system');
         }
       } catch (error) {
         console.log('[Theme] Failed to load theme preference:', error);
@@ -38,23 +40,22 @@ export const [ThemeProvider, useTheme] = createContextHook<ThemeContextType>(() 
     loadThemePreference();
   }, []);
 
-  // Listen to system color scheme changes
   useEffect(() => {
     const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      console.log('[Theme] System color scheme changed:', colorScheme);
       setSystemColorScheme(colorScheme);
     });
 
     return () => subscription?.remove();
   }, []);
 
-  // Determine if dark mode should be active
-  const isDark = themeMode === 'dark' || (themeMode === 'system' && systemColorScheme === 'dark');
-  
-  // Get current theme
+  const isDark = themeMode === 'dark' || themeMode === 'system';
+
   const theme = isDark ? darkTheme : lightTheme;
 
   const setThemeMode = useCallback(async (mode: ThemeMode) => {
     try {
+      console.log('[Theme] Setting theme mode to', mode);
       setThemeModeState(mode);
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
     } catch (error) {
@@ -64,6 +65,7 @@ export const [ThemeProvider, useTheme] = createContextHook<ThemeContextType>(() 
 
   const toggleTheme = useCallback(() => {
     const newMode = isDark ? 'light' : 'dark';
+    console.log('[Theme] Toggling theme. New mode:', newMode);
     setThemeMode(newMode);
   }, [isDark, setThemeMode]);
 

@@ -52,15 +52,17 @@ export default function OwnerCheckInsScreen() {
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false} testID="owner-checkins-list">
         {myEvents.map(event => {
           const vendors = event.vendors ?? [];
+          const total = vendors.length;
+          const checkIns = vendors.filter(v => v.arrivalConfirmed).length;
+          const midway = vendors.filter(v => v.halfwayConfirmed).length;
           const completed = vendors.filter(v => v.fundsReleased).length;
-          const inProgress = vendors.filter(v => !v.fundsReleased && (v.halfwayConfirmed || v.endConfirmed)).length;
-          const pending = vendors.filter(v => !v.arrivalConfirmed).length;
+          const pending = Math.max(total - checkIns, 0);
 
           return (
             <View key={event.id} style={styles.eventCard} testID={`owner-event-${event.id}`}>
               <TouchableOpacity
                 style={styles.eventHeader}
-                onPress={() => router.push(`/(tabs)/events/${event.id}`)}
+                onPress={() => router.push({ pathname: '/(tabs)/events/[id]', params: { id: String(event.id) } })}
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${event.title}`}
                 testID={`open-event-${event.id}`}
@@ -83,26 +85,33 @@ export default function OwnerCheckInsScreen() {
               </TouchableOpacity>
 
               <View style={styles.kpiRow}>
-                <View style={styles.kpiCard}>
+                <View style={styles.kpiCard} testID={`kpi-vendors-${event.id}`}>
                   <User size={14} color="#10B981" />
-                  <Text style={styles.kpiNumber}>{vendors.length}</Text>
+                  <Text style={styles.kpiNumber}>{total}</Text>
                   <Text style={styles.kpiLabel}>Vendors</Text>
                 </View>
-                <View style={styles.kpiCard}>
+                <View style={styles.kpiCard} testID={`kpi-checkins-${event.id}`}>
+                  <CheckCircle size={14} color="#6366F1" />
+                  <Text style={styles.kpiNumber}>{`${checkIns}/${total}`}</Text>
+                  <Text style={styles.kpiLabel}>Check-in</Text>
+                </View>
+                <View style={styles.kpiCard} testID={`kpi-midway-${event.id}`}>
+                  <Clock size={14} color="#3B82F6" />
+                  <Text style={styles.kpiNumber}>{`${midway}/${total}`}</Text>
+                  <Text style={styles.kpiLabel}>Midway</Text>
+                </View>
+                <View style={styles.kpiCard} testID={`kpi-completed-${event.id}`}>
                   <CheckCircle size={14} color="#10B981" />
-                  <Text style={styles.kpiNumber}>{completed}</Text>
+                  <Text style={styles.kpiNumber}>{`${completed}/${total}`}</Text>
                   <Text style={styles.kpiLabel}>Completed</Text>
                 </View>
-                <View style={styles.kpiCard}>
-                  <Clock size={14} color="#3B82F6" />
-                  <Text style={styles.kpiNumber}>{inProgress}</Text>
-                  <Text style={styles.kpiLabel}>In Progress</Text>
-                </View>
-                <View style={styles.kpiCard}>
-                  <Clock size={14} color="#9CA3AF" />
-                  <Text style={styles.kpiNumber}>{pending}</Text>
-                  <Text style={styles.kpiLabel}>Pending</Text>
-                </View>
+              </View>
+
+              <View style={styles.progressBar} accessibilityLabel={`progress-${event.id}`} testID={`progress-${event.id}`}>
+                <View style={[styles.progressSegment, { flex: completed, backgroundColor: '#10B981' }]} />
+                <View style={[styles.progressSegment, { flex: Math.max(midway - completed, 0), backgroundColor: '#3B82F6' }]} />
+                <View style={[styles.progressSegment, { flex: Math.max(checkIns - midway, 0), backgroundColor: '#6366F1' }]} />
+                <View style={[styles.progressSegment, { flex: pending, backgroundColor: '#E5E7EB' }]} />
               </View>
 
               {vendors.length > 0 && (
@@ -258,6 +267,18 @@ const styles = StyleSheet.create({
   vendorList: {
     paddingHorizontal: 12,
     paddingBottom: 12,
+  },
+  progressBar: {
+    flexDirection: 'row',
+    height: 8,
+    marginHorizontal: 12,
+    marginBottom: 12,
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  progressSegment: {
+    height: 8,
   },
   vendorRow: {
     flexDirection: "row",

@@ -1,13 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useEvents } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
-import { CheckCircle, Clock, Camera, User, Calendar, MapPin, Eye } from "lucide-react-native";
+import { CheckCircle, Clock, Camera, User, Calendar, MapPin, Eye, Plus, Check } from "lucide-react-native";
 
 export default function OwnerCheckInsScreen() {
   const router = useRouter();
-  const { events } = useEvents();
+  const { events, updateVendorCheckIn } = useEvents();
   const { userRole, currentUser } = useUser();
 
   const myEvents = useMemo(() => {
@@ -18,13 +18,36 @@ export default function OwnerCheckInsScreen() {
   }, [events, userRole, currentUser]);
 
   const getVendorStatus = (v: import("@/hooks/events-store").VendorCheckIn) => {
-    if (v.fundsReleased && v.review) return { label: 'Reviewed', color: '#10B981', bg: '#D1FAE5' } as const;
-    if (v.fundsReleased) return { label: 'Completed', color: '#10B981', bg: '#D1FAE5' } as const;
-    if (v.endConfirmed) return { label: 'Event Ended', color: '#F59E0B', bg: '#FEF3C7' } as const;
-    if (v.halfwayConfirmed) return { label: 'In Progress', color: '#3B82F6', bg: '#DBEAFE' } as const;
+    if (v.endConfirmed && v.review) return { label: 'Reviewed', color: '#10B981', bg: '#D1FAE5' } as const;
+    if (v.endConfirmed) return { label: 'Completed', color: '#10B981', bg: '#D1FAE5' } as const;
+    if (v.halfwayConfirmed) return { label: 'Midway', color: '#3B82F6', bg: '#DBEAFE' } as const;
     if (v.arrivalConfirmed) return { label: 'Checked In', color: '#8B5CF6', bg: '#EDE9FE' } as const;
     return { label: 'Pending', color: '#6B7280', bg: '#F3F4F6' } as const;
   };
+
+  const toggleArrival = useCallback((eventId: string, vendorId: string, current: boolean) => {
+    const now = new Date().toLocaleTimeString();
+    updateVendorCheckIn(eventId, vendorId, {
+      arrivalConfirmed: !current,
+      arrivalTime: !current ? now : undefined,
+    });
+  }, [updateVendorCheckIn]);
+
+  const toggleHalfway = useCallback((eventId: string, vendorId: string, current: boolean) => {
+    const now = new Date().toLocaleTimeString();
+    updateVendorCheckIn(eventId, vendorId, {
+      halfwayConfirmed: !current,
+      halfwayCheckIn: !current ? now : undefined,
+    });
+  }, [updateVendorCheckIn]);
+
+  const toggleCompleted = useCallback((eventId: string, vendorId: string, current: boolean) => {
+    const now = new Date().toLocaleTimeString();
+    updateVendorCheckIn(eventId, vendorId, {
+      endConfirmed: !current,
+      endCheckIn: !current ? now : undefined,
+    });
+  }, [updateVendorCheckIn]);
 
   if (userRole !== 'business_owner') {
     return (
@@ -55,8 +78,23 @@ export default function OwnerCheckInsScreen() {
           const total = vendors.length;
           const checkIns = vendors.filter(v => v.arrivalConfirmed).length;
           const midway = vendors.filter(v => v.halfwayConfirmed).length;
-          const completed = vendors.filter(v => v.fundsReleased).length;
+          const completed = vendors.filter(v => v.endConfirmed).length;
           const pending = Math.max(total - checkIns, 0);
+
+          const groups = vendors.reduce<Record<string, import("@/hooks/events-store").VendorCheckIn[]>>((acc, v) => {
+            const key = v.tableLabel?.trim() || 'Unassigned';
+            if (!acc[key]) acc[key] = [] as import("@/hooks/events-store").VendorCheckIn[];
+            acc[key].push(v);
+            return acc;
+          }, {});
+
+          const onPlusOne = (groupKey?: string) => {
+            const list = groupKey ? (groups[groupKey] ?? []) : vendors;
+            const next = list.find(v => !v.arrivalConfirmed);
+            if (next) {
+              toggleArrival(event.id, next.id, false);
+            }
+          };
 
           return (
             <View key={event.id} style={styles.eventCard} testID={`owner-event-${event.id}`}>
@@ -105,6 +143,16 @@ export default function OwnerCheckInsScreen() {
                   <Text style={styles.kpiNumber}>{`${completed}/${total}`}</Text>
                   <Text style={styles.kpiLabel}>Completed</Text>
                 </View>
+                <TouchableOpacity
+                  style={styles.plusOneButton}
+                  onPress={() => onPlusOne(undefined)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Quick add one check-in"
+                  testID={`plus-one-${event.id}`}
+                >
+                  <Plus size={16} color="#FFFFFF" />
+                  <Text style={styles.plusOneText}>+1 Check-in</Text>
+                </TouchableOpacity>
               </View>
 
               <View style={styles.progressBar} accessibilityLabel={`progress-${event.id}`} testID={`progress-${event.id}`}>
@@ -116,36 +164,104 @@ export default function OwnerCheckInsScreen() {
 
               {vendors.length > 0 && (
                 <View style={styles.vendorList}>
-                  {vendors.map(v => {
-                    const s = getVendorStatus(v);
+                  {Object.keys(groups).sort().map((groupKey) => {
+                    const list = groups[groupKey] ?? [];
+                    const gTotal = list.length;
+                    const gCheckIns = list.filter(v => v.arrivalConfirmed).length;
+                    const gMidway = list.filter(v => v.halfwayConfirmed).length;
+                    const gCompleted = list.filter(v => v.endConfirmed).length;
+                    const hasNext = list.some(v => !v.arrivalConfirmed);
                     return (
-                      <View key={v.id} style={styles.vendorRow} testID={`vendor-row-${v.id}`}>
-                        <View style={styles.vendorLeft}>
-                          <View style={styles.avatar}>
-                            <User size={16} color="#6366F1" />
-                          </View>
-                          <View style={styles.vendorInfo}>
-                            <Text style={styles.vendorName}>{v.vendorName}</Text>
-                            <View style={[styles.statusPill, { backgroundColor: s.bg }]}> 
-                              <Text style={[styles.statusPillText, { color: s.color }]}>{s.label}</Text>
+                      <View key={`${event.id}-${groupKey}`} style={styles.groupBlock}>
+                        <View style={styles.groupHeader}>
+                          <Text style={styles.groupTitle}>{groupKey}</Text>
+                          <View style={styles.groupKpis}>
+                            <View style={styles.groupKpi}>
+                              <Text style={styles.groupKpiNumber}>{gCheckIns}/{gTotal}</Text>
+                              <Text style={styles.groupKpiLabel}>Check-in</Text>
+                            </View>
+                            <View style={styles.groupKpi}>
+                              <Text style={styles.groupKpiNumber}>{gMidway}/{gTotal}</Text>
+                              <Text style={styles.groupKpiLabel}>Midway</Text>
+                            </View>
+                            <View style={styles.groupKpi}>
+                              <Text style={styles.groupKpiNumber}>{gCompleted}/{gTotal}</Text>
+                              <Text style={styles.groupKpiLabel}>Completed</Text>
                             </View>
                           </View>
+                          <TouchableOpacity
+                            style={[styles.plusOneSmall, !hasNext ? styles.plusOneDisabled : undefined]}
+                            disabled={!hasNext}
+                            onPress={() => onPlusOne(groupKey)}
+                            testID={`plus-one-${event.id}-${groupKey}`}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Quick +1 check-in for ${groupKey}`}
+                          >
+                            <Plus size={14} color="#FFFFFF" />
+                            <Text style={styles.plusOneSmallText}>+1</Text>
+                          </TouchableOpacity>
                         </View>
-                        <View style={styles.vendorRight}>
-                          {v.arrivalTime && (
-                            <Text style={styles.timeText}>Arrived: {v.arrivalTime}</Text>
-                          )}
-                          {v.halfwayCheckIn && (
-                            <Text style={styles.timeText}>Halfway: {v.halfwayCheckIn}</Text>
-                          )}
-                          {v.endCheckIn && (
-                            <Text style={styles.timeText}>End: {v.endCheckIn}</Text>
-                          )}
-                          <View style={styles.photosBadge}>
-                            <Camera size={14} color="#6366F1" />
-                            <Text style={styles.photosText}>{v.eventPhotos.length}</Text>
-                          </View>
-                        </View>
+
+                        {list.map(v => {
+                          const s = getVendorStatus(v);
+                          return (
+                            <View key={v.id} style={styles.vendorRow} testID={`vendor-row-${v.id}`}>
+                              <View style={styles.vendorLeft}>
+                                <View style={styles.avatar}>
+                                  <User size={16} color="#6366F1" />
+                                </View>
+                                <View style={styles.vendorInfo}>
+                                  <Text style={styles.vendorName}>{v.vendorName}</Text>
+                                  <View style={[styles.statusPill, { backgroundColor: s.bg }]}> 
+                                    <Text style={[styles.statusPillText, { color: s.color }]}>{s.label}</Text>
+                                  </View>
+                                </View>
+                              </View>
+                              <View style={styles.vendorRight}>
+                                <View style={styles.actionRow}>
+                                  <TouchableOpacity
+                                    style={[styles.actionBtn, v.arrivalConfirmed ? styles.actionOnCheckIn : styles.actionOff]}
+                                    onPress={() => toggleArrival(event.id, v.id, v.arrivalConfirmed)}
+                                    testID={`toggle-arrival-${v.id}`}
+                                  >
+                                    <Check size={12} color={v.arrivalConfirmed ? '#FFFFFF' : '#6366F1'} />
+                                    <Text style={[styles.actionText, v.arrivalConfirmed ? styles.actionTextOn : styles.actionTextOff]}>Check-in</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[styles.actionBtn, v.halfwayConfirmed ? styles.actionOnMidway : styles.actionOff]}
+                                    onPress={() => toggleHalfway(event.id, v.id, v.halfwayConfirmed)}
+                                    testID={`toggle-midway-${v.id}`}
+                                  >
+                                    <Clock size={12} color={v.halfwayConfirmed ? '#FFFFFF' : '#3B82F6'} />
+                                    <Text style={[styles.actionText, v.halfwayConfirmed ? styles.actionTextOn : styles.actionTextOff]}>Midway</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[styles.actionBtn, v.endConfirmed ? styles.actionOnCompleted : styles.actionOff]}
+                                    onPress={() => toggleCompleted(event.id, v.id, v.endConfirmed)}
+                                    testID={`toggle-completed-${v.id}`}
+                                  >
+                                    <CheckCircle size={12} color={v.endConfirmed ? '#FFFFFF' : '#10B981'} />
+                                    <Text style={[styles.actionText, v.endConfirmed ? styles.actionTextOn : styles.actionTextOff]}>Completed</Text>
+                                  </TouchableOpacity>
+                                </View>
+
+                                {v.arrivalTime && (
+                                  <Text style={styles.timeText}>Arrived: {v.arrivalTime}</Text>
+                                )}
+                                {v.halfwayCheckIn && (
+                                  <Text style={styles.timeText}>Midway: {v.halfwayCheckIn}</Text>
+                                )}
+                                {v.endCheckIn && (
+                                  <Text style={styles.timeText}>End: {v.endCheckIn}</Text>
+                                )}
+                                <View style={styles.photosBadge}>
+                                  <Camera size={14} color="#6366F1" />
+                                  <Text style={styles.photosText}>{v.eventPhotos.length}</Text>
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        })}
                       </View>
                     );
                   })}
@@ -243,6 +359,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     padding: 12,
+    alignItems: 'center',
   },
   kpiCard: {
     flex: 1,
@@ -264,9 +381,80 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     fontWeight: "600",
   },
+  plusOneButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  plusOneText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   vendorList: {
     paddingHorizontal: 12,
     paddingBottom: 12,
+  },
+  groupBlock: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: '#F9FAFB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  groupTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  groupKpis: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  groupKpi: {
+    alignItems: 'center',
+  },
+  groupKpiNumber: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  groupKpiLabel: {
+    fontSize: 10,
+    color: '#6B7280',
+  },
+  plusOneSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  plusOneDisabled: {
+    backgroundColor: '#A5B4FC',
+  },
+  plusOneSmallText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   progressBar: {
     flexDirection: 'row',
@@ -285,6 +473,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 10,
+    paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: "#F3F4F6",
   },
@@ -323,7 +512,47 @@ const styles = StyleSheet.create({
   },
   vendorRight: {
     alignItems: "flex-end",
-    gap: 4,
+    gap: 6,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  actionOff: {
+    backgroundColor: '#FFFFFF',
+  },
+  actionOnCheckIn: {
+    backgroundColor: '#6366F1',
+    borderColor: '#6366F1',
+  },
+  actionOnMidway: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  actionOnCompleted: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  actionText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  actionTextOn: {
+    color: '#FFFFFF',
+  },
+  actionTextOff: {
+    color: '#374151',
   },
   timeText: {
     fontSize: 11,

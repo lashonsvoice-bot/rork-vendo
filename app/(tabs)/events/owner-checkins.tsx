@@ -155,7 +155,7 @@ export default function OwnerCheckInsScreen() {
     <View style={styles.container}>
       <View style={styles.headerBar}>
         <Text style={styles.headerTitle}>Check-ins Overview</Text>
-        <Text style={styles.headerSub}>View-only: Hosts manage all check-ins</Text>
+        <Text style={styles.headerSub}>View-only: Contractors check in via app, hosts supervise</Text>
         <TextInput
           ref={searchRef}
           value={search}
@@ -394,7 +394,7 @@ export default function OwnerCheckInsScreen() {
         {myEvents.length === 0 && (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>No events yet</Text>
-            <Text style={styles.emptyText}>Create an opportunity and connect with a host to start tracking check-ins.</Text>
+            <Text style={styles.emptyText}>Create an opportunity and connect with a host. Contractors will receive digital passes through the app for seamless check-ins.</Text>
           </View>
         )}
 
@@ -414,7 +414,7 @@ export default function OwnerCheckInsScreen() {
                 <StickyNote size={18} color="#111827" />
                 <Text style={styles.modalTitle}>Private Notes</Text>
               </View>
-              <Text style={styles.modalSub}>Hosts manage notes. Owners can view only.</Text>
+              <Text style={styles.modalSub}>Private notes for rating process. Hosts manage, owners view only.</Text>
             </View>
             <TextInput
               testID="notes-input"

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
 import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
+import sgMail from "@sendgrid/mail";
 
 const sendExternalProposalSchema = z.object({
   businessOwnerId: z.string(),
@@ -123,34 +124,9 @@ const sendExternalProposalProcedure = publicProcedure
     
     // Email content with invitation code (using your template)
     const replyToEmail = businessOwnerContactEmail || 'noreply@revovend.com';
-    const emailContent = `
-Subject: A RevoVend vendor wants to secure a table at ${eventTitle}
-
-Greetings,
-
-${businessName} located in ${eventLocation.split(',')[1]?.trim() || 'our location'} would like to RevoVend at your ${eventTitle} on ${eventDate}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.
-
-We want to pay ${proposedAmount} today for a table or booth as well as an additional fee for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
-
-Custom Message from ${businessOwnerName}:
-${message}
-
-If you accept this proposal, please use the following invite code when you log into the RevoVend App:
-
-🔑 INVITATION CODE: ${invitationCode}
-
-The more vendors see that you are a RevoVend Host, the more your events could be filled remotely with vendors from all around the world.
-
-Download the RevoVend App:
-• iOS: [App Store Link]
-• Android: [Google Play Link]
-
-For questions, please reply to: ${replyToEmail}
-
-Best regards,
-${businessOwnerName}
-${businessName}
-    `;
+    const subjectLine = `A RevoVend vendor wants to secure a table at ${eventTitle}`;
+    const emailContent = `Greetings,\n\n${businessName} located in ${eventLocation.split(',')[1]?.trim() || 'our location'} would like to RevoVend at your ${eventTitle} on ${eventDate}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.\n\nWe want to pay ${proposedAmount} today for a table or booth as well as an additional fee for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.\n\nCustom Message from ${businessOwnerName}:\n${message}\n\nIf you accept this proposal, please use the following invite code when you log into the RevoVend App:\n\nINVITATION CODE: ${invitationCode}\n\nThe more vendors see that you are a RevoVend Host, the more your events could be filled remotely with vendors from all around the world.\n\nDownload the RevoVend App:\n• iOS: [App Store Link]\n• Android: [Google Play Link]\n\nFor questions, please reply to: ${replyToEmail}\n\nBest regards,\n${businessOwnerName}\n${businessName}`;
+    const htmlContent = emailContent.replace(/\n/g, '<br/>');
 
     // SMS content (shorter version) with invitation code
     const smsContent = `A RevoVend Business owner wants to secure a table at your event ${eventTitle} on ${eventDate}. Please download the app [App Link] and use this invite code when registering as a host: ${invitationCode}. Check your email for more information.`;
@@ -158,25 +134,20 @@ ${businessName}
     // Send email if provided
     if (hostEmail) {
       try {
-        // In a real app, integrate with email service like SendGrid, AWS SES, etc.
-        console.log('📧 SENDING EMAIL PROPOSAL:');
-        console.log('To:', hostEmail);
-        console.log('Subject:', `Business Proposal for ${eventTitle}`);
-        console.log('Content:', emailContent);
-        
-        // Simulate email sending
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        results.emailSent = true;
-        
-        // Here you would integrate with your email service:
-        // await emailService.send({
-        //   to: hostEmail,
-        //   subject: `Business Proposal for ${eventTitle}`,
-        //   html: emailContent,
-        //   from: 'proposals@yourdomain.com',
-        //   replyTo: replyToEmail
-        // });
-        
+        const apiKey = process.env.SENDGRID_API_KEY;
+        const fromEmail = process.env.SENDGRID_FROM || 'noreply@revovend.com';
+        if (apiKey) {
+          sgMail.setApiKey(apiKey);
+          await sgMail.send({ to: hostEmail, from: fromEmail, subject: subjectLine, text: emailContent, html: htmlContent, replyTo: replyToEmail });
+          results.emailSent = true;
+        } else {
+          console.log('📧 SENDING EMAIL PROPOSAL (stub):');
+          console.log('To:', hostEmail);
+          console.log('Subject:', subjectLine);
+          console.log('Content:', emailContent);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          results.emailSent = true;
+        }
       } catch (error) {
         console.error('Email sending failed:', error);
         results.errors.push('Failed to send email notification');
@@ -366,15 +337,20 @@ Event Host - ${eventTitle}
     // Send email if provided
     if (businessOwnerEmail) {
       try {
-        console.log('📧 SENDING REVERSE PROPOSAL EMAIL:');
-        console.log('To:', businessOwnerEmail);
-        console.log('Subject:', `Remote Vending Invitation for ${eventTitle}`);
-        console.log('Content:', emailContent);
-        
-        // Simulate email sending
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        results.emailSent = true;
-        
+        const apiKey = process.env.SENDGRID_API_KEY;
+        const fromEmail = process.env.SENDGRID_FROM || 'noreply@revovend.com';
+        if (apiKey) {
+          sgMail.setApiKey(apiKey);
+          await sgMail.send({ to: businessOwnerEmail, from: fromEmail, subject: `Remote Vending Invitation for ${eventTitle}`, text: emailContent, html: emailContent.replace(/\n/g, '<br/>'), replyTo: replyToEmail });
+          results.emailSent = true;
+        } else {
+          console.log('📧 SENDING REVERSE PROPOSAL EMAIL (stub):');
+          console.log('To:', businessOwnerEmail);
+          console.log('Subject:', `Remote Vending Invitation for ${eventTitle}`);
+          console.log('Content:', emailContent);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          results.emailSent = true;
+        }
       } catch (error) {
         console.error('Email sending failed:', error);
         results.errors.push('Failed to send email notification');

@@ -297,6 +297,16 @@ export default function HomeScreen() {
                   <Text style={styles.actionTextOutline}>Hire Contractors</Text>
                 </View>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => router.push('/(tabs)/events/owner-checkins' as const)}
+                testID="qa-owner-checkins"
+              >
+                <View style={styles.actionOutline}>
+                  <Users size={24} color={neonTheme.accentCyan} />
+                  <Text style={styles.actionTextOutline}>Check-ins</Text>
+                </View>
+              </TouchableOpacity>
             </>
           ) : userRole === 'contractor' ? (
             <>

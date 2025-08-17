@@ -50,6 +50,19 @@ export default function EventsLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="owner-checkins"
+        options={{
+          title: "Owner Check-ins",
+          headerStyle: {
+            backgroundColor: neonTheme.surface,
+          },
+          headerTintColor: neonTheme.textPrimary,
+          headerTitleStyle: {
+            fontWeight: "bold" as const,
+          },
+        }}
+      />
     </Stack>
   );
 }

@@ -113,7 +113,7 @@ export default function CreateEventScreen() {
   const [hasMiscInfo, setHasMiscInfo] = useState<boolean>(false);
   const [miscInfo, setMiscInfo] = useState<string>("");
 
-  const [proposalForm, setProposalForm] = useState<{ hostName: string; hostEmail: string; hostPhone: string; proposedAmount: string; supervisoryFee: string; message: string; }>({ hostName: "", hostEmail: "", hostPhone: "", proposedAmount: "", supervisoryFee: "", message: "" });
+  const [proposalForm, setProposalForm] = useState<{ hostName: string; hostEmail: string; hostPhone: string; proposedAmount: string; supervisoryFee: string; message: string; }>({ hostName: "", hostEmail: "lashonsvoice@gmail.com", hostPhone: "", proposedAmount: "", supervisoryFee: "", message: "" });
   const [proposalSending, setProposalSending] = useState<boolean>(false);
 
   const { events } = useEvents();

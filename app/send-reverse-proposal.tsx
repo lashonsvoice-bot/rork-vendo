@@ -72,6 +72,9 @@ I'd like to invite you to participate as a remote vendor at our event. Here's wh
 5. We oversee the process and provide updates
 6. Payment is released to contractors at the end of the event
 
+🎯 **Why This Opportunity Matters:**
+With [Expected Attendees] expected at this event, this represents a significant market opportunity for [Business Name]. Our attendees are specifically interested in quality products and services like yours, making this an ideal match for remote vending success.
+
 I'm excited about the possibility of having [Business Name] as part of our event. Remote vending allows you to expand your market reach without the travel costs and time commitment of traditional vending.
 
 Best regards,
@@ -208,6 +211,9 @@ I'd like to invite you to participate as a remote vendor at our event. Here's wh
 4. Your contractors handle sales and customer interactions
 5. We oversee the process and provide updates
 6. Payment is released to contractors at the end of the event
+
+🎯 **Why This Opportunity Matters:**
+With [Expected Attendees] expected at this event, this represents a significant market opportunity for [Business Name]. Our attendees are specifically interested in quality products and services like yours, making this an ideal match for remote vending success.
 
 I'm excited about the possibility of having [Business Name] as part of our event. Remote vending allows you to expand your market reach without the travel costs and time commitment of traditional vending.
 
@@ -519,6 +525,9 @@ I'd like to invite you to participate as a remote vendor at our event. Here's wh
 4. Your contractors handle sales and customer interactions
 5. We oversee the process and provide updates
 6. Payment is released to contractors at the end of the event
+
+🎯 **Why This Opportunity Matters:**
+With ${formData.expectedAttendees || '[Expected Attendees]'} expected at this event, this represents a significant market opportunity for ${formData.businessName || '[Business Name]'}. Our attendees are specifically interested in quality products and services like yours, making this an ideal match for remote vending success.
 
 I'm excited about the possibility of having ${formData.businessName || '[Business Name]'} as part of our event. Remote vending allows you to expand your market reach without the travel costs and time commitment of traditional vending.
 

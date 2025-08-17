@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Image,
+  Platform,
 } from 'react-native';
 import { 
   MessageCircle, 
@@ -20,8 +22,13 @@ import {
   UserCheck,
   DollarSign,
   Mail,
-  AlertCircle
+  AlertCircle,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+  Download
 } from 'lucide-react-native';
+import FileUpload from '@/components/FileUpload';
 import { useCommunication } from '@/hooks/communication-store';
 import { useUser } from '@/hooks/user-store';
 import { Stack } from 'expo-router';
@@ -42,6 +49,8 @@ export default function MessagesScreen() {
   const [activeTab, setActiveTab] = useState<'messages' | 'proposals' | 'email-demo'>('messages');
   const [replyText, setReplyText] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [showAttachmentUpload, setShowAttachmentUpload] = useState<string | null>(null);
   
   // Email demo form state
   const [demoForm, setDemoForm] = useState({
@@ -79,7 +88,10 @@ export default function MessagesScreen() {
   };
 
   const handleSendReply = (originalMessage: any) => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() && attachments.length === 0) {
+      Alert.alert('Error', 'Please enter a message or attach a file');
+      return;
+    }
 
     sendCoordinationMessage(
       currentUser.id,
@@ -91,11 +103,14 @@ export default function MessagesScreen() {
       originalMessage.eventId || '',
       originalMessage.eventTitle || 'General',
       `Re: ${originalMessage.subject}`,
-      replyText.trim()
+      replyText.trim(),
+      attachments
     );
 
     setReplyText('');
     setReplyingTo(null);
+    setAttachments([]);
+    setShowAttachmentUpload(null);
     Alert.alert('Success', 'Reply sent successfully');
   };
 
@@ -220,6 +235,57 @@ export default function MessagesScreen() {
                     <Text style={styles.messageSubject}>{message.subject}</Text>
                     <Text style={styles.messageContent}>{message.content}</Text>
 
+                    {message.attachments && message.attachments.length > 0 && (
+                      <View style={styles.attachmentsContainer}>
+                        <Text style={styles.attachmentsLabel}>Attachments:</Text>
+                        {message.attachments.map((attachment: string, index: number) => {
+                          const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(attachment);
+                          const fileName = attachment.split('/').pop() || 'File';
+                          
+                          return (
+                            <View key={index} style={styles.attachmentItem}>
+                              {isImage ? (
+                                <View style={styles.imageAttachment}>
+                                  <Image 
+                                    source={{ uri: attachment }} 
+                                    style={styles.attachmentImage}
+                                    resizeMode="cover"
+                                  />
+                                  <TouchableOpacity 
+                                    style={styles.downloadButton}
+                                    onPress={() => {
+                                      if (Platform.OS === 'web') {
+                                        window.open(attachment, '_blank');
+                                      } else {
+                                        Alert.alert('Download', 'Image download functionality would be implemented here');
+                                      }
+                                    }}
+                                  >
+                                    <Download size={16} color="#FFFFFF" />
+                                  </TouchableOpacity>
+                                </View>
+                              ) : (
+                                <TouchableOpacity 
+                                  style={styles.fileAttachment}
+                                  onPress={() => {
+                                    if (Platform.OS === 'web') {
+                                      window.open(attachment, '_blank');
+                                    } else {
+                                      Alert.alert('Download', 'File download functionality would be implemented here');
+                                    }
+                                  }}
+                                >
+                                  <FileText size={20} color="#6B7280" />
+                                  <Text style={styles.fileName} numberOfLines={1}>{fileName}</Text>
+                                  <Download size={16} color="#6B7280" />
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+
                     {message.eventTitle && (
                       <View style={styles.eventInfo}>
                         <Text style={styles.eventLabel}>Event: {message.eventTitle}</Text>
@@ -305,7 +371,54 @@ export default function MessagesScreen() {
                           multiline
                           placeholderTextColor="#9CA3AF"
                         />
+                        
+                        {attachments.length > 0 && (
+                          <View style={styles.replyAttachments}>
+                            <Text style={styles.replyAttachmentsLabel}>Attachments:</Text>
+                            {attachments.map((attachment, index) => {
+                              const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(attachment);
+                              const fileName = attachment.split('/').pop() || 'File';
+                              
+                              return (
+                                <View key={index} style={styles.replyAttachmentItem}>
+                                  {isImage ? <ImageIcon size={16} color="#10B981" /> : <FileText size={16} color="#10B981" />}
+                                  <Text style={styles.replyAttachmentName} numberOfLines={1}>{fileName}</Text>
+                                  <TouchableOpacity
+                                    onPress={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                                    style={styles.removeAttachmentButton}
+                                  >
+                                    <XCircle size={16} color="#EF4444" />
+                                  </TouchableOpacity>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        )}
+                        
+                        {showAttachmentUpload === message.id && (
+                          <View style={styles.attachmentUploadContainer}>
+                            <FileUpload
+                              onUpload={(fileUrl) => {
+                                setAttachments(prev => [...prev, fileUrl]);
+                                setShowAttachmentUpload(null);
+                              }}
+                              fileType="all"
+                              multiple={false}
+                              label="Attach File"
+                              description="Upload images or documents"
+                            />
+                          </View>
+                        )}
+                        
                         <View style={styles.replyActions}>
+                          <TouchableOpacity
+                            style={styles.attachButton}
+                            onPress={() => setShowAttachmentUpload(showAttachmentUpload === message.id ? null : message.id)}
+                          >
+                            <Paperclip size={16} color="#6B7280" />
+                            <Text style={styles.attachButtonText}>Attach</Text>
+                          </TouchableOpacity>
+                          
                           <TouchableOpacity
                             style={styles.sendReplyButton}
                             onPress={() => handleSendReply(message)}
@@ -313,11 +426,14 @@ export default function MessagesScreen() {
                             <Send size={16} color="#FFFFFF" />
                             <Text style={styles.sendReplyButtonText}>Send Reply</Text>
                           </TouchableOpacity>
+                          
                           <TouchableOpacity
                             style={styles.cancelReplyButton}
                             onPress={() => {
                               setReplyingTo(null);
                               setReplyText('');
+                              setAttachments([]);
+                              setShowAttachmentUpload(null);
                             }}
                           >
                             <Text style={styles.cancelReplyButtonText}>Cancel</Text>
@@ -789,6 +905,8 @@ const styles = StyleSheet.create({
   replyActions: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
+    marginTop: 8,
   },
   sendReplyButton: {
     flexDirection: 'row',
@@ -882,6 +1000,103 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     textAlign: 'center',
     marginTop: 40,
+  },
+  attachmentsContainer: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+  },
+  attachmentsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  attachmentItem: {
+    marginBottom: 8,
+  },
+  imageAttachment: {
+    position: 'relative',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  attachmentImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#F3F4F6',
+  },
+  downloadButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 16,
+    padding: 8,
+  },
+  fileAttachment: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
+    gap: 8,
+  },
+  fileName: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+  },
+  replyAttachments: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 6,
+  },
+  replyAttachmentsLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10B981',
+    marginBottom: 4,
+  },
+  replyAttachmentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    padding: 6,
+    marginBottom: 4,
+    gap: 6,
+  },
+  replyAttachmentName: {
+    flex: 1,
+    fontSize: 12,
+    color: '#374151',
+  },
+  removeAttachmentButton: {
+    padding: 2,
+  },
+  attachmentUploadContainer: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 6,
+  },
+  attachButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: '#F3F4F6',
+    gap: 4,
+  },
+  attachButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '500',
   },
   emailDemoContainer: {
     gap: 16,

@@ -137,26 +137,7 @@ export default function CreateEventScreen() {
     }
   };
 
-  const captureImage = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant camera permissions to take a photo.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets[0]) {
-        setFlyerImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('CREATE - captureImage error', error);
-      Alert.alert('Error', 'Failed to open camera');
-    }
-  };
+
 
   const removeFlyerImage = () => {
     setFlyerImage(null);
@@ -531,17 +512,11 @@ export default function CreateEventScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <View style={styles.uploadRow}>
-              <TouchableOpacity testID="pick-image" style={[styles.uploadButton, { flex: 1 }]} onPress={pickImage}>
-                <ImageIcon size={24} color="#10B981" />
-                <Text style={styles.uploadText}>Upload From Library</Text>
-                <Text style={styles.uploadSubtext}>JPG, PNG up to 10MB - Required</Text>
-              </TouchableOpacity>
-              <TouchableOpacity testID="capture-photo" style={styles.captureButton} onPress={captureImage}>
-                <ImageIcon size={24} color="#0EA5E9" />
-                <Text style={styles.captureText}>Take Photo</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity testID="pick-image" style={styles.uploadButton} onPress={pickImage}>
+              <ImageIcon size={24} color="#10B981" />
+              <Text style={styles.uploadText}>Upload Event Flyer</Text>
+              <Text style={styles.uploadSubtext}>JPG, PNG up to 10MB - Required</Text>
+            </TouchableOpacity>
           )}
         </View>
 
@@ -1199,11 +1174,7 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: "top",
   },
-  uploadRow: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "stretch",
-  },
+
   uploadButton: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -1213,6 +1184,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: "center",
     gap: 8,
+    width: "100%",
   },
   uploadText: {
     fontSize: 16,
@@ -1223,22 +1195,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
   },
-  captureButton: {
-    backgroundColor: "#EFF6FF",
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#0EA5E9",
-    borderStyle: "dashed",
-    padding: 24,
-    alignItems: "center",
-    gap: 8,
-    minWidth: 140,
-  },
-  captureText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0EA5E9",
-  },
+
   flyerContainer: {
     position: "relative",
     borderRadius: 12,

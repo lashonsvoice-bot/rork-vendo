@@ -16,6 +16,7 @@ export interface Message {
   type: 'proposal' | 'acceptance' | 'confirmation' | 'coordination' | 'payment_confirmation' | 'material_confirmation';
   subject: string;
   content: string;
+  attachments?: string[]; // Array of file URLs
   status: 'pending' | 'accepted' | 'declined' | 'read';
   createdAt: string;
   respondedAt?: string;
@@ -359,6 +360,7 @@ The Event Management Team
     eventTitle: string,
     subject: string,
     content: string,
+    attachments?: string[],
     metadata?: Message['metadata']
   ) => {
     const message: Omit<Message, 'id' | 'createdAt' | 'status' | 'isRecipientRegistered' | 'emailNotificationSent'> = {
@@ -373,6 +375,7 @@ The Event Management Team
       type: 'coordination',
       subject,
       content,
+      attachments,
       metadata,
     };
 

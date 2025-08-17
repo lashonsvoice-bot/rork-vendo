@@ -11,6 +11,7 @@ export const sendMessageProcedure = protectedProcedure
     content: z.string(),
     type: z.enum(['general', 'proposal', 'coordination', 'hiring']).default('general'),
     eventId: z.string().optional(),
+    attachments: z.array(z.string()).optional(),
   }))
   .mutation(async ({ ctx, input }) => {
     if (!ctx.user) {
@@ -29,6 +30,7 @@ export const sendMessageProcedure = protectedProcedure
       content: input.content,
       type: input.type,
       eventId: input.eventId,
+      attachments: input.attachments || [],
       status: 'sent',
       createdAt: new Date().toISOString(),
       read: false,

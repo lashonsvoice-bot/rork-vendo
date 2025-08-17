@@ -352,8 +352,8 @@ export default function BusinessDirectoryScreen() {
             <Text style={styles.description}>{business.description}</Text>
 
             <View style={styles.contactInfo}>
-              {/* Only show contact info to registered users */}
-              {user?.role !== 'guest' && (
+              {/* Only show contact info to authenticated, non-guest users */}
+              {user && user.role !== 'guest' && (
                 <>
                   <View style={styles.contactItem}>
                     <Mail size={16} color={theme.colors.text.secondary} />
@@ -382,13 +382,13 @@ export default function BusinessDirectoryScreen() {
                 )}
               </View>
               
-              {user?.role === 'guest' && (
+              {!user || user.role === 'guest' ? (
                 <View style={styles.guestContactNotice}>
                   <Text style={styles.guestContactNoticeText}>
                     Sign up to view contact information
                   </Text>
                 </View>
-              )}
+              ) : null}
             </View>
 
             <View style={styles.statsContainer}>

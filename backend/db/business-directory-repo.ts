@@ -11,6 +11,11 @@ export interface BusinessDirectoryEntry {
   description: string;
   website?: string;
   location: string;
+  latitude?: number;
+  longitude?: number;
+  zipCode?: string;
+  state?: string;
+  city?: string;
   isVerified: boolean;
   isRevoVendMember: boolean;
   addedBy: string; // host ID who added them
@@ -125,7 +130,26 @@ async function addBusinessToDirectory(business: Omit<BusinessDirectoryEntry, 'id
   return newEntry;
 }
 
-async function searchBusinessDirectory(query: string, location?: string): Promise<BusinessDirectoryEntry[]> {
+// Calculate distance between two points using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+async function searchBusinessDirectory(
+  query: string, 
+  location?: string, 
+  userLat?: number, 
+  userLon?: number, 
+  maxDistance?: number
+): Promise<BusinessDirectoryEntry[]> {
   const entries = await readBusinessDirectory();
   const searchTerm = query.toLowerCase();
   
@@ -136,10 +160,45 @@ async function searchBusinessDirectory(query: string, location?: string): Promis
       entry.businessType.toLowerCase().includes(searchTerm) ||
       entry.description.toLowerCase().includes(searchTerm);
     
-    const matchesLocation = !location || entry.location.toLowerCase().includes(location.toLowerCase());
+    const matchesLocation = !location || 
+      entry.location.toLowerCase().includes(location.toLowerCase()) ||
+      entry.zipCode?.toLowerCase().includes(location.toLowerCase()) ||
+      entry.state?.toLowerCase().includes(location.toLowerCase()) ||
+      entry.city?.toLowerCase().includes(location.toLowerCase());
     
-    return matchesQuery && matchesLocation;
+    // Distance filtering
+    let withinDistance = true;
+    if (userLat && userLon && maxDistance && entry.latitude && entry.longitude) {
+      const distance = calculateDistance(userLat, userLon, entry.latitude, entry.longitude);
+      withinDistance = distance <= maxDistance;
+    }
+    
+    return matchesQuery && matchesLocation && withinDistance;
   });
+}
+
+async function searchBusinessesByDistance(
+  userLat: number, 
+  userLon: number, 
+  maxDistance: number,
+  businessType?: string
+): Promise<(BusinessDirectoryEntry & { distance: number })[]> {
+  const entries = await readBusinessDirectory();
+  
+  const businessesWithDistance = entries
+    .filter(entry => {
+      if (!entry.latitude || !entry.longitude) return false;
+      if (businessType && !entry.businessType.toLowerCase().includes(businessType.toLowerCase())) return false;
+      return true;
+    })
+    .map(entry => {
+      const distance = calculateDistance(userLat, userLon, entry.latitude!, entry.longitude!);
+      return { ...entry, distance };
+    })
+    .filter(entry => entry.distance <= maxDistance)
+    .sort((a, b) => a.distance - b.distance);
+  
+  return businessesWithDistance;
 }
 
 async function sendReverseProposal(proposal: Omit<ReverseProposal, 'id' | 'sentAt'>): Promise<ReverseProposal> {
@@ -229,6 +288,7 @@ export const businessDirectoryRepo = {
   writeReverseProposals,
   addBusinessToDirectory,
   searchBusinessDirectory,
+  searchBusinessesByDistance,
   sendReverseProposal,
   updateReverseProposalStatus,
   getHostReverseProposals,

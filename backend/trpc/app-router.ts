@@ -65,6 +65,7 @@ import {
   addBusinessToDirectoryProcedure,
   searchBusinessDirectoryProcedure,
   getBusinessDirectoryProcedure,
+  searchBusinessesByDistanceProcedure,
 } from "./routes/business-directory/crud/route";
 import {
   sendReverseProposalProcedure,
@@ -199,6 +200,7 @@ export const appRouter = createTRPCRouter({
   businessDirectory: createTRPCRouter({
     add: addBusinessToDirectoryProcedure,
     search: searchBusinessDirectoryProcedure,
+    searchByDistance: searchBusinessesByDistanceProcedure,
     getAll: getBusinessDirectoryProcedure,
     proposals: createTRPCRouter({
       send: sendReverseProposalProcedure,

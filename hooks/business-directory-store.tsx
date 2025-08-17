@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { trpc } from '@/lib/trpc';
+import { trpc, trpcClient } from '@/lib/trpc';
 
 export interface BusinessDirectoryEntry {
   id: string;
@@ -13,6 +13,11 @@ export interface BusinessDirectoryEntry {
   description: string;
   website?: string;
   location: string;
+  latitude?: number;
+  longitude?: number;
+  zipCode?: string;
+  state?: string;
+  city?: string;
   isVerified: boolean;
   isRevoVendMember: boolean;
   addedBy: string;
@@ -50,7 +55,6 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
   const sendProposalMutation = trpc.businessDirectory.proposals.send.useMutation();
   const updateProposalMutation = trpc.businessDirectory.proposals.updateStatus.useMutation();
   const hostProposalsQuery = trpc.businessDirectory.proposals.getByHost.useQuery();
-  const businessProposalsQuery = trpc.businessDirectory.proposals.getByBusiness.useQuery();
 
   useEffect(() => {
     loadStoredData();
@@ -108,6 +112,34 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
       console.error('Error saving proposals to storage:', error);
     }
   };
+
+  // Calculate distance between two points using Haversine formula
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  const searchByDistance = useCallback(async (userLat: number, userLon: number, maxDistance: number, businessType?: string) => {
+    try {
+      const results = await trpcClient.businessDirectory.searchByDistance.query({
+        userLat,
+        userLon,
+        maxDistance,
+        businessType,
+      });
+      return results;
+    } catch (error) {
+      console.error('Error searching businesses by distance:', error);
+      throw error;
+    }
+  }, []);
 
   const addBusiness = useCallback(async (businessData: Omit<BusinessDirectoryEntry, 'id' | 'addedAt' | 'invitationsSent' | 'signupConversions'>) => {
     try {
@@ -171,7 +203,7 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
     }
   }, [reverseProposals, updateProposalMutation]);
 
-  const searchBusinesses = useCallback((query: string, location?: string) => {
+  const searchBusinesses = useCallback((query: string, location?: string, userLat?: number, userLon?: number, maxDistance?: number) => {
     const searchTerm = query.toLowerCase();
     
     return businesses.filter(business => {
@@ -182,11 +214,21 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
         business.description.toLowerCase().includes(searchTerm);
       
       const matchesLocation = !location || 
-        business.location.toLowerCase().includes(location.toLowerCase());
+        business.location.toLowerCase().includes(location.toLowerCase()) ||
+        business.zipCode?.toLowerCase().includes(location.toLowerCase()) ||
+        business.state?.toLowerCase().includes(location.toLowerCase()) ||
+        business.city?.toLowerCase().includes(location.toLowerCase());
       
-      return matchesQuery && matchesLocation;
+      // Distance filtering
+      let withinDistance = true;
+      if (userLat && userLon && maxDistance && business.latitude && business.longitude) {
+        const distance = calculateDistance(userLat, userLon, business.latitude, business.longitude);
+        withinDistance = distance <= maxDistance;
+      }
+      
+      return matchesQuery && matchesLocation && withinDistance;
     });
-  }, [businesses]);
+  }, [businesses, calculateDistance]);
 
   const getProposalsByEvent = useCallback((eventId: string) => {
     return reverseProposals.filter(proposal => proposal.eventId === eventId);
@@ -221,6 +263,8 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
     sendInvitation,
     updateProposalStatus,
     searchBusinesses,
+    searchByDistance,
+    calculateDistance,
     getProposalsByEvent,
     getProposalsByBusiness,
     getInvitationStats,
@@ -234,6 +278,8 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
     sendInvitation,
     updateProposalStatus,
     searchBusinesses,
+    searchByDistance,
+    calculateDistance,
     getProposalsByEvent,
     getProposalsByBusiness,
     getInvitationStats,

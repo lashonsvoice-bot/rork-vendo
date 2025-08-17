@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,14 @@ import {
   Alert,
   Modal,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { Stack } from 'expo-router';
-import { Search, Plus, Mail, Phone, MapPin, ExternalLink, Send } from 'lucide-react-native';
+import { Search, Plus, Mail, Phone, MapPin, ExternalLink, Send, Navigation } from 'lucide-react-native';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/auth-store';
 import { theme } from '@/constants/theme';
+import * as Location from 'expo-location';
 
 interface BusinessDirectoryEntry {
   id: string;
@@ -40,8 +42,14 @@ export default function BusinessDirectoryScreen() {
   const [locationFilter, setLocationFilter] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showDistanceModal, setShowDistanceModal] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessDirectoryEntry | null>(null);
   const [selectedEventId, setSelectedEventId] = useState('');
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [maxDistance, setMaxDistance] = useState<number>(25);
+  const [businessType, setBusinessType] = useState('');
+  const [distanceResults, setDistanceResults] = useState<(BusinessDirectoryEntry & { distance: number })[]>([]);
+  const [useDistanceFilter, setUseDistanceFilter] = useState(false);
 
   const [newBusiness, setNewBusiness] = useState({
     businessName: '',
@@ -52,6 +60,9 @@ export default function BusinessDirectoryScreen() {
     description: '',
     website: '',
     location: '',
+    zipCode: '',
+    state: '',
+    city: '',
   });
 
   const businessesQuery = trpc.businessDirectory.getAll.useQuery();
@@ -59,7 +70,59 @@ export default function BusinessDirectoryScreen() {
   const addBusinessMutation = trpc.businessDirectory.add.useMutation();
   const sendProposalMutation = trpc.businessDirectory.proposals.send.useMutation();
 
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'web') {
+      try {
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setUserLocation({
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              });
+            },
+            (error) => {
+              console.log('Location error:', error);
+            }
+          );
+        }
+      } catch (error) {
+        console.log('Web location error:', error);
+      }
+    } else {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          setUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.log('Native location error:', error);
+      }
+    }
+  };
+
   const filteredBusinesses = useMemo(() => {
+    if (useDistanceFilter && distanceResults.length > 0) {
+      return distanceResults.filter(business => {
+        const matchesSearch = !searchQuery || 
+          business.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          business.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          business.businessType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          business.description.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        return matchesSearch;
+      });
+    }
+    
     if (!businessesQuery.data) return [];
     
     return businessesQuery.data.filter(business => {
@@ -70,11 +133,14 @@ export default function BusinessDirectoryScreen() {
         business.description.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesLocation = !locationFilter || 
-        business.location.toLowerCase().includes(locationFilter.toLowerCase());
+        business.location.toLowerCase().includes(locationFilter.toLowerCase()) ||
+        business.zipCode?.toLowerCase().includes(locationFilter.toLowerCase()) ||
+        business.state?.toLowerCase().includes(locationFilter.toLowerCase()) ||
+        business.city?.toLowerCase().includes(locationFilter.toLowerCase());
       
       return matchesSearch && matchesLocation;
     });
-  }, [businessesQuery.data, searchQuery, locationFilter]);
+  }, [businessesQuery.data, searchQuery, locationFilter, useDistanceFilter, distanceResults]);
 
   const handleAddBusiness = async () => {
     if (!newBusiness.businessName || !newBusiness.ownerName || !newBusiness.email) {
@@ -99,6 +165,9 @@ export default function BusinessDirectoryScreen() {
         description: '',
         website: '',
         location: '',
+        zipCode: '',
+        state: '',
+        city: '',
       });
       
       businessesQuery.refetch();
@@ -141,6 +210,51 @@ export default function BusinessDirectoryScreen() {
     setShowInviteModal(true);
   };
 
+  const handleDistanceSearch = async () => {
+    if (!userLocation) {
+      Alert.alert('Location Required', 'Please enable location services to search by distance.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/trpc/businessDirectory.searchByDistance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          json: {
+            userLat: userLocation.latitude,
+            userLon: userLocation.longitude,
+            maxDistance,
+            businessType: businessType || undefined,
+          }
+        })
+      });
+      
+      const data = await response.json();
+      const results = data.result?.data?.json || [];
+      
+      setDistanceResults(results);
+      setUseDistanceFilter(true);
+      setShowDistanceModal(false);
+      
+      Alert.alert(
+        'Search Complete',
+        `Found ${results.length} businesses within ${maxDistance} miles of your location.`
+      );
+    } catch {
+      Alert.alert('Error', 'Failed to search businesses by distance');
+    }
+  };
+
+  const clearDistanceFilter = () => {
+    setUseDistanceFilter(false);
+    setDistanceResults([]);
+  };
+
+  const distanceOptions = [5, 10, 25, 50, 100];
+
   if (user?.role !== 'event_host' && user?.role !== 'business_owner') {
     return (
       <SafeAreaView style={styles.container}>
@@ -177,17 +291,41 @@ export default function BusinessDirectoryScreen() {
           />
         </View>
         
-        <TextInput
-          style={styles.locationInput}
-          placeholder="Filter by location..."
-          value={locationFilter}
-          onChangeText={setLocationFilter}
-          placeholderTextColor={theme.colors.text.secondary}
-        />
+        <View style={styles.filterRow}>
+          <TextInput
+            style={[styles.locationInput, { flex: 1 }]}
+            placeholder="Filter by location..."
+            value={locationFilter}
+            onChangeText={setLocationFilter}
+            placeholderTextColor={theme.colors.text.secondary}
+          />
+          
+          <TouchableOpacity 
+            style={styles.distanceButton}
+            onPress={() => setShowDistanceModal(true)}
+          >
+            <Navigation size={16} color={theme.colors.primary} />
+            <Text style={styles.distanceButtonText}>Distance</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {useDistanceFilter && (
+          <View style={styles.activeFilterContainer}>
+            <Text style={styles.activeFilterText}>
+              Showing businesses within {maxDistance} miles
+              {businessType && ` • ${businessType}`}
+            </Text>
+            <TouchableOpacity onPress={clearDistanceFilter}>
+              <Text style={styles.clearFilterText}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <ScrollView style={styles.businessList}>
-        {filteredBusinesses.map((business) => (
+        {filteredBusinesses.map((business) => {
+          const businessWithDistance = business as BusinessDirectoryEntry & { distance?: number };
+          return (
           <View key={business.id} style={styles.businessCard}>
             <View style={styles.businessHeader}>
               <View style={styles.businessInfo}>
@@ -226,6 +364,9 @@ export default function BusinessDirectoryScreen() {
               <View style={styles.contactItem}>
                 <MapPin size={16} color={theme.colors.text.secondary} />
                 <Text style={styles.contactText}>{business.location}</Text>
+                {businessWithDistance.distance && (
+                  <Text style={styles.distanceText}> • {businessWithDistance.distance.toFixed(1)} mi</Text>
+                )}
               </View>
               
               {business.website && (
@@ -252,7 +393,8 @@ export default function BusinessDirectoryScreen() {
               </TouchableOpacity>
             )}
           </View>
-        ))}
+          );
+        })}
       </ScrollView>
 
       {/* Add Business Modal */}
@@ -351,7 +493,38 @@ export default function BusinessDirectoryScreen() {
                 style={styles.input}
                 value={newBusiness.location}
                 onChangeText={(text) => setNewBusiness(prev => ({ ...prev, location: text }))}
-                placeholder="City, State"
+                placeholder="Full address or City, State"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>City</Text>
+              <TextInput
+                style={styles.input}
+                value={newBusiness.city}
+                onChangeText={(text) => setNewBusiness(prev => ({ ...prev, city: text }))}
+                placeholder="City"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>State</Text>
+              <TextInput
+                style={styles.input}
+                value={newBusiness.state}
+                onChangeText={(text) => setNewBusiness(prev => ({ ...prev, state: text }))}
+                placeholder="State"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>ZIP Code</Text>
+              <TextInput
+                style={styles.input}
+                value={newBusiness.zipCode}
+                onChangeText={(text) => setNewBusiness(prev => ({ ...prev, zipCode: text }))}
+                placeholder="ZIP Code"
+                keyboardType="numeric"
               />
             </View>
           </ScrollView>
@@ -410,6 +583,81 @@ export default function BusinessDirectoryScreen() {
               <Text style={styles.inviteInfoText}>
                 This will send an email and SMS invitation to the business owner introducing your event and RevoVend. 
                 You&apos;ll be charged $1 for this invitation, but receive $10 if they sign up as a new RevoVend member.
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Distance Search Modal */}
+      <Modal visible={showDistanceModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowDistanceModal(false)}>
+              <Text style={styles.cancelButton}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Search by Distance</Text>
+            <TouchableOpacity onPress={handleDistanceSearch}>
+              <Text style={styles.saveButton}>Search</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            {!userLocation && (
+              <View style={styles.locationWarning}>
+                <Navigation size={24} color={theme.colors.warning} />
+                <Text style={styles.locationWarningText}>
+                  Location access is required for distance-based search. Please enable location services.
+                </Text>
+                <TouchableOpacity 
+                  style={styles.enableLocationButton}
+                  onPress={requestLocationPermission}
+                >
+                  <Text style={styles.enableLocationButtonText}>Enable Location</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Maximum Distance (miles)</Text>
+              <View style={styles.distanceOptionsContainer}>
+                {distanceOptions.map((distance) => (
+                  <TouchableOpacity
+                    key={distance}
+                    style={[
+                      styles.distanceOption,
+                      maxDistance === distance && styles.distanceOptionSelected
+                    ]}
+                    onPress={() => setMaxDistance(distance)}
+                  >
+                    <Text style={[
+                      styles.distanceOptionText,
+                      maxDistance === distance && styles.distanceOptionTextSelected
+                    ]}>
+                      {distance} mi
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Business Type (Optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={businessType}
+                onChangeText={setBusinessType}
+                placeholder="e.g., Restaurant, Retail, Service"
+                placeholderTextColor={theme.colors.text.secondary}
+              />
+            </View>
+
+            <View style={styles.searchInfo}>
+              <Text style={styles.searchInfoText}>
+                This will search for businesses within your selected distance from your current location.
+                {userLocation && (
+                  ` Your location: ${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}`
+                )}
               </Text>
             </View>
           </View>
@@ -685,5 +933,112 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text.primary,
     lineHeight: 20,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  distanceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  distanceButtonText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: '500',
+  },
+  activeFilterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  activeFilterText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: '500',
+  },
+  clearFilterText: {
+    fontSize: 14,
+    color: theme.colors.primary,
+    fontWeight: '600',
+  },
+  distanceText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '500',
+  },
+  locationWarning: {
+    backgroundColor: theme.colors.warning + '20',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  locationWarningText: {
+    fontSize: 14,
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+    marginVertical: 12,
+    lineHeight: 20,
+  },
+  enableLocationButton: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  enableLocationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  distanceOptionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  distanceOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: '#FFFFFF',
+  },
+  distanceOptionSelected: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  distanceOptionText: {
+    fontSize: 14,
+    color: theme.colors.text.primary,
+  },
+  distanceOptionTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  searchInfo: {
+    backgroundColor: theme.colors.background,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  searchInfoText: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+    lineHeight: 18,
   },
 });

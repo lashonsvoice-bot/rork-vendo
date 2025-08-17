@@ -1,9 +1,9 @@
 import React, { useMemo, useCallback, useState } from "react";
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Modal, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useEvents } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
-import { CheckCircle, Clock, Camera, User, Calendar, MapPin, Eye, Plus, Check } from "lucide-react-native";
+import { CheckCircle, Clock, Camera, User, Calendar, MapPin, Eye, Plus, Check, Lock, StickyNote } from "lucide-react-native";
 
 export default function OwnerCheckInsScreen() {
   const router = useRouter();
@@ -66,6 +66,10 @@ export default function OwnerCheckInsScreen() {
   }
 
   const [filter, setFilter] = useState<'all' | 'unassigned' | 'checkedin' | 'midway' | 'completed'>('all');
+  const [notesVisible, setNotesVisible] = useState<boolean>(false);
+  const [activeVendorId, setActiveVendorId] = useState<string | null>(null);
+  const [activeEventId, setActiveEventId] = useState<string | null>(null);
+  const [notesText, setNotesText] = useState<string>("");
 
   const FilterPill = useCallback(({ label, value }: { label: string; value: 'all' | 'unassigned' | 'checkedin' | 'midway' | 'completed' }) => {
     const active = filter === value;
@@ -81,6 +85,32 @@ export default function OwnerCheckInsScreen() {
       </TouchableOpacity>
     );
   }, [filter]);
+
+  const openNotes = useCallback((eventId: string, vendorId: string, currentNotes?: string) => {
+    setActiveEventId(eventId);
+    setActiveVendorId(vendorId);
+    setNotesText(currentNotes ?? "");
+    setNotesVisible(true);
+  }, []);
+
+  const closeNotes = useCallback(() => {
+    setNotesVisible(false);
+    setActiveEventId(null);
+    setActiveVendorId(null);
+    setNotesText("");
+  }, []);
+
+  const saveNotes = useCallback(() => {
+    if (!activeEventId || !activeVendorId) return;
+    updateVendorCheckIn(activeEventId, activeVendorId, { notes: notesText });
+    closeNotes();
+  }, [activeEventId, activeVendorId, notesText, updateVendorCheckIn, closeNotes]);
+
+  const clearNotes = useCallback(() => {
+    if (!activeEventId || !activeVendorId) return;
+    updateVendorCheckIn(activeEventId, activeVendorId, { notes: undefined });
+    closeNotes();
+  }, [activeEventId, activeVendorId, updateVendorCheckIn, closeNotes]);
 
   return (
     <View style={styles.container}>
@@ -265,7 +295,7 @@ export default function OwnerCheckInsScreen() {
                                       if (!v.endConfirmed) return toggleCompleted(event.id, v.id, v.endConfirmed);
                                       updateVendorCheckIn(event.id, v.id, { arrivalConfirmed: false, halfwayConfirmed: false, endConfirmed: false, arrivalTime: undefined, halfwayCheckIn: undefined, endCheckIn: undefined });
                                     }}
-                                    onLongPress={() => console.log('Long press for full actions for vendor', v.id)}
+                                    onLongPress={() => openNotes(event.id, v.id, v.notes)}
                                     style={[styles.statusPill, { backgroundColor: s.bg }]}
                                     accessibilityRole="button"
                                     accessibilityLabel={`Toggle status for ${v.vendorName}`}
@@ -311,9 +341,17 @@ export default function OwnerCheckInsScreen() {
                                 {v.endCheckIn && (
                                   <Text style={styles.timeText}>End: {v.endCheckIn}</Text>
                                 )}
-                                <View style={styles.photosBadge}>
-                                  <Camera size={14} color="#6366F1" />
-                                  <Text style={styles.photosText}>{v.eventPhotos.length}</Text>
+                                <View style={styles.rightBadgesRow}>
+                                  {v.notes ? (
+                                    <View style={styles.noteBadge} testID={`notes-badge-${v.id}`}>
+                                      <Lock size={12} color="#111827" />
+                                      <Text style={styles.noteBadgeLabel}>Notes</Text>
+                                    </View>
+                                  ) : null}
+                                  <View style={styles.photosBadge}>
+                                    <Camera size={14} color="#6366F1" />
+                                    <Text style={styles.photosText}>{v.eventPhotos.length}</Text>
+                                  </View>
                                 </View>
                               </View>
                             </View>
@@ -337,6 +375,59 @@ export default function OwnerCheckInsScreen() {
 
         <View style={{ height: 80 }} />
       </ScrollView>
+
+      <Modal
+        visible={notesVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeNotes}
+      >
+        <View style={styles.modalOverlay} testID="notes-modal-overlay">
+          <View style={styles.modalCard} testID="notes-modal">
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <StickyNote size={18} color="#111827" />
+                <Text style={styles.modalTitle}>Private Notes</Text>
+              </View>
+              <Text style={styles.modalSub}>Only visible to hosts and used during ratings</Text>
+            </View>
+            <TextInput
+              testID="notes-input"
+              placeholder="Type private notes here..."
+              multiline
+              value={notesText}
+              onChangeText={setNotesText}
+              style={styles.textArea}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnSecondary]}
+                onPress={closeNotes}
+                testID="notes-cancel"
+                accessibilityRole="button"
+              >
+                <Text style={styles.modalBtnSecondaryText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnDanger]}
+                onPress={clearNotes}
+                testID="notes-clear"
+                accessibilityRole="button"
+              >
+                <Text style={styles.modalBtnDangerText}>Clear</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnPrimary]}
+                onPress={saveNotes}
+                testID="notes-save"
+                accessibilityRole="button"
+              >
+                <Text style={styles.modalBtnPrimaryText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -642,6 +733,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#6B7280",
   },
+  rightBadgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  noteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  noteBadgeLabel: {
+    fontSize: 12,
+    color: '#111827',
+    fontWeight: '700',
+  },
   photosBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -681,5 +791,80 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
     textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 520,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+  },
+  modalHeader: {
+    marginBottom: 10,
+    gap: 6,
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  modalSub: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  textArea: {
+    minHeight: 120,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    padding: 12,
+    textAlignVertical: 'top' as const,
+    fontSize: 14,
+    color: '#111827',
+    backgroundColor: '#F9FAFB',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+    marginTop: 12,
+  },
+  modalBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  modalBtnSecondary: {
+    backgroundColor: '#F3F4F6',
+  },
+  modalBtnSecondaryText: {
+    color: '#111827',
+    fontWeight: '700',
+  },
+  modalBtnDanger: {
+    backgroundColor: '#FEE2E2',
+  },
+  modalBtnDangerText: {
+    color: '#B91C1C',
+    fontWeight: '700',
+  },
+  modalBtnPrimary: {
+    backgroundColor: '#111827',
+  },
+  modalBtnPrimaryText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

@@ -706,12 +706,27 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
           status: selectedContractorIds.includes(app.contractorId) ? 'accepted' as const : 'rejected' as const,
         }));
 
+        // Auto-create vendor entries for selected contractors
+        const selectedApplications = updatedApplications.filter(app => app.status === 'accepted');
+        const autoVendors: VendorCheckIn[] = selectedApplications.map(app => ({
+          id: `vendor-${app.contractorId}-${Date.now()}`,
+          vendorName: app.contractorName,
+          contractorId: app.contractorId,
+          arrivalConfirmed: false,
+          idVerified: false,
+          halfwayConfirmed: false,
+          endConfirmed: false,
+          eventPhotos: [],
+          fundsReleased: false,
+        }));
+
         return {
           ...event,
           contractorApplications: updatedApplications,
           selectedContractors: selectedContractorIds,
           contractorsHiredAt: new Date().toISOString(),
           status: 'contractors_hired' as const,
+          vendors: autoVendors, // Auto-populate vendors from selected contractors
         };
       }
       return event;
@@ -719,7 +734,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     setEvents(updatedEvents);
     saveEvents(updatedEvents);
 
-    const event = events.find(e => e.id === eventId);
+    const event = updatedEvents.find(e => e.id === eventId);
     if (event && currentUser && userRole === 'business_owner') {
       selectedContractorIds.forEach((contractorId) => {
         const contractor = contractors.find(c => c.id === contractorId);
@@ -757,7 +772,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
             eventTitle: event.title,
             type: 'coordination',
             subject: `Contractors selected for ${event.title}`,
-            content: `The contractors have been selected for \"${event.title}\". You can now coordinate with them and prepare for the event.`,
+            content: `The contractors have been selected for \"${event.title}\". You can now coordinate with them and prepare for the event. Contractors have been automatically added to your vendor management system.`,
             metadata: { contractorCount: selectedContractorIds.length },
           });
         } catch (e) {

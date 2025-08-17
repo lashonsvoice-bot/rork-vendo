@@ -37,8 +37,7 @@ export default function ManageVendorScreen() {
   const { events, updateVendorCheckIn, addVendorToEvent, addVendorReview, updateEvent } = useEvents();
   const event = events.find((e) => e.id === id);
   
-  const [showAddVendor, setShowAddVendor] = useState(false);
-  const [newVendorName, setNewVendorName] = useState("");
+
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState("");
   const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -68,13 +67,7 @@ export default function ManageVendorScreen() {
   const completedVendors = vendors.filter(v => v.endConfirmed && v.fundsReleased).length;
   const totalEarnings = completedVendors * (event.contractorPay + (event.foodStipend || 0) + (event.travelStipend || 0));
 
-  const handleAddVendor = () => {
-    if (newVendorName.trim()) {
-      addVendorToEvent(event.id, newVendorName.trim());
-      setNewVendorName("");
-      setShowAddVendor(false);
-    }
-  };
+
 
   // Manual check-in removed to prevent host dishonesty
   // Contractors must check in via their app with digital passes
@@ -615,22 +608,19 @@ export default function ManageVendorScreen() {
             <Text style={styles.infoInlineText}>Select how stipends are released to contractors for this event.</Text>
           </View>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderTitle}>Vendor Management</Text>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => setShowAddVendor(true)}
-            >
-              <Plus size={16} color="#FFFFFF" />
-              <Text style={styles.addButtonText}>Add Vendor</Text>
-            </TouchableOpacity>
+            <Text style={styles.sectionHeaderTitle}>Contractor Management</Text>
+            <View style={styles.autoPopulateInfo}>
+              <AlertCircle size={14} color="#059669" />
+              <Text style={styles.autoPopulateText}>Auto-populated from hired contractors</Text>
+            </View>
           </View>
 
           {vendors.length === 0 ? (
             <View style={styles.emptyState}>
               <AlertCircle size={48} color="#9CA3AF" />
-              <Text style={styles.emptyStateTitle}>No Vendors Added</Text>
+              <Text style={styles.emptyStateTitle}>No Contractors Assigned</Text>
               <Text style={styles.emptyStateText}>
-                Add vendors to start tracking their check-ins and manage payments.
+                Contractors will appear here automatically when the business owner assigns them to this event.
               </Text>
             </View>
           ) : (
@@ -638,42 +628,7 @@ export default function ManageVendorScreen() {
           )}
         </View>
 
-        <Modal
-          visible={showAddVendor}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowAddVendor(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Add New Vendor</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={newVendorName}
-                onChangeText={setNewVendorName}
-                placeholder="Enter vendor name"
-                autoFocus
-              />
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={styles.modalCancelButton}
-                  onPress={() => {
-                    setShowAddVendor(false);
-                    setNewVendorName("");
-                  }}
-                >
-                  <Text style={styles.modalCancelText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalAddButton}
-                  onPress={handleAddVendor}
-                >
-                  <Text style={styles.modalAddText}>Add Vendor</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+
 
         <Modal
           visible={showPhotoModal}
@@ -1682,5 +1637,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#DC2626",
     lineHeight: 18,
+  },
+  autoPopulateInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  autoPopulateText: {
+    fontSize: 12,
+    color: "#059669",
+    fontWeight: "600",
   },
 });

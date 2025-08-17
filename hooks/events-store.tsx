@@ -365,6 +365,10 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
   const [events, setEvents] = useState<Event[]>(mockEvents);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  type PendingAction = { id: string; type: 'updateVendor'; payload: { eventId: string; vendorId: string; updates: Partial<VendorCheckIn> } };
+  const QUEUE_KEY = 'events_action_queue';
+  const [queue, setQueue] = useState<PendingAction[]>([]);
+
   const { updateContractor: updateContractorUser, contractors, currentUser, userRole, businessOwners } = useUser();
   const { sendMessage } = useCommunication();
 
@@ -374,6 +378,12 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       if (stored) {
         const parsedEvents: Event[] = JSON.parse(stored);
         setEvents([...mockEvents, ...parsedEvents]);
+      }
+      const q = await AsyncStorage.getItem(QUEUE_KEY);
+      if (q) {
+        const parsedQ: PendingAction[] = JSON.parse(q);
+        setQueue(parsedQ);
+        console.log('[Events] Loaded queued actions', parsedQ.length);
       }
     } catch (error) {
       console.error("Error loading events:", error);
@@ -394,6 +404,14 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(customEvents));
     } catch (error) {
       console.error("Error saving events:", error);
+    }
+  }, []);
+
+  const saveQueue = useCallback(async (q: PendingAction[]) => {
+    try {
+      await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+    } catch (e) {
+      console.log('[Events] Failed saving queue', e);
     }
   }, []);
 
@@ -482,7 +500,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     saveEvents(updatedEvents);
   }, [events, currentUser, userRole, sendMessage, businessOwners, saveEvents]);
 
-  const updateVendorCheckIn = useCallback((eventId: string, vendorId: string, updates: Partial<VendorCheckIn>) => {
+  const applyVendorUpdateLocal = useCallback((eventId: string, vendorId: string, updates: Partial<VendorCheckIn>) => {
     const updatedEvents = events.map((event) => {
       if (event.id === eventId) {
         const vendors = event.vendors || [];
@@ -496,6 +514,38 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     setEvents(updatedEvents);
     saveEvents(updatedEvents);
   }, [events, saveEvents]);
+
+  const isOnline = typeof navigator !== 'undefined' && (navigator as unknown as { onLine?: boolean }).onLine !== undefined ? ((navigator as unknown as { onLine?: boolean }).onLine ?? true) : true;
+
+  const processQueue = useCallback(async () => {
+    if (!queue.length) return;
+    console.log('[Events] Processing queue', queue.length);
+    setQueue([]);
+    await saveQueue([]);
+  }, [queue, saveQueue]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const onOnline = () => {
+        console.log('[Events] Online detected, processing queue');
+        processQueue();
+      };
+      window.addEventListener('online', onOnline);
+      return () => window.removeEventListener('online', onOnline);
+    }
+    return undefined;
+  }, [processQueue]);
+
+  const updateVendorCheckIn = useCallback((eventId: string, vendorId: string, updates: Partial<VendorCheckIn>) => {
+    applyVendorUpdateLocal(eventId, vendorId, updates);
+    if (!isOnline) {
+      const action: PendingAction = { id: Date.now().toString(), type: 'updateVendor', payload: { eventId, vendorId, updates } };
+      const next = [...queue, action];
+      setQueue(next);
+      saveQueue(next);
+      console.log('[Events] Queued action (offline)', action);
+    }
+  }, [applyVendorUpdateLocal, isOnline, queue, saveQueue]);
 
   const addVendorReview = useCallback((eventId: string, vendorId: string, review: Omit<VendorReview, 'reviewDate' | 'isRehirable'>) => {
     const reviewWithDefaults: VendorReview = {

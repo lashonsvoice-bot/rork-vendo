@@ -1,9 +1,9 @@
-import React, { useMemo, useCallback, useState } from "react";
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Modal, TextInput } from "react-native";
+import React, { useMemo, useCallback, useState, useRef, useEffect } from "react";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, Modal, TextInput, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useEvents } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
-import { CheckCircle, Clock, Camera, User, Calendar, MapPin, Eye, Plus, Check, Lock, StickyNote } from "lucide-react-native";
+import { CheckCircle, Clock, Camera, User, Calendar, MapPin, Eye, Plus, Check, Lock, StickyNote, Search, Scan, ListChecks, CheckSquare } from "lucide-react-native";
 
 export default function OwnerCheckInsScreen() {
   const router = useRouter();
@@ -71,6 +71,17 @@ export default function OwnerCheckInsScreen() {
   const [activeEventId, setActiveEventId] = useState<string | null>(null);
   const [notesText, setNotesText] = useState<string>("");
 
+  const [search, setSearch] = useState<string>("");
+  const [debounced, setDebounced] = useState<string>("");
+  const searchRef = useRef<TextInput | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<{ eventId: string; key: string } | null>(null);
+  const [scanVisible, setScanVisible] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handle = setTimeout(() => setDebounced(search.trim().toLowerCase()), 250);
+    return () => clearTimeout(handle);
+  }, [search]);
+
   const FilterPill = useCallback(({ label, value }: { label: string; value: 'all' | 'unassigned' | 'checkedin' | 'midway' | 'completed' }) => {
     const active = filter === value;
     return (
@@ -85,6 +96,34 @@ export default function OwnerCheckInsScreen() {
       </TouchableOpacity>
     );
   }, [filter]);
+
+  const getSelectedGroupList = useCallback(() => {
+    if (!selectedGroup) return [] as import("@/hooks/events-store").VendorCheckIn[];
+    const event = events.find(e => e.id === selectedGroup.eventId);
+    if (!event) return [] as import("@/hooks/events-store").VendorCheckIn[];
+    const all = (event.vendors ?? []);
+    const list = all.filter(v => (v.tableLabel?.trim() || 'Unassigned') === selectedGroup.key);
+    return list;
+  }, [selectedGroup, events]);
+
+  const footerPlusOne = useCallback(() => {
+    const list = getSelectedGroupList();
+    const next = list.find(v => !v.arrivalConfirmed);
+    if (next) toggleArrival(selectedGroup?.eventId ?? '', next.id, false);
+  }, [getSelectedGroupList, toggleArrival, selectedGroup]);
+
+  const footerMarkMidway = useCallback(() => {
+    const list = getSelectedGroupList();
+    const next = list.find(v => v.arrivalConfirmed && !v.halfwayConfirmed);
+    if (next) toggleHalfway(selectedGroup?.eventId ?? '', next.id, false);
+  }, [getSelectedGroupList, toggleHalfway, selectedGroup]);
+
+  const footerCompleteTable = useCallback(() => {
+    const list = getSelectedGroupList();
+    list.forEach(v => {
+      if (!v.endConfirmed) toggleCompleted(selectedGroup?.eventId ?? '', v.id, false);
+    });
+  }, [getSelectedGroupList, toggleCompleted, selectedGroup]);
 
   const openNotes = useCallback((eventId: string, vendorId: string, currentNotes?: string) => {
     setActiveEventId(eventId);
@@ -117,6 +156,14 @@ export default function OwnerCheckInsScreen() {
       <View style={styles.headerBar}>
         <Text style={styles.headerTitle}>Check-ins Overview</Text>
         <Text style={styles.headerSub}>Monitor host progress across your events</Text>
+        <TextInput
+          ref={searchRef}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search vendors, tables, roles..."
+          style={styles.searchBox}
+          testID="global-search"
+        />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterRowContent}>
           <FilterPill label="All" value="all" />
           <FilterPill label="Unassigned" value="unassigned" />
@@ -129,6 +176,14 @@ export default function OwnerCheckInsScreen() {
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false} testID="owner-checkins-list">
         {myEvents.map(event => {
           let vendors = event.vendors ?? [];
+
+          const matchQuery = (v: import("@/hooks/events-store").VendorCheckIn) => {
+            if (!debounced) return true;
+            const name = v.vendorName?.toLowerCase() ?? '';
+            const table = v.tableLabel?.toLowerCase() ?? '';
+            const role = '';
+            return name.includes(debounced) || table.includes(debounced) || role.includes(debounced);
+          };
           const total = vendors.length;
           const checkIns = vendors.filter(v => v.arrivalConfirmed).length;
           const midway = vendors.filter(v => v.halfwayConfirmed).length;
@@ -144,7 +199,7 @@ export default function OwnerCheckInsScreen() {
             return true;
           };
 
-          vendors = vendors.filter(matchesFilter);
+          vendors = vendors.filter(matchesFilter).filter(matchQuery);
 
           const groups = vendors.reduce<Record<string, import("@/hooks/events-store").VendorCheckIn[]>>((acc, v) => {
             const key = v.tableLabel?.trim() || 'Unassigned';
@@ -240,7 +295,12 @@ export default function OwnerCheckInsScreen() {
                     const hasNext = list.some(v => !v.arrivalConfirmed);
                     return (
                       <View key={`${event.id}-${groupKey}`} style={styles.groupBlock}>
-                        <View style={styles.groupHeader}>
+                        <TouchableOpacity
+                          style={[styles.groupHeader, selectedGroup?.eventId === event.id && selectedGroup?.key === groupKey ? styles.groupHeaderSelected : undefined]}
+                          onPress={() => setSelectedGroup(prev => (prev && prev.eventId === event.id && prev.key === groupKey ? null : { eventId: event.id, key: groupKey }))}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Select group ${groupKey}`}
+                        >
                           <Text style={styles.groupTitle}>{groupKey}</Text>
                           <View style={styles.groupKpis}>
                             <View style={styles.groupKpi}>
@@ -267,7 +327,7 @@ export default function OwnerCheckInsScreen() {
                             <Plus size={14} color="#FFFFFF" />
                             <Text style={styles.plusOneSmallText}>+1</Text>
                           </TouchableOpacity>
-                        </View>
+                        </TouchableOpacity>
 
                         {[...list]
                           .sort((a, b) => {
@@ -287,7 +347,25 @@ export default function OwnerCheckInsScreen() {
                                   <User size={16} color="#6366F1" />
                                 </View>
                                 <View style={styles.vendorInfo}>
-                                  <Text style={styles.vendorName}>{v.vendorName}</Text>
+                                  <Text style={styles.vendorName}>
+                                    {(() => {
+                                      const name = v.vendorName ?? '';
+                                      if (!debounced) return name;
+                                      const lower = name.toLowerCase();
+                                      const idx = lower.indexOf(debounced);
+                                      if (idx === -1) return name;
+                                      const before = name.slice(0, idx);
+                                      const match = name.slice(idx, idx + debounced.length);
+                                      const after = name.slice(idx + debounced.length);
+                                      return (
+                                        <Text>
+                                          <Text>{before}</Text>
+                                          <Text style={styles.highlight}>{match}</Text>
+                                          <Text>{after}</Text>
+                                        </Text>
+                                      ) as unknown as string;
+                                    })()}
+                                  </Text>
                                   <TouchableOpacity
                                     onPress={() => {
                                       if (!v.arrivalConfirmed) return toggleArrival(event.id, v.id, v.arrivalConfirmed);
@@ -428,6 +506,84 @@ export default function OwnerCheckInsScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={scanVisible} transparent animationType="fade" onRequestClose={() => setScanVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { padding: 0 }]}> 
+            <View style={{ padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Scan size={18} color="#111827" />
+                <Text style={styles.modalTitle}>Scan</Text>
+              </View>
+              <TouchableOpacity style={[styles.modalBtn, styles.modalBtnSecondary]} onPress={() => setScanVisible(false)}>
+                <Text style={styles.modalBtnSecondaryText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ height: 420, backgroundColor: '#000' }}>
+              {(
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#fff' }}>Camera preview not implemented for web demo</Text>
+                </View>
+              )}
+            </View>
+            <View style={{ padding: 12, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+              <TouchableOpacity style={[styles.modalBtn, styles.modalBtnPrimary]} onPress={() => { setScanVisible(false); searchRef.current?.focus(); }}>
+                <Text style={styles.modalBtnPrimaryText}>Use Search</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <View style={styles.stickyFooter} testID="sticky-footer">
+        <TouchableOpacity
+          style={styles.footerBtn}
+          onPress={() => { searchRef.current?.focus(); }}
+          onLongPress={() => setScanVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Scan or Find"
+          testID="footer-scan-find"
+        >
+          <Search size={18} color="#111827" />
+          <Text style={styles.footerBtnText}>Scan/Find</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.footerBtn, styles.footerPrimary]}
+          onPress={footerPlusOne}
+          accessibilityRole="button"
+          accessibilityLabel="Plus one check-in"
+          testID="footer-plus-one"
+          disabled={!selectedGroup}
+        >
+          <Plus size={18} color="#FFFFFF" />
+          <Text style={styles.footerPrimaryText}>+1 Check-in</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.footerBtn}
+          onPress={footerMarkMidway}
+          accessibilityRole="button"
+          accessibilityLabel="Mark midway for table"
+          testID="footer-mark-midway"
+          disabled={!selectedGroup}
+        >
+          <Clock size={18} color="#111827" />
+          <Text style={styles.footerBtnText}>Mark Midway</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.footerBtn}
+          onPress={footerCompleteTable}
+          accessibilityRole="button"
+          accessibilityLabel="Complete table"
+          testID="footer-complete-table"
+          disabled={!selectedGroup}
+        >
+          <CheckSquare size={18} color="#111827" />
+          <Text style={styles.footerBtnText}>Complete</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -441,6 +597,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
+  },
+  searchBox: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    fontSize: 14,
+    color: '#111827',
+  },
+  highlight: {
+    backgroundColor: '#FEF3C7',
+    color: '#92400E',
+    fontWeight: '700',
   },
   headerTitle: {
     fontSize: 22,
@@ -481,6 +653,9 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
+  },
+  groupHeaderSelected: {
+    backgroundColor: '#EEF2FF',
   },
   eventCard: {
     backgroundColor: "#FFFFFF",
@@ -780,6 +955,43 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: "center",
     padding: 40,
+  },
+  stickyFooter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    gap: 8,
+  },
+  footerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  footerPrimary: {
+    backgroundColor: '#6366F1',
+  },
+  footerBtnText: {
+    color: '#111827',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  footerPrimaryText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 12,
   },
   emptyTitle: {
     fontSize: 18,

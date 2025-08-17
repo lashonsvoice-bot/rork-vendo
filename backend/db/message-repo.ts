@@ -15,12 +15,28 @@ export const MessageSchema = z.object({
   createdAt: z.string(),
   read: z.boolean().default(false),
   readAt: z.string().optional(),
+  connectionType: z.enum(['proposal', 'reverse_proposal', 'hired']).optional(),
+  eventEndTime: z.string().optional(),
+  messagingAllowedUntil: z.string().optional(),
 });
 
 export type Message = z.infer<typeof MessageSchema>;
 
-const store: { messages: Message[] } = {
+export interface UserConnection {
+  id: string;
+  userId1: string;
+  userId2: string;
+  eventId: string;
+  connectionType: 'proposal' | 'reverse_proposal' | 'hired';
+  connectedAt: string;
+  eventEndTime?: string;
+  messagingAllowedUntil?: string;
+  isActive: boolean;
+}
+
+const store: { messages: Message[]; connections: UserConnection[] } = {
   messages: [],
+  connections: [],
 };
 
 export const messageRepo = {
@@ -42,5 +58,73 @@ export const messageRepo = {
   },
   clearAll() {
     store.messages = [];
+    store.connections = [];
+  },
+  
+  // Connection management
+  addConnection(connection: UserConnection) {
+    store.connections.push(connection);
+    return connection;
+  },
+  
+  getConnection(userId1: string, userId2: string, eventId?: string): UserConnection | null {
+    return store.connections.find(c => 
+      ((c.userId1 === userId1 && c.userId2 === userId2) || 
+       (c.userId1 === userId2 && c.userId2 === userId1)) &&
+      (!eventId || c.eventId === eventId) &&
+      c.isActive
+    ) || null;
+  },
+  
+  getUserConnections(userId: string): UserConnection[] {
+    return store.connections.filter(c => 
+      (c.userId1 === userId || c.userId2 === userId) && c.isActive
+    );
+  },
+  
+  canUsersMessage(fromUserId: string, toUserId: string, eventId?: string): { canMessage: boolean; reason?: string } {
+    const connection = this.getConnection(fromUserId, toUserId, eventId);
+    
+    if (!connection) {
+      return { canMessage: false, reason: 'Users are not connected through any event proposal or hiring' };
+    }
+    
+    // Check if messaging period has expired
+    if (connection.messagingAllowedUntil) {
+      const now = new Date();
+      const allowedUntil = new Date(connection.messagingAllowedUntil);
+      
+      if (now > allowedUntil) {
+        return { canMessage: false, reason: 'Messaging period has expired (48 hours after event completion)' };
+      }
+    }
+    
+    return { canMessage: true };
+  },
+  
+  updateConnectionForEventEnd(eventId: string, eventEndTime: string) {
+    const eventConnections = store.connections.filter(c => c.eventId === eventId);
+    
+    eventConnections.forEach(connection => {
+      // Set messaging allowed until 48 hours after event end for contractor connections
+      const endTime = new Date(eventEndTime);
+      const messagingCutoff = new Date(endTime.getTime() + (48 * 60 * 60 * 1000)); // 48 hours later
+      
+      connection.eventEndTime = eventEndTime;
+      connection.messagingAllowedUntil = messagingCutoff.toISOString();
+    });
+  },
+  
+  deactivateExpiredConnections() {
+    const now = new Date();
+    
+    store.connections.forEach(connection => {
+      if (connection.messagingAllowedUntil) {
+        const allowedUntil = new Date(connection.messagingAllowedUntil);
+        if (now > allowedUntil) {
+          connection.isActive = false;
+        }
+      }
+    });
   },
 };

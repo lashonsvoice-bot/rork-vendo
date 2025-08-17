@@ -4,7 +4,7 @@ import profileRoute from "./routes/profile/get/route";
 import getProfileByIdRoute, { getPublicProfileByIdProcedure } from "./routes/profile/get-by-id/route";
 import updateProfileRoute from "./routes/profile/update/route";
 import searchProfilesRoute, { searchPublicProfilesProcedure } from "./routes/profile/search/route";
-import sendMessageRoute from "./routes/messages/send/route";
+import sendMessageRoute, { createConnectionProcedure, updateConnectionsForEventEndProcedure } from "./routes/messages/send/route";
 import getMessagesRoute from "./routes/messages/get/route";
 import markMessageAsReadRoute from "./routes/messages/mark-read/route";
 import sendExternalProposalRoute, { 
@@ -120,6 +120,8 @@ export const appRouter = createTRPCRouter({
     send: sendMessageRoute,
     get: getMessagesRoute,
     markAsRead: markMessageAsReadRoute,
+    createConnection: createConnectionProcedure,
+    updateConnectionsForEventEnd: updateConnectionsForEventEndProcedure,
   }),
   proposals: createTRPCRouter({
     sendExternal: sendExternalProposalRoute,

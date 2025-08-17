@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
 import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
+import { messageRepo } from "@/backend/db/message-repo";
 import sgMail from "@sendgrid/mail";
 
 const BRAND_NAME = '[[YOUR BRAND NAME]]';
@@ -174,6 +175,20 @@ export const connectHostWithInvitationCodeProcedure = publicProcedure
       if (!connectedProposal) {
         throw new Error('Invalid invitation code or proposal not found');
       }
+      
+      // Create messaging connection between business owner and host
+      const connection = {
+        id: Date.now().toString(),
+        userId1: connectedProposal.businessOwnerId,
+        userId2: input.hostId,
+        eventId: connectedProposal.eventId,
+        connectionType: 'proposal' as const,
+        connectedAt: new Date().toISOString(),
+        isActive: true,
+      };
+      
+      messageRepo.addConnection(connection);
+      console.log('[ConnectHost] Messaging connection created:', connection.id);
       
       console.log('[ConnectHost] Host connected successfully:', connectedProposal.id);
       return {
@@ -703,6 +718,22 @@ export const connectBusinessOwnerWithInvitationCodeProcedure = publicProcedure
       
       if (!connectedProposal) {
         throw new Error('Invalid invitation code or proposal not found');
+      }
+      
+      // Create messaging connection between host and business owner
+      if (connectedProposal.hostId) {
+        const connection = {
+          id: Date.now().toString(),
+          userId1: connectedProposal.hostId,
+          userId2: input.businessOwnerId,
+          eventId: connectedProposal.eventId,
+          connectionType: 'reverse_proposal' as const,
+          connectedAt: new Date().toISOString(),
+          isActive: true,
+        };
+        
+        messageRepo.addConnection(connection);
+        console.log('[ConnectBusinessOwner] Messaging connection created:', connection.id);
       }
       
       console.log('[ConnectBusinessOwner] Business owner connected successfully:', connectedProposal.id);

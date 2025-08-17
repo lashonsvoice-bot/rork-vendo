@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
+import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
 
 const sendExternalProposalSchema = z.object({
   businessOwnerId: z.string(),
@@ -17,6 +18,79 @@ const sendExternalProposalSchema = z.object({
   eventDate: z.string(),
   eventLocation: z.string(),
 });
+
+// Procedure to connect host using invitation code
+export const connectHostWithInvitationCodeProcedure = publicProcedure
+  .input(z.object({
+    invitationCode: z.string().min(1),
+    hostId: z.string().min(1),
+  }))
+  .mutation(async ({ input }) => {
+    console.log('[ConnectHost] Connecting host with invitation code:', input.invitationCode);
+    
+    try {
+      const connectedProposal = await businessDirectoryRepo.connectHostToExternalProposal(
+        input.invitationCode,
+        input.hostId
+      );
+      
+      if (!connectedProposal) {
+        throw new Error('Invalid invitation code or proposal not found');
+      }
+      
+      console.log('[ConnectHost] Host connected successfully:', connectedProposal.id);
+      return {
+        success: true,
+        proposal: connectedProposal,
+        message: `Successfully connected to proposal from ${connectedProposal.businessName}`,
+      };
+    } catch (error) {
+      console.error('[ConnectHost] Error connecting host:', error);
+      throw error;
+    }
+  });
+
+// Procedure to find proposal by invitation code (for preview)
+export const findProposalByCodeProcedure = publicProcedure
+  .input(z.object({
+    invitationCode: z.string().min(1),
+  }))
+  .query(async ({ input }) => {
+    console.log('[FindProposal] Looking up invitation code:', input.invitationCode);
+    
+    try {
+      const proposal = await businessDirectoryRepo.findExternalProposalByCode(input.invitationCode);
+      
+      if (!proposal) {
+        return {
+          found: false,
+          message: 'Invitation code not found or expired',
+        };
+      }
+      
+      return {
+        found: true,
+        proposal: {
+          businessName: proposal.businessName,
+          businessOwnerName: proposal.businessOwnerName,
+          eventTitle: proposal.eventTitle,
+          eventDate: proposal.eventDate,
+          eventLocation: proposal.eventLocation,
+          proposedAmount: proposal.proposedAmount,
+          contractorsNeeded: proposal.contractorsNeeded,
+          message: proposal.message,
+          status: proposal.status,
+        },
+        message: `Invitation from ${proposal.businessName} for ${proposal.eventTitle}`,
+      };
+    } catch (error) {
+      console.error('[FindProposal] Error finding proposal:', error);
+      return {
+        found: false,
+        message: 'Error looking up invitation code',
+      };
+    }
+  });
 
 const sendExternalProposalProcedure = publicProcedure
   .input(sendExternalProposalSchema)
@@ -44,7 +118,10 @@ const sendExternalProposalProcedure = publicProcedure
       errors: [] as string[],
     };
 
-    // Email content
+    // Generate unique invitation code for the host
+    const invitationCode = `HOST_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    
+    // Email content with invitation code
     const replyToEmail = businessOwnerContactEmail || 'noreply@yourdomain.com';
     const emailContent = `
 Hello ${hostName},
@@ -73,6 +150,11 @@ To review this proposal and manage your events more efficiently, we invite you t
 
 Download the app: [App Store Link] | [Google Play Link]
 
+🔑 IMPORTANT: When you sign up, use this invitation code to connect to your proposal:
+Invitation Code: ${invitationCode}
+
+This code will automatically connect you to ${businessOwnerName} and load your proposal details.
+
 If you prefer to respond via email, please reply to: ${replyToEmail}
 
 Best regards,
@@ -80,8 +162,8 @@ ${businessOwnerName}
 ${businessName}
     `;
 
-    // SMS content (shorter version)
-    const smsContent = `Hi ${hostName}! ${businessName} sent you a proposal for "${eventTitle}" (${eventDate}). Amount: $${proposedAmount}, ${contractorsNeeded} contractors needed. Download our app to review: [App Link] or reply to this text.`;
+    // SMS content (shorter version) with invitation code
+    const smsContent = `Hi ${hostName}! ${businessName} sent you a proposal for "${eventTitle}" (${eventDate}). Amount: ${proposedAmount}, ${contractorsNeeded} contractors needed. Download our app and use code: ${invitationCode} to connect. [App Link]`;
 
     // Send email if provided
     if (hostEmail) {
@@ -136,7 +218,7 @@ ${businessName}
       }
     }
 
-    // Store the proposal in database (in a real app)
+    // Store the proposal in database with invitation code
     const proposalRecord = {
       id: `proposal_${Date.now()}`,
       businessOwnerId,
@@ -157,19 +239,31 @@ ${businessName}
       createdAt: new Date().toISOString(),
       emailSent: results.emailSent,
       smsSent: results.smsSent,
+      invitationCode, // This will connect the host when they sign up
+      isExternal: true, // Flag to identify external proposals
     };
+
+    // Store in business directory as external proposal
+    try {
+      await businessDirectoryRepo.storeExternalProposal(proposalRecord);
+      console.log('💾 EXTERNAL PROPOSAL STORED:', proposalRecord.id);
+    } catch (error) {
+      console.error('Failed to store external proposal:', error);
+      results.errors.push('Failed to store proposal record');
+    }
 
     console.log('💾 PROPOSAL RECORD CREATED:', proposalRecord);
 
     return {
       success: results.emailSent || results.smsSent,
       proposalId: proposalRecord.id,
+      invitationCode,
       emailSent: results.emailSent,
       smsSent: results.smsSent,
       errors: results.errors,
       message: results.errors.length > 0 
         ? `Proposal sent with some issues: ${results.errors.join(', ')}`
-        : 'Proposal sent successfully!'
+        : `Proposal sent successfully! Host invitation code: ${invitationCode}`
     };
   });
 

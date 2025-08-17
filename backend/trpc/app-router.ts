@@ -7,7 +7,7 @@ import searchProfilesRoute, { searchPublicProfilesProcedure } from "./routes/pro
 import sendMessageRoute from "./routes/messages/send/route";
 import getMessagesRoute from "./routes/messages/get/route";
 import markMessageAsReadRoute from "./routes/messages/mark-read/route";
-import sendExternalProposalRoute from "./routes/proposals/send-external/route";
+import sendExternalProposalRoute, { connectHostWithInvitationCodeProcedure, findProposalByCodeProcedure } from "./routes/proposals/send-external/route";
 import { submitW9Procedure, getW9Procedure, updateW9StatusProcedure, checkW9RequiredProcedure } from "./routes/tax/w9/route";
 import { recordPaymentProcedure, getContractorPaymentsProcedure, getBusinessOwnerPaymentsProcedure } from "./routes/tax/payments/route";
 import { generate1099Procedure, update1099StatusProcedure, getBusinessOwner1099sProcedure } from "./routes/tax/1099/route";
@@ -115,6 +115,8 @@ export const appRouter = createTRPCRouter({
   }),
   proposals: createTRPCRouter({
     sendExternal: sendExternalProposalRoute,
+    connectHost: connectHostWithInvitationCodeProcedure,
+    findByCode: findProposalByCodeProcedure,
   }),
   tax: createTRPCRouter({
     w9: createTRPCRouter({

@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Stack } from 'expo-router';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Platform, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Building2, UserCheck, Store, Users, Mail } from 'lucide-react-native';
+import { Building2, UserCheck, Store, Users, Mail, Key } from 'lucide-react-native';
 import { useAuth, type AuthRole } from '@/hooks/auth-store';
+import { trpcClient } from '@/lib/trpc';
 
 type RoleKey = 'business_owner' | 'contractor' | 'event_host' | 'guest';
 
@@ -50,6 +51,32 @@ export default function RoleSelectionScreen() {
   const { login, isLoading } = useAuth();
   const [selected, setSelected] = useState<RoleKey | null>(null);
   const [email, setEmail] = useState<string>('');
+  const [invitationCode, setInvitationCode] = useState<string>('');
+  const [proposalPreview, setProposalPreview] = useState<any>(null);
+  const [isCheckingCode, setIsCheckingCode] = useState<boolean>(false);
+
+  const checkInvitationCode = async (code: string) => {
+    if (!code.trim()) {
+      setProposalPreview(null);
+      return;
+    }
+    
+    setIsCheckingCode(true);
+    try {
+      const result = await trpcClient.proposals.findByCode.query({ invitationCode: code.trim() });
+      if (result.found) {
+        setProposalPreview(result.proposal);
+      } else {
+        setProposalPreview(null);
+        Alert.alert('Invalid Code', result.message);
+      }
+    } catch (error) {
+      console.error('[RoleSelection] Error checking invitation code:', error);
+      setProposalPreview(null);
+    } finally {
+      setIsCheckingCode(false);
+    }
+  };
 
   const onContinue = async () => {
     if (!selected) {
@@ -64,7 +91,28 @@ export default function RoleSelectionScreen() {
     
     try {
       console.log('[RoleSelection] Logging in with role:', selected);
-      await login(email.trim(), selected as AuthRole);
+      const user = await login(email.trim(), selected as AuthRole);
+      
+      // If event host with invitation code, connect them to the proposal
+      if (selected === 'event_host' && invitationCode.trim() && user) {
+        try {
+          const connectResult = await trpcClient.proposals.connectHost.mutate({
+            invitationCode: invitationCode.trim(),
+            hostId: user.id,
+          });
+          
+          if (connectResult.success) {
+            Alert.alert(
+              'Connected Successfully!',
+              `You've been connected to the proposal from ${connectResult.proposal.businessName}. You can now manage this event in your dashboard.`,
+              [{ text: 'Great!', style: 'default' }]
+            );
+          }
+        } catch (error) {
+          console.error('[RoleSelection] Error connecting host:', error);
+          Alert.alert('Connection Error', 'Failed to connect to the proposal, but your account was created successfully.');
+        }
+      }
     } catch (e: any) {
       console.error('[RoleSelection] Login failed:', e);
       Alert.alert('Error', e?.message ?? 'Login failed');
@@ -93,6 +141,47 @@ export default function RoleSelectionScreen() {
               onChangeText={setEmail}
             />
           </View>
+          
+          {selected === 'event_host' && (
+            <View style={styles.invitationSection}>
+              <Text style={styles.invitationLabel}>Have an invitation code? (Optional)</Text>
+              <View style={styles.inputRow}>
+                <Key size={20} color="#6B7280" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter invitation code"
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="characters"
+                  value={invitationCode}
+                  onChangeText={(text) => {
+                    setInvitationCode(text);
+                    if (text.length >= 8) {
+                      checkInvitationCode(text);
+                    } else {
+                      setProposalPreview(null);
+                    }
+                  }}
+                />
+              </View>
+              
+              {isCheckingCode && (
+                <Text style={styles.checkingText}>Checking invitation code...</Text>
+              )}
+              
+              {proposalPreview && (
+                <View style={styles.proposalPreview}>
+                  <Text style={styles.previewTitle}>✅ Invitation Found!</Text>
+                  <Text style={styles.previewText}>
+                    <Text style={styles.previewBold}>{proposalPreview.businessName}</Text> wants to participate in your event 
+                    <Text style={styles.previewBold}>&quot;{proposalPreview.eventTitle}&quot;</Text>
+                  </Text>
+                  <Text style={styles.previewDetails}>
+                    📅 {proposalPreview.eventDate} • 💰 ${proposalPreview.proposedAmount} • 👥 {proposalPreview.contractorsNeeded} contractors
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={styles.cards}>
@@ -148,6 +237,36 @@ const styles = StyleSheet.create({
   form: { paddingHorizontal: 20, marginTop: 16 },
   inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 12, paddingVertical: 8, gap: 8, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' },
   input: { flex: 1, paddingVertical: 10, color: '#111827', fontSize: 16 },
+  invitationSection: { marginTop: 16 },
+  invitationLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
+  checkingText: { fontSize: 12, color: '#6B7280', marginTop: 8, fontStyle: 'italic' },
+  proposalPreview: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#10B981',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  previewTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10B981',
+    marginBottom: 4,
+  },
+  previewText: {
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  previewBold: {
+    fontWeight: '600',
+  },
+  previewDetails: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
   cards: { paddingHorizontal: 20, marginTop: 20, gap: 12 },
   card: {
     flexDirection: 'row',

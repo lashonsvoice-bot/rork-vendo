@@ -81,6 +81,7 @@ Best regards,
     smsSent: boolean;
     proposalId: string;
     message: string;
+    invitationCode?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -283,6 +284,19 @@ Best regards,
             </View>
             
             <Text style={styles.resultMessage}>{sendResults.message}</Text>
+            
+            {sendResults.success && sendResults.invitationCode && (
+              <View style={styles.invitationCodeSection}>
+                <Text style={styles.invitationCodeLabel}>🔑 Host Invitation Code:</Text>
+                <View style={styles.invitationCodeBox}>
+                  <Text style={styles.invitationCodeText}>{sendResults.invitationCode}</Text>
+                </View>
+                <Text style={styles.invitationCodeNote}>
+                  The host will use this code when they sign up to automatically connect to your proposal.
+                  This code has been included in the email and SMS sent to the host.
+                </Text>
+              </View>
+            )}
             
             <View style={styles.resultDetails}>
               <View style={styles.resultItem}>
@@ -752,5 +766,40 @@ const styles = StyleSheet.create({
     color: '#374151',
     fontSize: 12,
     fontWeight: '500',
+  },
+  invitationCodeSection: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 12,
+  },
+  invitationCodeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400E',
+    marginBottom: 8,
+  },
+  invitationCodeBox: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderRadius: 6,
+    padding: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  invitationCodeText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#92400E',
+    letterSpacing: 2,
+  },
+  invitationCodeNote: {
+    fontSize: 12,
+    color: '#92400E',
+    lineHeight: 16,
+    textAlign: 'center',
   },
 });

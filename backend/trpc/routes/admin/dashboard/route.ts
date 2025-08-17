@@ -84,6 +84,81 @@ export const getAnalyticsProcedure = adminProcedure.query(async () => {
   
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const lastWeekStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  
+  // Calculate contractor applications this month
+  const contractorApplicationsThisMonth = events.reduce((total: number, event: any) => {
+    if (!event.contractorApplications) return total;
+    return total + event.contractorApplications.filter((app: any) => {
+      const appliedDate = new Date(app.appliedAt);
+      return appliedDate >= monthStart;
+    }).length;
+  }, 0);
+  
+  // Calculate total revenue from all events (contractor pay + host fees + stipends)
+  const totalEventRevenue = events.reduce((total: number, event: any) => {
+    if (event.status === 'completed' || event.status === 'active') {
+      const contractorPay = (event.contractorPay || 0) * (event.contractorsNeeded || 0);
+      const hostFee = event.hostSupervisionFee || 0;
+      const foodStipend = (event.foodStipend || 0) * (event.contractorsNeeded || 0);
+      const travelStipend = (event.travelStipend || 0) * (event.contractorsNeeded || 0);
+      return total + contractorPay + hostFee + foodStipend + travelStipend;
+    }
+    return total;
+  }, 0);
+  
+  // Calculate monthly revenue from events created this month
+  const monthlyEventRevenue = events
+    .filter((e: any) => {
+      const eventDate = new Date(e.createdAt || e.date);
+      return eventDate >= monthStart && (e.status === 'completed' || e.status === 'active');
+    })
+    .reduce((total: number, event: any) => {
+      const contractorPay = (event.contractorPay || 0) * (event.contractorsNeeded || 0);
+      const hostFee = event.hostSupervisionFee || 0;
+      const foodStipend = (event.foodStipend || 0) * (event.contractorsNeeded || 0);
+      const travelStipend = (event.travelStipend || 0) * (event.contractorsNeeded || 0);
+      return total + contractorPay + hostFee + foodStipend + travelStipend;
+    }, 0);
+  
+  // Calculate weekly growth metrics
+  const thisWeekUsers = users.filter((u: any) => {
+    const createdDate = new Date(u.createdAt);
+    return createdDate >= weekStart;
+  }).length;
+  
+  const lastWeekUsers = users.filter((u: any) => {
+    const createdDate = new Date(u.createdAt);
+    return createdDate >= lastWeekStart && createdDate < weekStart;
+  }).length;
+  
+  const thisWeekRevenue = events
+    .filter((e: any) => {
+      const eventDate = new Date(e.createdAt || e.date);
+      return eventDate >= weekStart && (e.status === 'completed' || e.status === 'active');
+    })
+    .reduce((total: number, event: any) => {
+      const contractorPay = (event.contractorPay || 0) * (event.contractorsNeeded || 0);
+      const hostFee = event.hostSupervisionFee || 0;
+      return total + contractorPay + hostFee;
+    }, 0);
+  
+  const lastWeekRevenue = events
+    .filter((e: any) => {
+      const eventDate = new Date(e.createdAt || e.date);
+      return eventDate >= lastWeekStart && eventDate < weekStart && (e.status === 'completed' || e.status === 'active');
+    })
+    .reduce((total: number, event: any) => {
+      const contractorPay = (event.contractorPay || 0) * (event.contractorsNeeded || 0);
+      const hostFee = event.hostSupervisionFee || 0;
+      return total + contractorPay + hostFee;
+    }, 0);
+  
+  // Calculate growth percentage
+  const userGrowth = lastWeekUsers > 0 ? ((thisWeekUsers - lastWeekUsers) / lastWeekUsers) * 100 : 0;
+  const revenueGrowth = lastWeekRevenue > 0 ? ((thisWeekRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 : 0;
+  const combinedGrowth = (userGrowth + revenueGrowth) / 2;
   
   const analytics: AdminAnalytics = {
     totalUsers: users.length,
@@ -92,10 +167,12 @@ export const getAnalyticsProcedure = adminProcedure.query(async () => {
     totalEvents: events.length,
     activeEvents: events.filter((e: any) => e.status === "active").length,
     cancelledEvents: events.filter((e: any) => e.status === "cancelled").length,
-    totalRevenue: subscriptions.reduce((sum: number, s: any) => sum + (s.totalPaid || 0), 0),
-    monthlyRevenue: subscriptions
+    totalRevenue: totalEventRevenue + subscriptions.reduce((sum: number, s: any) => sum + (s.totalPaid || 0), 0),
+    monthlyRevenue: monthlyEventRevenue + subscriptions
       .filter((s: any) => s.lastPaymentDate && new Date(s.lastPaymentDate) >= monthStart)
       .reduce((sum: number, s: any) => sum + (s.monthlyAmount || 0), 0),
+    contractorApplicationsThisMonth,
+    weeklyGrowth: combinedGrowth,
     subscriptions: {
       active: subscriptions.filter((s: any) => s.status === "active").length,
       cancelled: subscriptions.filter((s: any) => s.status === "cancelled").length,

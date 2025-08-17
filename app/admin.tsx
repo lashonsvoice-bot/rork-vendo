@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useAuth } from '@/hooks/auth-store';
 import { trpc } from '@/lib/trpc';
 import { 
@@ -24,7 +24,8 @@ import {
   UserCheck,
   Calendar,
   TrendingUp,
-  Shield,
+  FileText,
+  Briefcase,
 } from 'lucide-react-native';
 
 const theme = {
@@ -57,7 +58,7 @@ const theme = {
 type TabType = 'analytics' | 'users' | 'appeals' | 'activity';
 
 export default function AdminDashboard() {
-  const { user, signout } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('analytics');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -73,7 +74,7 @@ export default function AdminDashboard() {
           <AlertTriangle size={48} color={theme.error} />
           <Text style={styles.errorTitle}>Access Denied</Text>
           <Text style={styles.errorText}>You don&apos;t have permission to access this page.</Text>
-          <TouchableOpacity style={styles.signOutButton} onPress={signout}>
+          <TouchableOpacity style={styles.signOutButton} onPress={logout}>
             <Text style={styles.signOutButtonText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
@@ -107,7 +108,7 @@ export default function AdminDashboard() {
         options={{ 
           title: 'Admin Dashboard',
           headerRight: () => (
-            <TouchableOpacity onPress={signout} style={styles.signOutHeaderButton}>
+            <TouchableOpacity onPress={logout} style={styles.signOutHeaderButton}>
               <Text style={styles.signOutHeaderText}>Sign Out</Text>
             </TouchableOpacity>
           ),
@@ -153,19 +154,24 @@ function AnalyticsTab() {
     );
   }
 
-  const StatCard = ({ title, value, icon, color = theme.primary }: {
+  const StatCard = ({ title, value, icon, color = theme.primary, onPress }: {
     title: string;
     value: string | number;
     icon: React.ReactNode;
     color?: string;
+    onPress?: () => void;
   }) => (
-    <View style={styles.statCard}>
+    <TouchableOpacity 
+      style={[styles.statCard, onPress && styles.clickableStatCard]} 
+      onPress={onPress}
+      disabled={!onPress}
+    >
       <View style={styles.statHeader}>
         <View>{icon}</View>
         <Text style={styles.statTitle}>{title}</Text>
       </View>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -174,21 +180,37 @@ function AnalyticsTab() {
       
       <View style={styles.statsGrid}>
         <StatCard
-          title="Total Users"
-          value={analytics.totalUsers}
-          icon={<Users size={24} color={theme.primary} />}
-        />
-        <StatCard
-          title="Active Users"
-          value={analytics.activeUsers}
-          icon={<UserCheck size={24} color={theme.success} />}
+          title="Active Events"
+          value={analytics.activeEvents}
+          icon={<Calendar size={24} color={theme.success} />}
           color={theme.success}
         />
         <StatCard
-          title="Suspended Users"
-          value={analytics.suspendedUsers}
-          icon={<Ban size={24} color={theme.error} />}
-          color={theme.error}
+          title="Contractors This Month"
+          value={analytics.contractorApplicationsThisMonth}
+          icon={<Briefcase size={24} color={theme.secondary} />}
+          color={theme.secondary}
+        />
+        <StatCard
+          title="Monthly Revenue"
+          value={`${analytics.monthlyRevenue.toLocaleString()}`}
+          icon={<DollarSign size={24} color={theme.success} />}
+          color={theme.success}
+        />
+        <StatCard
+          title="Weekly Growth"
+          value={`${analytics.weeklyGrowth >= 0 ? '+' : ''}${analytics.weeklyGrowth.toFixed(1)}%`}
+          icon={<TrendingUp size={24} color={analytics.weeklyGrowth >= 0 ? theme.success : theme.error} />}
+          color={analytics.weeklyGrowth >= 0 ? theme.success : theme.error}
+        />
+      </View>
+
+      <Text style={styles.sectionTitle}>Platform Stats</Text>
+      <View style={styles.statsGrid}>
+        <StatCard
+          title="Total Users"
+          value={analytics.totalUsers}
+          icon={<Users size={24} color={theme.primary} />}
         />
         <StatCard
           title="Total Events"
@@ -196,21 +218,17 @@ function AnalyticsTab() {
           icon={<Calendar size={24} color={theme.secondary} />}
           color={theme.secondary}
         />
-      </View>
-
-      <Text style={styles.sectionTitle}>Revenue</Text>
-      <View style={styles.statsGrid}>
         <StatCard
           title="Total Revenue"
-          value={`$${analytics.totalRevenue.toLocaleString()}`}
+          value={`${analytics.totalRevenue.toLocaleString()}`}
           icon={<DollarSign size={24} color={theme.success} />}
           color={theme.success}
         />
         <StatCard
-          title="Monthly Revenue"
-          value={`$${analytics.monthlyRevenue.toLocaleString()}`}
-          icon={<TrendingUp size={24} color={theme.success} />}
-          color={theme.success}
+          title="Suspended Users"
+          value={analytics.suspendedUsers}
+          icon={<Ban size={24} color={theme.error} />}
+          color={theme.error}
         />
       </View>
 
@@ -1092,5 +1110,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.text.secondary,
     textAlign: 'center',
+  },
+  clickableStatCard: {
+    opacity: 0.8,
   },
 });

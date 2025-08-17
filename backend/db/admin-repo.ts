@@ -10,6 +10,8 @@ export type AdminAnalytics = {
   cancelledEvents: number;
   totalRevenue: number;
   monthlyRevenue: number;
+  contractorApplicationsThisMonth: number;
+  weeklyGrowth: number;
   subscriptions: {
     active: number;
     cancelled: number;

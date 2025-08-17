@@ -21,8 +21,6 @@ import {
   Store,
   UserCheck,
   DollarSign,
-  Mail,
-  AlertCircle,
   Paperclip,
   Image as ImageIcon,
   FileText,
@@ -40,27 +38,16 @@ export default function MessagesScreen() {
     getProposalsForUser, 
     respondToMessage, 
     respondToProposal,
-    sendCoordinationMessage,
-    createBusinessProposal,
-    getPendingEmailNotifications,
-    getEmailNotificationHistory
+    sendCoordinationMessage
   } = useCommunication();
   
-  const [activeTab, setActiveTab] = useState<'messages' | 'proposals' | 'email-demo'>('messages');
+  const [activeTab, setActiveTab] = useState<'messages' | 'proposals'>('messages');
   const [replyText, setReplyText] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [showAttachmentUpload, setShowAttachmentUpload] = useState<string | null>(null);
   
-  // Email demo form state
-  const [demoForm, setDemoForm] = useState({
-    hostName: '',
-    hostEmail: '',
-    eventTitle: '',
-    proposedAmount: '',
-    contractorsNeeded: '',
-    message: ''
-  });
+
 
   if (!currentUser || !userRole) {
     return (
@@ -110,8 +97,6 @@ export default function MessagesScreen() {
 
   const messages = getMessagesForUser(currentUser.id);
   const proposals = getProposalsForUser(currentUser.id, userRole as 'business_owner' | 'event_host');
-  const pendingEmails = getPendingEmailNotifications();
-  const emailHistory = getEmailNotificationHistory();
 
   const handleRespondToMessage = (messageId: string, status: 'accepted' | 'declined' | 'read') => {
     respondToMessage(messageId, status);
@@ -225,17 +210,6 @@ export default function MessagesScreen() {
             </TouchableOpacity>
           )}
           
-          {userRole === 'business_owner' && (
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'email-demo' && styles.activeTab]}
-              onPress={() => setActiveTab('email-demo')}
-            >
-              <Mail size={20} color={activeTab === 'email-demo' ? '#FFFFFF' : '#6B7280'} />
-              <Text style={[styles.tabText, activeTab === 'email-demo' && styles.activeTabText]}>
-                Email Demo
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -547,205 +521,13 @@ export default function MessagesScreen() {
                 ))
               )}
             </View>
-          ) : (
-            renderEmailDemo()
-          )}
+          ) : null}
         </ScrollView>
       </View>
     </>
   );
 
-  function renderEmailDemo() {
-    const handleSendDemoProposal = () => {
-      if (!currentUser || userRole !== 'business_owner') {
-        Alert.alert('Error', 'Only business owners can send proposals');
-        return;
-      }
 
-      if (!demoForm.hostName || !demoForm.hostEmail || !demoForm.eventTitle || !demoForm.proposedAmount || !demoForm.contractorsNeeded || !demoForm.message) {
-        Alert.alert('Error', 'Please fill in all fields');
-        return;
-      }
-
-      const proposalData = {
-        businessOwnerId: currentUser.id,
-        businessOwnerName: currentUser.name,
-        businessName: (currentUser as any).businessName || 'Demo Business',
-        eventId: 'demo-event-' + Date.now(),
-        eventTitle: demoForm.eventTitle,
-        eventHostId: 'unregistered-host-' + Date.now(),
-        eventHostName: demoForm.hostName,
-        eventHostEmail: demoForm.hostEmail,
-        proposedAmount: parseInt(demoForm.proposedAmount),
-        contractorsNeeded: parseInt(demoForm.contractorsNeeded),
-        message: demoForm.message,
-      };
-
-      createBusinessProposal(proposalData);
-      
-      Alert.alert(
-        'Demo Proposal Sent!', 
-        `A proposal has been sent to ${demoForm.hostEmail}. Check the console logs to see the email notification that would be sent.`,
-        [{ text: 'OK', onPress: () => {
-          setDemoForm({
-            hostName: '',
-            hostEmail: '',
-            eventTitle: '',
-            proposedAmount: '',
-            contractorsNeeded: '',
-            message: ''
-          });
-        }}]
-      );
-    };
-
-    return (
-      <View style={styles.emailDemoContainer}>
-        <View style={styles.demoSection}>
-          <View style={styles.demoHeader}>
-            <Mail size={24} color="#10B981" />
-            <Text style={styles.demoTitle}>Email Notification Demo</Text>
-          </View>
-          <Text style={styles.demoDescription}>
-            This demo shows how the app handles notifications when event hosts don&apos;t have accounts yet. 
-            When you send a proposal, an email will be queued (check console logs).
-          </Text>
-        </View>
-
-        <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>Send Proposal to Unregistered Host</Text>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Host Name</Text>
-            <TextInput
-              style={styles.input}
-              value={demoForm.hostName}
-              onChangeText={(text) => setDemoForm(prev => ({ ...prev, hostName: text }))}
-              placeholder="Enter host name"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Host Email</Text>
-            <TextInput
-              style={styles.input}
-              value={demoForm.hostEmail}
-              onChangeText={(text) => setDemoForm(prev => ({ ...prev, hostEmail: text }))}
-              placeholder="host@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Event Title</Text>
-            <TextInput
-              style={styles.input}
-              value={demoForm.eventTitle}
-              onChangeText={(text) => setDemoForm(prev => ({ ...prev, eventTitle: text }))}
-              placeholder="Enter event title"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Proposed Amount ($)</Text>
-            <TextInput
-              style={styles.input}
-              value={demoForm.proposedAmount}
-              onChangeText={(text) => setDemoForm(prev => ({ ...prev, proposedAmount: text }))}
-              placeholder="500"
-              keyboardType="numeric"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Contractors Needed</Text>
-            <TextInput
-              style={styles.input}
-              value={demoForm.contractorsNeeded}
-              onChangeText={(text) => setDemoForm(prev => ({ ...prev, contractorsNeeded: text }))}
-              placeholder="3"
-              keyboardType="numeric"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Message</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={demoForm.message}
-              onChangeText={(text) => setDemoForm(prev => ({ ...prev, message: text }))}
-              placeholder="Enter your proposal message..."
-              multiline
-              numberOfLines={4}
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <TouchableOpacity style={styles.sendButton} onPress={handleSendDemoProposal}>
-            <Send size={20} color="#FFFFFF" />
-            <Text style={styles.sendButtonText}>Send Demo Proposal</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.emailStatusSection}>
-          <Text style={styles.sectionTitle}>Email Notifications Status</Text>
-          
-          {pendingEmails.length > 0 && (
-            <View style={styles.statusCard}>
-              <View style={styles.statusHeader}>
-                <Clock size={20} color="#F59E0B" />
-                <Text style={styles.statusTitle}>Pending Emails ({pendingEmails.length})</Text>
-              </View>
-              {pendingEmails.slice(0, 3).map((email) => (
-                <View key={email.id} style={styles.emailItem}>
-                  <Text style={styles.emailTo}>To: {email.email}</Text>
-                  <Text style={styles.emailSubject}>{email.subject}</Text>
-                  <Text style={styles.emailType}>Type: {email.type}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {emailHistory.length > 0 && (
-            <View style={styles.statusCard}>
-              <View style={styles.statusHeader}>
-                <CheckCircle size={20} color="#10B981" />
-                <Text style={styles.statusTitle}>Recent Email History</Text>
-              </View>
-              {emailHistory.slice(0, 5).map((email) => (
-                <View key={email.id} style={styles.emailItem}>
-                  <View style={styles.emailItemHeader}>
-                    <Text style={styles.emailTo}>To: {email.email}</Text>
-                    <View style={[styles.statusBadge, email.sent ? styles.sentBadge : styles.pendingBadge]}>
-                      <Text style={[styles.statusBadgeText, email.sent ? styles.sentBadgeText : styles.pendingBadgeText]}>
-                        {email.sent ? 'Sent' : 'Pending'}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.emailSubject}>{email.subject}</Text>
-                  <Text style={styles.emailType}>Type: {email.type}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {pendingEmails.length === 0 && emailHistory.length === 0 && (
-            <View style={styles.emptyState}>
-              <AlertCircle size={48} color="#D1D5DB" />
-              <Text style={styles.emptyStateTitle}>No email notifications yet</Text>
-              <Text style={styles.emptyStateText}>Send a demo proposal to see how email notifications work</Text>
-            </View>
-          )}
-        </View>
-      </View>
-    );
-  }
 }
 
 const styles = StyleSheet.create({

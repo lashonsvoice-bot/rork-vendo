@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   FlatList,
+  ActivityIndicator,
 
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -37,6 +38,9 @@ import {
   Gift,
   CreditCard,
   Wallet,
+  Mail,
+  Phone,
+  Send,
 } from "lucide-react-native";
 import { useEvents, TableOption } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
@@ -44,6 +48,7 @@ import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import DatePickerField from "@/components/DatePickerField";
 import TimePickerField from "@/components/TimePickerField";
+import { trpcClient } from "@/lib/trpc";
 
 interface FormDataType {
   title: string;
@@ -107,6 +112,9 @@ export default function CreateEventScreen() {
   const [parkingInfo, setParkingInfo] = useState<string>("");
   const [hasMiscInfo, setHasMiscInfo] = useState<boolean>(false);
   const [miscInfo, setMiscInfo] = useState<string>("");
+
+  const [proposalForm, setProposalForm] = useState<{ hostName: string; hostEmail: string; hostPhone: string; proposedAmount: string; supervisoryFee: string; message: string; }>({ hostName: "", hostEmail: "", hostPhone: "", proposedAmount: "", supervisoryFee: "", message: "" });
+  const [proposalSending, setProposalSending] = useState<boolean>(false);
 
   const { events } = useEvents();
   const workedContractorIds = useMemo(() => {
@@ -217,6 +225,56 @@ export default function CreateEventScreen() {
     }, 0);
     console.log('CREATE - Total vendor spaces:', total);
     return total;
+  };
+
+  const sendProposalInline = async () => {
+    if (userRole !== 'business_owner' || !currentUser) {
+      Alert.alert('Unavailable', 'Only business owners can send external proposals at this stage.');
+      return;
+    }
+    if (!formData.title || !formData.date || !formData.location) {
+      Alert.alert('Missing info', 'Add title, date and location first.');
+      return;
+    }
+    if (!proposalForm.hostName) {
+      Alert.alert('Missing host', 'Add a host name.');
+      return;
+    }
+    if (!proposalForm.hostEmail && !proposalForm.hostPhone) {
+      Alert.alert('Contact needed', 'Provide host email or phone.');
+      return;
+    }
+    const proposedAmountNum = parseFloat(proposalForm.proposedAmount);
+    const supervisoryFeeNum = parseFloat(proposalForm.supervisoryFee || '0');
+    if (!(proposedAmountNum > 0)) {
+      Alert.alert('Invalid amount', 'Enter a valid table/booth amount.');
+      return;
+    }
+    setProposalSending(true);
+    try {
+      const r = await trpcClient.proposals.sendExternal.mutate({
+        businessOwnerId: currentUser.id,
+        businessOwnerName: (currentUser as any).name ?? 'Business Owner',
+        businessName: (currentUser as any).businessName || 'My Business',
+        businessOwnerContactEmail: (currentUser as any).email ?? undefined,
+        eventId: `external_${Date.now()}`,
+        eventTitle: formData.title,
+        hostName: proposalForm.hostName,
+        hostEmail: proposalForm.hostEmail || undefined,
+        hostPhone: proposalForm.hostPhone || undefined,
+        proposedAmount: proposedAmountNum,
+        supervisoryFee: supervisoryFeeNum,
+        contractorsNeeded: (userRole === 'business_owner' ? (parseInt(formData.contractorsNeeded || '0') || undefined) : undefined),
+        message: proposalForm.message || `Proposal to remote vend at ${formData.title}`,
+        eventDate: formData.date,
+        eventLocation: formData.location,
+      });
+      Alert.alert(r.success ? 'Proposal sent' : 'Issue sending', r.message);
+    } catch (e) {
+      Alert.alert('Error', 'Failed to send proposal.');
+    } finally {
+      setProposalSending(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -519,6 +577,146 @@ export default function CreateEventScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {userRole === 'business_owner' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Propose To Event Host</Text>
+            <Text style={styles.sectionSubtitle}>Send an external proposal inline while creating your opportunity.</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Host Name</Text>
+              <View style={styles.inputContainer}>
+                <FileText size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="e.g., Downtown Events Co."
+                  value={proposalForm.hostName}
+                  onChangeText={(t) => setProposalForm({ ...proposalForm, hostName: t })}
+                  style={styles.input}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Host Email</Text>
+              <View style={styles.inputContainer}>
+                <Mail size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="host@example.com"
+                  value={proposalForm.hostEmail}
+                  onChangeText={(t) => setProposalForm({ ...proposalForm, hostEmail: t })}
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Host Phone</Text>
+              <View style={styles.inputContainer}>
+                <Phone size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="+1 (555) 123-4567"
+                  value={proposalForm.hostPhone}
+                  onChangeText={(t) => setProposalForm({ ...proposalForm, hostPhone: t })}
+                  style={styles.input}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Table/Booth Investment ($)</Text>
+              <View style={styles.inputContainer}>
+                <DollarSign size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="500"
+                  value={proposalForm.proposedAmount}
+                  onChangeText={(t) => setProposalForm({ ...proposalForm, proposedAmount: t })}
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Supervisory Fee ($)</Text>
+              <View style={styles.inputContainer}>
+                <DollarSign size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="75"
+                  value={proposalForm.supervisoryFee}
+                  onChangeText={(t) => setProposalForm({ ...proposalForm, supervisoryFee: t })}
+                  style={styles.input}
+                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Message (optional)</Text>
+              <View style={styles.inputContainer}>
+                <FileText size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="Customize your proposal message"
+                  value={proposalForm.message}
+                  onChangeText={(t) => setProposalForm({ ...proposalForm, message: t })}
+                  style={[styles.input, styles.textArea]}
+                  multiline
+                  numberOfLines={4}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                testID="send-proposal-inline"
+                style={[styles.submitButton, { flex: 1 }]}
+                onPress={sendProposalInline}
+                disabled={proposalSending}
+              >
+                <LinearGradient
+                  colors={proposalSending ? ["#9CA3AF", "#6B7280"] : ["#8B5CF6", "#A78BFA"]}
+                  style={styles.submitGradient}
+                >
+                  {proposalSending ? <ActivityIndicator color="#FFFFFF" /> : <Send size={20} color="#FFFFFF" />}
+                  <Text style={styles.submitText}>{proposalSending ? 'Sending…' : 'Send Proposal'}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID="save-proposal-draft"
+                style={[styles.submitButton, { flex: 1 }]}
+                onPress={async () => {
+                  try {
+                    const draft = {
+                      eventTitle: formData.title,
+                      eventDate: formData.date,
+                      eventLocation: formData.location,
+                      ...proposalForm,
+                      createdAt: new Date().toISOString(),
+                    };
+                    const key = 'proposal_drafts';
+                    const Async = await import('@react-native-async-storage/async-storage').then(m => m.default);
+                    const existingRaw = await Async.getItem(key);
+                    const existing = existingRaw ? JSON.parse(existingRaw) : [];
+                    const updated = [...existing, draft];
+                    await Async.setItem(key, JSON.stringify(updated));
+                    Alert.alert('Saved', 'Draft saved locally.');
+                  } catch {
+                    Alert.alert('Error', 'Failed to save draft.');
+                  }
+                }}
+              >
+                <LinearGradient
+                  colors={["#F59E0B", "#FCD34D"]}
+                  style={styles.submitGradient}
+                >
+                  <FileText size={20} color="#111827" />
+                  <Text style={[styles.submitText, { color: '#111827' }]}>Save Draft</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {inputSections.map((section, sectionIndex) => (
           <View key={sectionIndex} style={styles.section}>

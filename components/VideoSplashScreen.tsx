@@ -97,7 +97,7 @@ export function VideoSplashScreen({
       {/* Bottom branding */}
       <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 20 }]}>
         <Text style={styles.brandText}>RevoVend</Text>
-        <Text style={styles.subtitleText}>Welcome to the future of events</Text>
+        <Text style={styles.subtitleText}>Vend Remotely world wide. Sell out events locally.</Text>
       </View>
     </View>
   );

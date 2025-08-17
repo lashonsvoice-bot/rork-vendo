@@ -1,8 +1,6 @@
 import { protectedProcedure } from "@/backend/trpc/create-context";
 import { z } from "zod";
-
-// Mock message storage - in production, use a proper database
-let messages: any[] = [];
+import { messageRepo, MessageSchema, type Message } from "@/backend/db/message-repo";
 
 export const sendMessageProcedure = protectedProcedure
   .input(z.object({
@@ -17,10 +15,10 @@ export const sendMessageProcedure = protectedProcedure
     if (!ctx.user) {
       throw new Error('User not authenticated');
     }
-    
+
     console.log('[tRPC] Sending message:', input);
-    
-    const message = {
+
+    const message: Message = MessageSchema.parse({
       id: Date.now().toString(),
       fromUserId: ctx.user.id,
       fromUserName: ctx.user.name,
@@ -30,15 +28,13 @@ export const sendMessageProcedure = protectedProcedure
       content: input.content,
       type: input.type,
       eventId: input.eventId,
-      attachments: input.attachments || [],
+      attachments: input.attachments ?? [],
       status: 'sent',
       createdAt: new Date().toISOString(),
       read: false,
-    };
-    
-    messages.push(message);
-    
-    return message;
+    });
+
+    return messageRepo.add(message);
   });
 
 export default sendMessageProcedure;

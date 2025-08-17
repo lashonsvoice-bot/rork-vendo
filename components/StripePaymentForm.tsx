@@ -99,7 +99,7 @@ export function StripePaymentForm({
           onPress={!cardComplete || loading ? undefined : handlePayment}
         >
           {loading ? (
-            <ActivityIndicator color=\"#fff\" size=\"small\" />
+            <ActivityIndicator color="#fff" size="small" />
           ) : (
             `Subscribe to ${tier} (${billingCycle})`
           )}

@@ -44,7 +44,6 @@ export default function SendExternalProposalScreen() {
     hostEmail: '',
     hostPhone: '',
     proposedAmount: (params.proposedAmount as string) || '',
-    contractorsNeeded: (params.contractorsNeeded as string) || '',
     contactEmail: '',
     message: `Greetings,
 
@@ -87,7 +86,7 @@ Best regards,
     }
 
     // Validation
-    const requiredFields = ['eventTitle', 'eventDate', 'eventLocation', 'hostName', 'proposedAmount', 'contractorsNeeded', 'message'];
+    const requiredFields = ['eventTitle', 'eventDate', 'eventLocation', 'hostName', 'proposedAmount', 'message'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -101,15 +100,9 @@ Best regards,
     }
 
     const proposedAmount = parseFloat(formData.proposedAmount);
-    const contractorsNeeded = parseInt(formData.contractorsNeeded);
 
     if (isNaN(proposedAmount) || proposedAmount <= 0) {
       Alert.alert('Error', 'Please enter a valid proposed amount');
-      return;
-    }
-
-    if (isNaN(contractorsNeeded) || contractorsNeeded <= 0) {
-      Alert.alert('Error', 'Please enter a valid number of contractors needed');
       return;
     }
 
@@ -127,7 +120,6 @@ Best regards,
         hostEmail: formData.hostEmail || undefined,
         hostPhone: formData.hostPhone || undefined,
         proposedAmount,
-        contractorsNeeded,
         message: formData.message,
         eventDate: formData.eventDate,
         eventLocation: formData.eventLocation,
@@ -174,7 +166,6 @@ Best regards,
       hostEmail: '',
       hostPhone: '',
       proposedAmount: '',
-      contractorsNeeded: '',
       contactEmail: (profileQuery.data?.role === 'business_owner' ? profileQuery.data.contactEmail : '') || '',
       message: `Greetings,
 
@@ -410,20 +401,6 @@ Best regards,
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Contractors/Staff Needed *</Text>
-            <Text style={styles.inputHelper}>
-              Number of professional contractors you&apos;ll assign to manage the booth
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={formData.contractorsNeeded}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, contractorsNeeded: text }))}
-              placeholder="2"
-              keyboardType="numeric"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Proposal Message *</Text>

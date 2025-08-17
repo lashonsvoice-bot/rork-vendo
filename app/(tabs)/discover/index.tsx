@@ -310,11 +310,17 @@ export default function DiscoverScreen() {
 
         {isPublicView ? (
           <View style={styles.publicInfo}>
-            {profile.state && (
-              <Text style={styles.publicInfoText} testID="public-state">
-                {profile.state}
-              </Text>
+            {profile.city && profile.state && (
+              <View style={styles.publicInfoRow}>
+                <MapPin size={14} color="#6B7280" />
+                <Text style={styles.publicInfoText} testID="public-location">
+                  {profile.city}, {profile.state}
+                </Text>
+              </View>
             )}
+            <Text style={styles.limitedAccessText}>
+              Sign up to view full profile and contact information
+            </Text>
           </View>
         ) : (
           <>
@@ -752,10 +758,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
   },
+  publicInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
   publicInfoText: {
     fontSize: 13,
     color: '#6B7280',
-    marginBottom: 4,
   },
   limitedAccessText: {
     fontSize: 12,

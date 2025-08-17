@@ -177,7 +177,6 @@ export default function GuestDirectoriesScreen() {
       <View style={styles.itemHeader}>
         <View style={styles.itemInfo}>
           <Text style={styles.itemTitle} numberOfLines={1}>{event.title}</Text>
-          <Text style={styles.itemSubtitle}>{event.businessName || 'Business Event'}</Text>
         </View>
         <View style={styles.guestBadge}>
           <Text style={styles.guestBadgeText}>PUBLIC</Text>
@@ -188,14 +187,6 @@ export default function GuestDirectoriesScreen() {
         <View style={styles.publicInfoRow}>
           <MapPin size={14} color="#6B7280" />
           <Text style={styles.publicInfoText}>{event.city}, {event.state}</Text>
-        </View>
-        <View style={styles.publicInfoRow}>
-          <Calendar size={14} color="#6B7280" />
-          <Text style={styles.publicInfoText}>{new Date(event.date).toLocaleDateString()}</Text>
-        </View>
-        <View style={styles.publicInfoRow}>
-          <Clock size={14} color="#6B7280" />
-          <Text style={styles.publicInfoText}>Listed: {new Date(event.createdAt || Date.now()).toLocaleDateString()}</Text>
         </View>
       </View>
       

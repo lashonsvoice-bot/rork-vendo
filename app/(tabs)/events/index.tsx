@@ -112,8 +112,22 @@ export default function EventsScreen() {
         event.createdBy === 'contractor'
       );
     } else {
-      // Guest users should only see public listings
-      eventList = getPublicListings();
+      // Guest users should only see public listings with limited info
+      eventList = getPublicListings().map(event => ({
+        ...event,
+        // Only show event name, city, and state for guests
+        description: '',
+        businessName: '',
+        eventHostName: '',
+        contractorPay: 0,
+        contractorsNeeded: 0,
+        tableOptions: [],
+        hostSupervisionFee: 0,
+        foodStipend: false,
+        travelStipend: false,
+        stipendReleaseMethod: null,
+        flyerUrl: '',
+      }));
 
       if (selectedState && selectedState !== 'all') {
         eventList = eventList.filter(event => event.state === selectedState);
@@ -400,38 +414,44 @@ export default function EventsScreen() {
                   </View>
                 </View>
               
-              <View style={styles.eventMeta}>
-                {event.businessName && (
-                  <View style={styles.eventDetail}>
-                    <Building2 size={14} color="#6B7280" />
-                    <Text style={styles.eventDetailText}>{event.businessName}</Text>
-                  </View>
-                )}
-                {event.eventHostName && (
-                  <View style={styles.eventDetail}>
-                    <Store size={14} color="#6B7280" />
-                    <Text style={styles.eventDetailText}>{event.eventHostName}</Text>
-                  </View>
-                )}
-              </View>
+              {userRole !== null && (
+                <View style={styles.eventMeta}>
+                  {event.businessName && (
+                    <View style={styles.eventDetail}>
+                      <Building2 size={14} color="#6B7280" />
+                      <Text style={styles.eventDetailText}>{event.businessName}</Text>
+                    </View>
+                  )}
+                  {event.eventHostName && (
+                    <View style={styles.eventDetail}>
+                      <Store size={14} color="#6B7280" />
+                      <Text style={styles.eventDetailText}>{event.eventHostName}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
               
-              <Text style={styles.eventDescription} numberOfLines={2}>
-                {event.description}
-              </Text>
+              {userRole !== null && event.description && (
+                <Text style={styles.eventDescription} numberOfLines={2}>
+                  {event.description}
+                </Text>
+              )}
               
               <View style={styles.eventDetails}>
                 <View style={styles.eventDetail}>
                   <MapPin size={14} color="#6B7280" />
                   <Text style={styles.eventDetailText}>{event.city}, {event.state}</Text>
                 </View>
-                <View style={styles.eventDetail}>
-                  <Calendar size={14} color="#6B7280" />
-                  <Text style={styles.eventDetailText}>{formatDate(event.date)}</Text>
-                </View>
+                {userRole !== null && (
+                  <View style={styles.eventDetail}>
+                    <Calendar size={14} color="#6B7280" />
+                    <Text style={styles.eventDetailText}>{formatDate(event.date)}</Text>
+                  </View>
+                )}
               </View>
               
-              {/* Table Options for Host Events */}
-              {event.tableOptions && event.tableOptions.length > 0 && (
+              {/* Table Options for Host Events - Only for logged in users */}
+              {userRole !== null && event.tableOptions && event.tableOptions.length > 0 && (
                 <View style={styles.tableOptionsContainer}>
                   <View style={styles.tableOptionsHeader}>
                     <Table size={16} color="#10B981" />
@@ -467,19 +487,20 @@ export default function EventsScreen() {
                 </View>
               )}
               
-              <View style={styles.eventFooter}>
-                <View style={styles.payInfo}>
-                  <DollarSign size={16} color="#10B981" />
-                  <Text style={styles.payAmount}>${event.contractorPay}</Text>
-                  <Text style={styles.payLabel}>
-                    {userRole === 'business_owner' 
-                      ? 'per contractor'
-                      : userRole === 'contractor'
-                      ? 'per contractor'
-                      : 'suggested rate'
-                    }
-                  </Text>
-                </View>
+              {userRole !== null && (
+                <View style={styles.eventFooter}>
+                  <View style={styles.payInfo}>
+                    <DollarSign size={16} color="#10B981" />
+                    <Text style={styles.payAmount}>${event.contractorPay}</Text>
+                    <Text style={styles.payLabel}>
+                      {userRole === 'business_owner' 
+                        ? 'per contractor'
+                        : userRole === 'contractor'
+                        ? 'per contractor'
+                        : 'suggested rate'
+                      }
+                    </Text>
+                  </View>
                 <View style={styles.eventFooterRight}>
                   {userRole === 'event_host' && event.eventHostId === currentUser?.id && (
                     <TouchableOpacity
@@ -575,7 +596,17 @@ export default function EventsScreen() {
                     </View>
                   )}
                 </View>
-              </View>
+                </View>
+              )}
+              
+              {/* Guest view message */}
+              {userRole === null && (
+                <View style={styles.guestMessage}>
+                  <Text style={styles.guestMessageText}>
+                    Sign up to view full event details, pricing, and contact information
+                  </Text>
+                </View>
+              )}
             </View>
             </TouchableOpacity>
           );
@@ -1159,5 +1190,19 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
+  },
+  guestMessage: {
+    backgroundColor: "#F0FDF4",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#10B981",
+  },
+  guestMessageText: {
+    fontSize: 12,
+    color: "#10B981",
+    textAlign: "center",
+    fontStyle: "italic",
   },
 });

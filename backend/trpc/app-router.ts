@@ -20,6 +20,11 @@ import { upgradeSubscriptionProcedure } from "./routes/subscription/upgrade/rout
 import { recordEventUsageProcedure } from "./routes/subscription/record-usage/route";
 import { cancelSubscriptionProcedure } from "./routes/subscription/cancel/route";
 import { getVerificationDiscountProcedure } from "./routes/subscription/verification-discount/route";
+import { 
+  createStripeCheckoutProcedure, 
+  createSetupIntentProcedure, 
+  getStripeSubscriptionStatusProcedure 
+} from "./routes/subscription/stripe/route";
 import walletRoutes from "./routes/wallet/router";
 import { 
   createEventProcedure, 
@@ -158,6 +163,11 @@ export const appRouter = createTRPCRouter({
     recordUsage: recordEventUsageProcedure,
     cancel: cancelSubscriptionProcedure,
     getVerificationDiscount: getVerificationDiscountProcedure,
+    stripe: createTRPCRouter({
+      createCheckout: createStripeCheckoutProcedure,
+      createSetupIntent: createSetupIntentProcedure,
+      getStatus: getStripeSubscriptionStatusProcedure,
+    }),
   }),
   maps: createTRPCRouter({
     autocomplete: placesAutocompleteProcedure,

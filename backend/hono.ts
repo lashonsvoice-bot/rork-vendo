@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth";
 import profileRoutes from "./routes/profile";
 import uploadsRoutes from "./routes/uploads";
 import webhooksRoutes from "./routes/webhooks";
+import stripeWebhooksRoutes from "./routes/stripe-webhooks";
 import { validateConfig, logConfigStatus, logSecurityRecommendations } from "./config/env";
 import { initializeDatabase } from "./db/user-repo";
 
@@ -33,6 +34,7 @@ app.route("/auth", authRoutes);
 app.route("/profile", profileRoutes);
 app.route("/uploads", uploadsRoutes);
 app.route("/webhooks", webhooksRoutes);
+app.route("/stripe-webhooks", stripeWebhooksRoutes);
 
 app.use(
   "/trpc/*",

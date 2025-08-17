@@ -20,6 +20,11 @@ export type Subscription = {
   totalPaid?: number;
   lastPaymentDate?: string;
   monthlyAmount?: number;
+  // Stripe integration fields
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  stripePriceId?: string;
+  stripePaymentMethodId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -184,6 +189,28 @@ function createFreeTrialSubscription(userId: string): Subscription {
   };
 }
 
+async function findByStripeSubscriptionId(stripeSubscriptionId: string): Promise<Subscription | null> {
+  const all = await readAllSubscriptions();
+  return all.find((s) => s?.stripeSubscriptionId === stripeSubscriptionId) ?? null;
+}
+
+async function findByStripeCustomerId(stripeCustomerId: string): Promise<Subscription | null> {
+  const all = await readAllSubscriptions();
+  return all.find((s) => s?.stripeCustomerId === stripeCustomerId) ?? null;
+}
+
+async function updateByStripeSubscriptionId(stripeSubscriptionId: string, updates: Partial<Subscription>): Promise<Subscription | null> {
+  const all = await readAllSubscriptions();
+  const idx = all.findIndex((s) => s?.stripeSubscriptionId === stripeSubscriptionId);
+  if (idx === -1) return null;
+  
+  const updated = { ...all[idx], ...updates, updatedAt: new Date().toISOString() };
+  const next = [...all];
+  next[idx] = updated;
+  await writeAllSubscriptions(next);
+  return updated;
+}
+
 async function readAll(): Promise<Subscription[]> {
   return readAllSubscriptions();
 }
@@ -195,8 +222,11 @@ export const subscriptionRepo = {
   writeAllSubscriptions,
   writeAllUsage,
   findByUserId,
+  findByStripeSubscriptionId,
+  findByStripeCustomerId,
   createSubscription,
   updateSubscription,
+  updateByStripeSubscriptionId,
   recordEventUsage,
   getUsageForPeriod,
   getSubscriptionLimits,

@@ -378,28 +378,7 @@ export default function EventDetailsScreen() {
               </TouchableOpacity>
             )}
 
-            {isDraftForBO && (event.proposalSent ?? false) === false && (
-              <TouchableOpacity 
-                style={styles.manageButton}
-                testID="send-proposal-draft-details"
-                onPress={() => {
-                  try {
-                    updateEvent(event.id, { proposalSent: true });
-                  } catch (e) {
-                    // no-op
-                  }
-                }}
-              >
-                <LinearGradient
-                  colors={["#10B981", "#059669"]}
-                  style={styles.buttonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Text style={styles.buttonText}>Send Proposal</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            )}
+
           </View>
         ) : (
           <>

@@ -173,7 +173,8 @@ const sendExternalProposalProcedure = publicProcedure
         if (error && typeof error === 'object' && 'response' in error) {
           console.error('SendGrid error response:', (error as any).response.body);
         }
-        results.errors.push(`Failed to send email: ${error instanceof Error ? error.message : String(error)}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.errors.push(`Failed to send email: ${errorMessage}`);
       }
     }
 
@@ -398,7 +399,8 @@ Event Host - ${eventTitle}
         if (error && typeof error === 'object' && 'response' in error) {
           console.error('SendGrid error response:', (error as any).response.body);
         }
-        results.errors.push(`Failed to send email: ${error instanceof Error ? error.message : String(error)}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.errors.push(`Failed to send email: ${errorMessage}`);
       }
     }
 

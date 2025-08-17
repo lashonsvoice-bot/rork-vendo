@@ -46,7 +46,33 @@ export default function SendExternalProposalScreen() {
     proposedAmount: (params.proposedAmount as string) || '',
     contractorsNeeded: (params.contractorsNeeded as string) || '',
     contactEmail: '',
-    message: 'We would love to participate in your event with our experienced team of contractors. Our team is professional, reliable, and committed to making your event a success.',
+    message: `Dear Event Organizer,
+
+We would love to participate in your upcoming event "${(params.eventTitle as string) || '[Event Name]'}" as a remote vendor.
+
+Our Business Details:
+• Company: [Your Business Name]
+• Product/Service: [Brief description of what you offer]
+• Experience: [Years in business or relevant experience]
+• Professional Team: We work with experienced, reliable contractors
+
+What We're Proposing:
+• Table/Booth Space: We're willing to pay for premium positioning
+• Professional Setup: Our contractors will handle all booth management
+• Marketing Materials: We'll provide high-quality brochures and promotional materials
+• Customer Engagement: Professional representation of our brand
+
+We understand the value of your event and are committed to:
+✓ Professional appearance and conduct
+✓ Timely setup and breakdown
+✓ Positive attendee experience
+✓ Full compliance with event guidelines
+
+We're excited about the opportunity to be part of your event and contribute to its success. Please let us know if you'd like to discuss this further or if you need any additional information.
+
+Best regards,
+[Your Name]
+[Your Business Name]`,
   });
 
   const [sendResults, setSendResults] = useState<{
@@ -165,7 +191,33 @@ export default function SendExternalProposalScreen() {
       proposedAmount: '',
       contractorsNeeded: '',
       contactEmail: (profileQuery.data?.role === 'business_owner' ? profileQuery.data.contactEmail : '') || '',
-      message: 'We would love to participate in your event with our experienced team of contractors. Our team is professional, reliable, and committed to making your event a success.',
+      message: `Dear Event Organizer,
+
+We would love to participate in your upcoming event "${(params.eventTitle as string) || '[Event Name]'}" as a remote vendor.
+
+Our Business Details:
+• Company: [Your Business Name]
+• Product/Service: [Brief description of what you offer]
+• Experience: [Years in business or relevant experience]
+• Professional Team: We work with experienced, reliable contractors
+
+What We're Proposing:
+• Table/Booth Space: We're willing to pay for premium positioning
+• Professional Setup: Our contractors will handle all booth management
+• Marketing Materials: We'll provide high-quality brochures and promotional materials
+• Customer Engagement: Professional representation of our brand
+
+We understand the value of your event and are committed to:
+✓ Professional appearance and conduct
+✓ Timely setup and breakdown
+✓ Positive attendee experience
+✓ Full compliance with event guidelines
+
+We're excited about the opportunity to be part of your event and contribute to its success. Please let us know if you'd like to discuss this further or if you need any additional information.
+
+Best regards,
+[Your Name]
+[Your Business Name]`,
     });
     setSendResults(null);
   };
@@ -357,9 +409,15 @@ export default function SendExternalProposalScreen() {
 
         <View style={styles.formSection}>
           <Text style={styles.sectionTitle}>Proposal Details</Text>
+          <Text style={styles.sectionDescription}>
+            Specify your table/booth requirements and what you&apos;re willing to invest in this remote vending opportunity.
+          </Text>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Proposed Amount ($) *</Text>
+            <Text style={styles.inputLabel}>Table/Booth Investment ($) *</Text>
+            <Text style={styles.inputHelper}>
+              Amount you&apos;re willing to pay for table space, positioning, or booth rental
+            </Text>
             <TextInput
               style={styles.input}
               value={formData.proposedAmount}
@@ -371,29 +429,70 @@ export default function SendExternalProposalScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Contractors Needed *</Text>
+            <Text style={styles.inputLabel}>Contractors/Staff Needed *</Text>
+            <Text style={styles.inputHelper}>
+              Number of professional contractors you&apos;ll assign to manage the booth
+            </Text>
             <TextInput
               style={styles.input}
               value={formData.contractorsNeeded}
               onChangeText={(text) => setFormData(prev => ({ ...prev, contractorsNeeded: text }))}
-              placeholder="3"
+              placeholder="2"
               keyboardType="numeric"
               placeholderTextColor="#9CA3AF"
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Message *</Text>
+            <Text style={styles.inputLabel}>Proposal Message *</Text>
+            <Text style={styles.inputHelper}>
+              This is a default template that you can customize for each proposal. Edit the bracketed placeholders with your specific information.
+            </Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={formData.message}
               onChangeText={(text) => setFormData(prev => ({ ...prev, message: text }))}
               placeholder="Enter your proposal message..."
               multiline
-              numberOfLines={6}
+              numberOfLines={12}
               textAlignVertical="top"
               placeholderTextColor="#9CA3AF"
             />
+            <TouchableOpacity 
+              style={styles.resetTemplateButton}
+              onPress={() => {
+                const defaultTemplate = `Dear Event Organizer,
+
+We would love to participate in your upcoming event "${formData.eventTitle || '[Event Name]'}" as a remote vendor.
+
+Our Business Details:
+• Company: [Your Business Name]
+• Product/Service: [Brief description of what you offer]
+• Experience: [Years in business or relevant experience]
+• Professional Team: We work with experienced, reliable contractors
+
+What We're Proposing:
+• Table/Booth Space: We're willing to pay for premium positioning
+• Professional Setup: Our contractors will handle all booth management
+• Marketing Materials: We'll provide high-quality brochures and promotional materials
+• Customer Engagement: Professional representation of our brand
+
+We understand the value of your event and are committed to:
+✓ Professional appearance and conduct
+✓ Timely setup and breakdown
+✓ Positive attendee experience
+✓ Full compliance with event guidelines
+
+We're excited about the opportunity to be part of your event and contribute to its success. Please let us know if you'd like to discuss this further or if you need any additional information.
+
+Best regards,
+[Your Name]
+[Your Business Name]`;
+                setFormData(prev => ({ ...prev, message: defaultTemplate }));
+              }}
+            >
+              <Text style={styles.resetTemplateText}>Reset to Default Template</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -413,16 +512,14 @@ export default function SendExternalProposalScreen() {
         </TouchableOpacity>
 
         <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>How it works:</Text>
+          <Text style={styles.infoTitle}>Remote Vending Process:</Text>
           <Text style={styles.infoText}>
-            1. Fill in the event and host contact information{'\n'}
-            2. Enter your proposal details and message{'\n'}
-            3. The system will send your proposal via:{'\n'}
-               • Email (if email address provided){'\n'}
-               • SMS (if phone number provided){'\n'}
-            4. The host will receive information about downloading the app{'\n'}
-            5. If they reply via email, it will go to your contact email{'\n'}
-            6. Once they join the app, you can coordinate directly
+            1. <Text style={styles.infoBold}>Submit Proposal:</Text> Send your booth/table request to event organizers{'\n'}
+            2. <Text style={styles.infoBold}>Negotiation:</Text> Discuss space, positioning, and investment amount{'\n'}
+            3. <Text style={styles.infoBold}>Agreement:</Text> Finalize terms and payment for table space{'\n'}
+            4. <Text style={styles.infoBold}>Contractor Assignment:</Text> Hire and assign professional contractors{'\n'}
+            5. <Text style={styles.infoBold}>Event Management:</Text> Your contractors handle setup, sales, and breakdown{'\n'}
+            6. <Text style={styles.infoBold}>Remote Oversight:</Text> Monitor and manage your booth remotely through the app
           </Text>
         </View>
       </ScrollView>
@@ -583,7 +680,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   textArea: {
-    height: 120,
+    height: 200,
     textAlignVertical: 'top',
   },
   contactNote: {
@@ -628,5 +725,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0369A1',
     lineHeight: 20,
+  },
+  infoBold: {
+    fontWeight: '600',
+  },
+  inputHelper: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  resetTemplateButton: {
+    backgroundColor: '#F3F4F6',
+    padding: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  resetTemplateText: {
+    color: '#374151',
+    fontSize: 12,
+    fontWeight: '500',
   },
 });

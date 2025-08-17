@@ -31,6 +31,17 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+
+# Backend uploads
+backend/uploads/
+
+# API keys and secrets
+*.key
+*.pem
+*.p8
+*.p12
+*.mobileprovision
 
 # typescript
 *.tsbuildinfo

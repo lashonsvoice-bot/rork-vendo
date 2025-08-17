@@ -6,18 +6,15 @@ import { createContext } from "./trpc/create-context";
 import authRoutes from "./routes/auth";
 import profileRoutes from "./routes/profile";
 import uploadsRoutes from "./routes/uploads";
+import { validateConfig, logConfigStatus } from "./config/env";
 
-// Set SendGrid API key from environment or use the provided key
-if (!process.env.SENDGRID_API_KEY) {
-  process.env.SENDGRID_API_KEY = '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';
-  console.log('🔑 Using provided SendGrid API key');
-} else {
-  console.log('🔑 Using environment SendGrid API key');
-}
-
-if (!process.env.SENDGRID_FROM) {
-  process.env.SENDGRID_FROM = 'noreply@revovend.com';
-  console.log('📧 Using default from email: noreply@revovend.com');
+// Initialize and validate configuration
+try {
+  validateConfig();
+  logConfigStatus();
+} catch (error) {
+  console.error('❌ Failed to initialize configuration:', error);
+  process.exit(1);
 }
 
 const app = new Hono();

@@ -3,6 +3,121 @@ import { publicProcedure } from "../../../create-context";
 import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
 import sgMail from "@sendgrid/mail";
 
+function generateSimplePdf(params: {
+  title: string;
+  subtitle?: string;
+  sections: Array<{ heading: string; lines: string[] }>;
+}): { base64: string; bytes: number } {
+  const width = 612;
+  const height = 792;
+  const titleFontSize = 20;
+  const bodyFontSize = 12;
+  const leftMargin = 56;
+  let y = height - 72;
+
+  const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+
+  const lines: string[] = [];
+  lines.push("BT");
+  lines.push(`/F1 ${titleFontSize} Tf`);
+  lines.push(`${leftMargin} ${y} Td`);
+  lines.push(`(${esc(params.title)}) Tj`);
+  y -= 28;
+
+  if (params.subtitle && params.subtitle.trim().length > 0) {
+    lines.push(`/F1 ${bodyFontSize} Tf`);
+    lines.push(`${leftMargin} ${y} Td`);
+    lines.push(`(${esc(params.subtitle)}) Tj`);
+    y -= 22;
+  }
+
+  lines.push(`/F1 ${bodyFontSize} Tf`);
+
+  params.sections.forEach((sec) => {
+    y -= 10;
+    lines.push(`${leftMargin} ${y} Td`);
+    lines.push(`(${esc(sec.heading)}) Tj`);
+    y -= 16;
+    sec.lines.forEach((ln) => {
+      if (y < 72) {
+        // Simple guard: keep content on one page; truncate if overflow
+        return;
+      }
+      lines.push(`${leftMargin} ${y} Td`);
+      lines.push(`(${esc(ln)}) Tj`);
+      y -= 14;
+    });
+  });
+
+  lines.push("ET");
+
+  const contentStream = lines.join("\n");
+  const contentBuffer = Buffer.from(contentStream, "utf8");
+  const contentLength = contentBuffer.byteLength;
+
+  const objects: string[] = [];
+  const xref: number[] = [];
+  let offset = 0;
+  const pushObj = (obj: string) => {
+    xref.push(offset);
+    objects.push(obj);
+    offset += Buffer.byteLength(obj, "utf8");
+  };
+
+  const obj1 = `1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n`;
+  const obj2 = `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n`;
+  const obj3 = `3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n`;
+  const obj4 = `4 0 obj\n<< /Length ${contentLength} >>\nstream\n${contentStream}\nendstream\nendobj\n`;
+  const obj5 = `5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n`;
+
+  const header = `%PDF-1.4\n`;
+  offset += Buffer.byteLength(header, "utf8");
+  xref.push(0); // placeholder for header position
+  // Push in order while tracking offsets
+  // We already accounted header in offset, so we push with manual handling
+  let body = "";
+  const pushAndConcat = (s: string) => {
+    xref.push(offset);
+    body += s;
+    offset += Buffer.byteLength(s, "utf8");
+  };
+  // reset xref array to only store object offsets (start from first object)
+  xref.length = 0;
+  offset = Buffer.byteLength(header, "utf8");
+  pushAndConcat(obj1);
+  pushAndConcat(obj2);
+  pushAndConcat(obj3);
+  pushAndConcat(obj4);
+  pushAndConcat(obj5);
+
+  const xrefStart = offset;
+  let xrefTable = `xref\n0 ${objects.length + 1}\n`;
+  // Object 0
+  xrefTable += `0000000000 65535 f \n`;
+  // Now actual offsets for 1..n from our push order captured in pushAndConcat
+  // We need those offsets; recreate the list by scanning body strings
+  // Since we tracked offsets in pushAndConcat, but didn't store them, recompute by parsing body is complex.
+  // Instead, rebuild offsets array properly.
+  // We'll rebuild by iterating again: compute offsets of each object inside body.
+  const objStrings = [obj1, obj2, obj3, obj4, obj5];
+  let running = Buffer.byteLength(header, "utf8");
+  const offsets: number[] = [];
+  objStrings.forEach((s) => {
+    offsets.push(running);
+    running += Buffer.byteLength(s, "utf8");
+  });
+  offsets.forEach((off) => {
+    const padded = off.toString().padStart(10, "0");
+    xrefTable += `${padded} 00000 n \n`;
+  });
+
+  const trailer = `trailer\n<< /Size ${objStrings.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  const pdf = header + body + xrefTable + trailer;
+  const base64 = Buffer.from(pdf, "utf8").toString("base64");
+  return { base64, bytes: Buffer.byteLength(pdf, "utf8") };
+}
+
 const sendExternalProposalSchema = z.object({
   businessOwnerId: z.string(),
   businessOwnerName: z.string(),
@@ -134,6 +249,46 @@ const sendExternalProposalProcedure = publicProcedure
     // SMS content (shorter version) with invitation code
     const smsContent = `A RevoVend Business owner wants to secure a table at your event ${eventTitle} on ${eventDate}. Please download the app [App Link] and use this invite code when registering as a host: ${invitationCode}. Check your email for more information.`;
 
+    // Build PDF attachment summary
+    const pdf = generateSimplePdf({
+      title: `RevoVend Proposal: ${eventTitle}`,
+      subtitle: `${businessName} ➝ ${hostName} • ${eventDate} • ${eventLocation}`,
+      sections: [
+        {
+          heading: 'Business Owner',
+          lines: [
+            `Name: ${businessOwnerName}`,
+            `Business: ${businessName}`,
+            `Email: ${businessOwnerContactEmail ?? 'N/A'}`,
+          ],
+        },
+        {
+          heading: 'Host',
+          lines: [
+            `Name: ${hostName}`,
+            `Email: ${hostEmail ?? 'N/A'}`,
+            `Phone: ${hostPhone ?? 'N/A'}`,
+          ],
+        },
+        {
+          heading: 'Proposal Details',
+          lines: [
+            `Proposed Amount: ${proposedAmount.toFixed(2)}`,
+            `Supervisory Fee: ${supervisoryFee.toFixed(2)}`,
+            `Contractors Needed: ${contractorsNeeded ?? 'N/A'}`,
+          ],
+        },
+        {
+          heading: 'Message',
+          lines: message.split(/\r?\n/).slice(0, 12),
+        },
+        {
+          heading: 'Invitation Code',
+          lines: [invitationCode],
+        },
+      ],
+    });
+
     // Send email if provided
     if (hostEmail) {
       try {
@@ -142,6 +297,7 @@ const sendExternalProposalProcedure = publicProcedure
         
         console.log('🔑 SendGrid API Key status:', apiKey ? `Present (${apiKey.substring(0, 10)}...)` : 'Missing');
         console.log('📧 From email:', fromEmail);
+        console.log(`📎 PDF size: ${pdf.bytes} bytes`);
         
         if (apiKey && apiKey.startsWith('SG.')) {
           sgMail.setApiKey(apiKey);
@@ -153,10 +309,18 @@ const sendExternalProposalProcedure = publicProcedure
             subject: subjectLine,
             text: emailContent,
             html: htmlContent,
-            replyTo: replyToEmail
-          };
+            replyTo: replyToEmail,
+            attachments: [
+              {
+                content: pdf.base64,
+                filename: 'RevoVend-Proposal.pdf',
+                type: 'application/pdf',
+                disposition: 'attachment',
+              },
+            ],
+          } as const;
           
-          const response = await sgMail.send(emailData);
+          const response = await sgMail.send(emailData as any);
           console.log('✅ Email sent successfully:', response[0].statusCode);
           results.emailSent = true;
         } else {
@@ -166,6 +330,7 @@ const sendExternalProposalProcedure = publicProcedure
           console.log('To:', hostEmail);
           console.log('Subject:', subjectLine);
           console.log('Content:', emailContent);
+          console.log('Attachment: RevoVend-Proposal.pdf', `(${pdf.bytes} bytes)`);
           await new Promise(resolve => setTimeout(resolve, 1000));
           results.emailSent = true;
           results.errors.push(errorMsg);
@@ -361,6 +526,17 @@ Event Host - ${eventTitle}
     // SMS content (shorter version) with invitation code
     const smsContent = `${hostName} invites ${businessName} to remote vend at ${eventTitle} on ${eventDate}. Great opportunity! Download RevoVend app [App Link] and use invite code: ${invitationCode} when registering as business owner. Check email for details.`;
 
+    // Build PDF attachment for reverse proposal
+    const reversePdf = generateSimplePdf({
+      title: `RevoVend Invitation: ${eventTitle}`,
+      subtitle: `${hostName} ➝ ${businessName} • ${eventDate} • ${eventLocation}`,
+      sections: [
+        { heading: 'Host', lines: [`Name: ${hostName}`, `Email: ${hostContactEmail ?? 'N/A'}`] },
+        { heading: 'Business', lines: [`Owner: ${businessOwnerName}`, `Business: ${businessName}`, `Email: ${businessOwnerEmail ?? 'N/A'}`, `Phone: ${businessOwnerPhone ?? 'N/A'}`] },
+        { heading: 'Offer', lines: [`Table/Booth: ${tableSpaceOffered}`, `Management Fee: ${managementFee.toFixed(2)}`, `Expected Attendees: ${expectedAttendees}`] },
+      ],
+    });
+
     // Send email if provided
     if (businessOwnerEmail) {
       try {
@@ -369,6 +545,7 @@ Event Host - ${eventTitle}
         
         console.log('🔑 SendGrid API Key status:', apiKey ? `Present (${apiKey.substring(0, 10)}...)` : 'Missing');
         console.log('📧 From email:', fromEmail);
+        console.log(`📎 PDF size: ${reversePdf.bytes} bytes`);
         
         if (apiKey && apiKey.startsWith('SG.')) {
           sgMail.setApiKey(apiKey);
@@ -380,10 +557,18 @@ Event Host - ${eventTitle}
             subject: `Remote Vending Invitation for ${eventTitle}`,
             text: emailContent,
             html: emailContent.replace(/\n/g, '<br/>'),
-            replyTo: replyToEmail
-          };
+            replyTo: replyToEmail,
+            attachments: [
+              {
+                content: reversePdf.base64,
+                filename: 'RevoVend-Invitation.pdf',
+                type: 'application/pdf',
+                disposition: 'attachment',
+              },
+            ],
+          } as const;
           
-          const response = await sgMail.send(emailData);
+          const response = await sgMail.send(emailData as any);
           console.log('✅ Reverse proposal email sent successfully:', response[0].statusCode);
           results.emailSent = true;
         } else {
@@ -393,6 +578,7 @@ Event Host - ${eventTitle}
           console.log('To:', businessOwnerEmail);
           console.log('Subject:', `Remote Vending Invitation for ${eventTitle}`);
           console.log('Content:', emailContent);
+          console.log('Attachment: RevoVend-Invitation.pdf', `(${reversePdf.bytes} bytes)`);
           await new Promise(resolve => setTimeout(resolve, 1000));
           results.emailSent = true;
           results.errors.push(errorMsg);

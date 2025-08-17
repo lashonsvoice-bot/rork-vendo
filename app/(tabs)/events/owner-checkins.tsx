@@ -164,7 +164,9 @@ export default function OwnerCheckInsScreen() {
 
               {vendors.length > 0 && (
                 <View style={styles.vendorList}>
-                  {Object.keys(groups).sort().map((groupKey) => {
+                  {Object.keys(groups)
+                    .sort((a, b) => (a === 'Unassigned' ? -1 : b === 'Unassigned' ? 1 : a.localeCompare(b)))
+                    .map((groupKey) => {
                     const list = groups[groupKey] ?? [];
                     const gTotal = list.length;
                     const gCheckIns = list.filter(v => v.arrivalConfirmed).length;

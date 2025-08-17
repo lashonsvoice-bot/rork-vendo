@@ -1,29 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Platform, Text, TouchableOpacity } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { View, StyleSheet, Dimensions, Text, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { neonTheme } from '@/constants/theme';
-import { Play, SkipForward } from 'lucide-react-native';
+import { SkipForward } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
-interface VideoSplashScreenProps {
+interface ImageSplashScreenProps {
   onFinish: () => void;
-  videoUri?: string;
+  imageUri?: string;
   duration?: number;
 }
 
 export function VideoSplashScreen({ 
   onFinish, 
-  videoUri = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+  imageUri = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/p96qhw5k0yebwv61ljko1',
   duration = 5000 
-}: VideoSplashScreenProps) {
-  const [isVideoLoaded, setIsVideoLoaded] = useState<boolean>(false);
+}: ImageSplashScreenProps) {
   const [showSkip, setShowSkip] = useState<boolean>(false);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const videoRef = useRef<Video>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
 
@@ -46,30 +42,11 @@ export function VideoSplashScreen({
     };
   }, [duration, onFinish]);
 
-  const handleVideoLoad = (status: AVPlaybackStatus) => {
-    if (status.isLoaded && !isVideoLoaded) {
-      setIsVideoLoaded(true);
-      setIsPlaying(true);
-    }
-  };
-
   const handleSkip = () => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
     onFinish();
-  };
-
-  const handlePlayPress = async () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        await videoRef.current.pauseAsync();
-        setIsPlaying(false);
-      } else {
-        await videoRef.current.playAsync();
-        setIsPlaying(true);
-      }
-    }
   };
 
   return (
@@ -84,43 +61,16 @@ export function VideoSplashScreen({
         end={{ x: 1, y: 1 }}
       />
 
-      {/* Video container */}
-      <View style={styles.videoContainer}>
-        {Platform.OS !== 'web' ? (
-          <Video
-            ref={videoRef}
-            style={styles.video}
-            source={{ uri: videoUri }}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay={true}
-            isLooping={false}
-            isMuted={false}
-            onPlaybackStatusUpdate={handleVideoLoad}
-            onError={(error) => {
-              console.log('Video error:', error);
-              // Fallback to gradient background
-            }}
-          />
-        ) : (
-          // Web fallback - animated gradient
-          <View style={styles.webFallback}>
-            <LinearGradient
-              colors={[
-                neonTheme.accentCyan,
-                neonTheme.accentPink,
-                neonTheme.accentLime,
-                neonTheme.accentCyan
-              ]}
-              style={StyleSheet.absoluteFillObject}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-            <View style={styles.logoContainer}>
-              <Text style={styles.logoText}>RevoVend</Text>
-              <Text style={styles.taglineText}>Revolutionizing Events</Text>
-            </View>
-          </View>
-        )}
+      {/* Image container */}
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.splashImage}
+          resizeMode="contain"
+          onError={(error) => {
+            console.log('Image error:', error);
+          }}
+        />
 
         {/* Overlay gradient */}
         <LinearGradient
@@ -131,27 +81,12 @@ export function VideoSplashScreen({
 
       {/* Controls overlay */}
       <View style={styles.controlsOverlay}>
-        {/* Play/Pause button (only for video) */}
-        {Platform.OS !== 'web' && isVideoLoaded && (
-          <TouchableOpacity 
-            style={styles.playButton}
-            onPress={handlePlayPress}
-            testID="video-play-button"
-          >
-            <Play 
-              size={32} 
-              color={neonTheme.textPrimary} 
-              fill={isPlaying ? 'transparent' : neonTheme.textPrimary}
-            />
-          </TouchableOpacity>
-        )}
-
         {/* Skip button */}
         {showSkip && (
           <TouchableOpacity 
             style={styles.skipButton}
             onPress={handleSkip}
-            testID="video-skip-button"
+            testID="image-skip-button"
           >
             <SkipForward size={20} color={neonTheme.textPrimary} />
             <Text style={styles.skipText}>Skip</Text>
@@ -173,38 +108,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: neonTheme.background,
   },
-  videoContainer: {
+  imageContainer: {
     flex: 1,
     width: width,
     height: height,
     position: 'relative',
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-  },
-  webFallback: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoContainer: {
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: neonTheme.textPrimary,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    marginBottom: 8,
-  },
-  taglineText: {
-    fontSize: 18,
-    color: neonTheme.textPrimary,
-    textAlign: 'center',
-    opacity: 0.9,
+  splashImage: {
+    width: width * 0.8,
+    height: width * 0.8,
+    maxWidth: 400,
+    maxHeight: 400,
   },
   controlsOverlay: {
     position: 'absolute',
@@ -215,16 +131,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  playButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: neonTheme.textPrimary,
-  },
+
   skipButton: {
     position: 'absolute',
     top: 60,

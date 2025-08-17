@@ -270,7 +270,7 @@ export default function ProfileDetailScreen() {
                 {getProfileDescription(profile)}
               </Text>
             </View>
-          )
+          )}
           
           {!isGuest && profile.location && (
             <View style={styles.section}>

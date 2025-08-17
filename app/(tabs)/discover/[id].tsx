@@ -231,12 +231,16 @@ export default function ProfileDetailScreen() {
             <Text style={styles.profileName}>
               {getProfileDisplayName(profile)}
             </Text>
-            <Text style={styles.profileRole}>
-              {profile.role.replace('_', ' ').toUpperCase()}
-            </Text>
-            <Text style={styles.joinedDate}>
-              Member since {new Date(profile.createdAt).toLocaleDateString()}
-            </Text>
+            {!isGuest && (
+              <Text style={styles.profileRole}>
+                {profile.role.replace('_', ' ').toUpperCase()}
+              </Text>
+            )}
+            {!isGuest && (
+              <Text style={styles.joinedDate}>
+                Member since {new Date(profile.createdAt).toLocaleDateString()}
+              </Text>
+            )}
           </View>
         </LinearGradient>
 
@@ -244,19 +248,31 @@ export default function ProfileDetailScreen() {
           {isGuest && (
             <View style={styles.guestNotice}>
               <Text style={styles.guestNoticeText}>
-                Sign up to view full profile details and contact information
+                Public view: only name and state are visible
               </Text>
             </View>
           )}
-          
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>About</Text>
-            <Text style={styles.profileDescription}>
-              {getProfileDescription(profile)}
-            </Text>
-          </View>
 
-          {profile.location && (
+          {isGuest ? (
+            profile.state ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>State</Text>
+                <View style={styles.infoRow}>
+                  <MapPin size={20} color="#6B7280" />
+                  <Text style={styles.infoText} testID="public-state-detail">{profile.state}</Text>
+                </View>
+              </View>
+            ) : null
+          ) : (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>About</Text>
+              <Text style={styles.profileDescription}>
+                {getProfileDescription(profile)}
+              </Text>
+            </View>
+          )
+          
+          {!isGuest && profile.location && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Location</Text>
               <View style={styles.infoRow}>
@@ -268,7 +284,7 @@ export default function ProfileDetailScreen() {
 
           {profile.role === 'business_owner' && (
             <>
-              {profile.companyWebsite && !isGuest && (
+              {!isGuest && profile.companyWebsite && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Website</Text>
                   <View style={styles.infoRow}>
@@ -278,7 +294,7 @@ export default function ProfileDetailScreen() {
                 </View>
               )}
               
-              {profile.needs && profile.needs.length > 0 && (
+              {!isGuest && profile.needs && profile.needs.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Looking For</Text>
                   <View style={styles.skillsContainer}>
@@ -295,7 +311,7 @@ export default function ProfileDetailScreen() {
 
           {profile.role === 'contractor' && (
             <>
-              {profile.ratePerHour && (
+              {!isGuest && profile.ratePerHour && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Rate</Text>
                   <View style={styles.infoRow}>
@@ -307,7 +323,7 @@ export default function ProfileDetailScreen() {
                 </View>
               )}
 
-              {profile.availability && (
+              {!isGuest && profile.availability && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Availability</Text>
                   <View style={styles.infoRow}>
@@ -319,7 +335,7 @@ export default function ProfileDetailScreen() {
                 </View>
               )}
 
-              {profile.portfolioUrl && (
+              {!isGuest && profile.portfolioUrl && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Portfolio</Text>
                   <View style={styles.infoRow}>
@@ -329,7 +345,7 @@ export default function ProfileDetailScreen() {
                 </View>
               )}
 
-              {profile.skills && profile.skills.length > 0 && (
+              {!isGuest && profile.skills && profile.skills.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Skills</Text>
                   <View style={styles.skillsContainer}>
@@ -346,7 +362,7 @@ export default function ProfileDetailScreen() {
 
           {profile.role === 'event_host' && (
             <>
-              {profile.eventsHosted !== undefined && (
+              {!isGuest && profile.eventsHosted !== undefined && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Experience</Text>
                   <View style={styles.infoRow}>
@@ -358,7 +374,7 @@ export default function ProfileDetailScreen() {
                 </View>
               )}
 
-              {profile.interests && profile.interests.length > 0 && (
+              {!isGuest && profile.interests && profile.interests.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Event Interests</Text>
                   <View style={styles.skillsContainer}>
@@ -377,23 +393,26 @@ export default function ProfileDetailScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.contactSection}>
-        <TouchableOpacity
-          style={styles.contactButton}
-          onPress={handleContact}
-          disabled={isContacting}
-        >
-          <LinearGradient
-            colors={neonTheme.gradientHeader as unknown as any}
-            style={styles.contactButtonGradient}
+      {!isGuest && (
+        <View style={styles.contactSection}>
+          <TouchableOpacity
+            style={styles.contactButton}
+            onPress={handleContact}
+            disabled={isContacting}
+            testID="contact-profile-detail"
           >
-            <MessageCircle size={20} color="#FFFFFF" />
-            <Text style={styles.contactButtonText}>
-              {isGuest ? 'Sign Up to Contact' : isContacting ? 'Opening...' : 'Send Message'}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      </View>
+            <LinearGradient
+              colors={neonTheme.gradientHeader as unknown as any}
+              style={styles.contactButtonGradient}
+            >
+              <MessageCircle size={20} color="#FFFFFF" />
+              <Text style={styles.contactButtonText}>
+                {isContacting ? 'Opening...' : 'Send Message'}
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }

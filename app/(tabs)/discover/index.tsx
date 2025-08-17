@@ -287,43 +287,34 @@ export default function DiscoverScreen() {
               <Text style={styles.profileName} numberOfLines={1}>
                 {getProfileDisplayName(profile)}
               </Text>
-              {isPublicView && (
-                <View style={styles.guestBadge}>
-                  <Text style={styles.guestBadgeText}>PUBLIC</Text>
-                </View>
-              )}
+
             </View>
-            <Text style={[styles.profileRole, { color: getRoleColor(profile.role) }]}>
-              {profile.role.replace('_', ' ').toUpperCase()}
-            </Text>
+            {!isPublicView && (
+              <Text style={[styles.profileRole, { color: getRoleColor(profile.role) }]}>
+                {profile.role.replace('_', ' ').toUpperCase()}
+              </Text>
+            )}
           </View>
-          <TouchableOpacity
-            style={styles.contactButton}
-            onPress={() => handleContactProfile(profile)}
-          >
-            <MessageCircle size={18} color={neonTheme.accentCyan} />
-          </TouchableOpacity>
+          {!isPublicView && (
+            <TouchableOpacity
+              style={styles.contactButton}
+              onPress={() => handleContactProfile(profile)}
+              testID="contact-profile"
+            >
+              <MessageCircle size={18} color={neonTheme.accentCyan} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        {!isPublicView && (
-          <Text style={styles.profileDescription} numberOfLines={2}>
-            {getProfileDescription(profile)}
-          </Text>
-        )}
+
 
         {isPublicView ? (
           <View style={styles.publicInfo}>
-            <Text style={styles.publicInfoText}>
-              Registration Date: {new Date(profile.createdAt).toLocaleDateString()}
-            </Text>
             {profile.state && (
-              <Text style={styles.publicInfoText}>
-                State: {profile.state}
+              <Text style={styles.publicInfoText} testID="public-state">
+                {profile.state}
               </Text>
             )}
-            <Text style={styles.limitedAccessText}>
-              Sign up to view full profile and contact information
-            </Text>
           </View>
         ) : (
           <>
@@ -414,7 +405,7 @@ export default function DiscoverScreen() {
         <Text style={styles.headerTitle}>Discover Professionals</Text>
         <Text style={styles.headerSubtitle}>
           {isGuest
-            ? 'Browse public business and host directories'
+            ? 'Public view: only name and state are visible'
             : userRole === 'business_owner' 
             ? 'Find contractors and event hosts to work with'
             : userRole === 'contractor'

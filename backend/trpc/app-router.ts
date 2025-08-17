@@ -8,7 +8,7 @@ import sendMessageRoute from "./routes/messages/send/route";
 import getMessagesRoute from "./routes/messages/get/route";
 import markMessageAsReadRoute from "./routes/messages/mark-read/route";
 import sendExternalProposalRoute from "./routes/proposals/send-external/route";
-import { submitW9Procedure, getW9Procedure, updateW9StatusProcedure } from "./routes/tax/w9/route";
+import { submitW9Procedure, getW9Procedure, updateW9StatusProcedure, checkW9RequiredProcedure } from "./routes/tax/w9/route";
 import { recordPaymentProcedure, getContractorPaymentsProcedure, getBusinessOwnerPaymentsProcedure } from "./routes/tax/payments/route";
 import { generate1099Procedure, update1099StatusProcedure, getBusinessOwner1099sProcedure } from "./routes/tax/1099/route";
 import { registerPushTokenProcedure, updateNotificationSettingsProcedure, getNotificationSettingsProcedure, sendPushNotificationProcedure } from "./routes/notifications/push/route";
@@ -121,6 +121,7 @@ export const appRouter = createTRPCRouter({
       submit: submitW9Procedure,
       get: getW9Procedure,
       updateStatus: updateW9StatusProcedure,
+      checkRequired: checkW9RequiredProcedure,
     }),
     payments: createTRPCRouter({
       record: recordPaymentProcedure,

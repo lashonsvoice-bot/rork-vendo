@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure } from "../../../create-context";
 import { eventRepo } from "../../../../db/event-repo";
+import { taxRepo } from "../../../../db/tax-repo";
 
 export const submitContractorApplicationProcedure = protectedProcedure
   .input(z.object({
@@ -41,19 +42,33 @@ export const selectContractorsProcedure = protectedProcedure
       throw new Error('Event not found or no applications');
     }
     
+    // Check W9 status for selected contractors
+    const contractorsNeedingW9: string[] = [];
+    for (const contractorId of input.selectedContractorIds) {
+      const w9Form = await taxRepo.getW9ByContractor(contractorId);
+      if (!w9Form || w9Form.status !== 'verified') {
+        contractorsNeedingW9.push(contractorId);
+      }
+    }
+    
     const updatedApplications = event.contractorApplications.map(app => ({
       ...app,
       status: input.selectedContractorIds.includes(app.contractorId) ? 'accepted' as const : 'rejected' as const,
+      w9Required: input.selectedContractorIds.includes(app.contractorId) && contractorsNeedingW9.includes(app.contractorId),
     }));
     
     const updatedEvent = await eventRepo.update(input.eventId, {
       contractorApplications: updatedApplications,
       selectedContractors: input.selectedContractorIds,
       contractorsHiredAt: new Date().toISOString(),
-      status: 'contractors_hired',
+      status: contractorsNeedingW9.length > 0 ? 'pending_w9_forms' : 'contractors_hired',
+      contractorsNeedingW9,
     });
     
-    return updatedEvent;
+    return {
+      ...updatedEvent,
+      contractorsNeedingW9,
+    };
   });
 
 export const getContractorApplicationsProcedure = protectedProcedure

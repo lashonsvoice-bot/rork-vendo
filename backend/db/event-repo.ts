@@ -44,6 +44,7 @@ export interface ContractorApplication {
   message?: string;
   rating?: number;
   experience?: string;
+  w9Required?: boolean;
 }
 
 export interface InventoryItem {
@@ -131,7 +132,7 @@ export interface Event {
   eventHostName?: string;
   businessOwnerId?: string;
   createdBy: 'business_owner' | 'event_host' | 'contractor';
-  status: 'draft' | 'active' | 'filled' | 'completed' | 'cancelled' | 'awaiting_host' | 'host_connected' | 'contractors_hired' | 'materials_sent' | 'ready_for_event';
+  status: 'draft' | 'active' | 'filled' | 'completed' | 'cancelled' | 'awaiting_host' | 'host_connected' | 'contractors_hired' | 'pending_w9_forms' | 'materials_sent' | 'ready_for_event';
   vendors?: VendorCheckIn[];
   paymentReceived?: boolean;
   paymentReceivedDate?: string;
@@ -161,6 +162,7 @@ export interface Event {
   contractorApplications?: ContractorApplication[];
   selectedContractors?: string[];
   contractorsHiredAt?: string;
+  contractorsNeedingW9?: string[];
   materialsSentAt?: string;
   trackingNumber?: string;
   isPublicListing?: boolean;

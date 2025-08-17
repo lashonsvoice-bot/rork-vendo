@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/hooks/auth-store';
+import { useRouter } from 'expo-router';
 
 type EntityType = 'individual' | 'sole_proprietor' | 'partnership' | 'c_corp' | 's_corp' | 'llc' | 'other';
 
@@ -22,8 +23,14 @@ interface W9FormData {
   certificationDate: string;
 }
 
-export default function W9Form() {
+interface W9FormProps {
+  eventId?: string;
+  onComplete?: () => void;
+}
+
+export default function W9Form({ eventId, onComplete }: W9FormProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [formData, setFormData] = useState<W9FormData>({
     individualName: user?.name || '',
     federalTaxClassification: 'individual',
@@ -38,14 +45,40 @@ export default function W9Form() {
     certificationDate: new Date().toISOString().split('T')[0],
   });
 
+  const w9RequiredQuery = trpc.tax.w9.checkRequired.useQuery(
+    { contractorId: user?.id || '' },
+    { enabled: !!user?.id }
+  );
+
   const submitW9Mutation = trpc.tax.w9.submit.useMutation({
     onSuccess: () => {
-      Alert.alert('Success', 'W-9 form submitted successfully');
+      Alert.alert('Success', 'W-9 form submitted successfully', [
+        {
+          text: 'OK',
+          onPress: () => {
+            if (onComplete) {
+              onComplete();
+            } else {
+              router.back();
+            }
+          }
+        }
+      ]);
     },
     onError: (error) => {
       Alert.alert('Error', error.message);
     },
   });
+
+  useEffect(() => {
+    if (w9RequiredQuery.data && !w9RequiredQuery.data.w9Required) {
+      Alert.alert(
+        'W-9 Not Required',
+        'You do not currently need to submit a W-9 form.',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
+    }
+  }, [w9RequiredQuery.data, router]);
 
   const handleSubmit = () => {
     if (!user?.id) {
@@ -74,10 +107,36 @@ export default function W9Form() {
     }));
   };
 
+  if (w9RequiredQuery.isLoading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (w9RequiredQuery.data && !w9RequiredQuery.data.w9Required) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.title}>W-9 Not Required</Text>
+        <Text style={styles.subtitle}>You do not currently need to submit a W-9 form.</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Form W-9</Text>
+      <Text style={styles.title}>Form W-9 Required</Text>
       <Text style={styles.subtitle}>Request for Taxpayer Identification Number and Certification</Text>
+      
+      {w9RequiredQuery.data?.eventsRequiringW9 && w9RequiredQuery.data.eventsRequiringW9.length > 0 && (
+        <View style={styles.eventNotice}>
+          <Text style={styles.eventNoticeTitle}>Required for Events:</Text>
+          {w9RequiredQuery.data.eventsRequiringW9.map((event) => (
+            <Text key={event.id} style={styles.eventNoticeText}>• {event.title}</Text>
+          ))}
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.label}>Name (as shown on your income tax return) *</Text>
@@ -299,5 +358,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+  eventNotice: {
+    backgroundColor: '#fff3cd',
+    borderColor: '#ffeaa7',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 20,
+  },
+  eventNoticeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#856404',
+    marginBottom: 8,
+  },
+  eventNoticeText: {
+    fontSize: 14,
+    color: '#856404',
+    marginBottom: 4,
   },
 });

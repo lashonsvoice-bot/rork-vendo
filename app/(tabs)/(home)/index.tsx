@@ -22,6 +22,7 @@ import {
   Store,
   LogOut,
   MessageCircle,
+  FileText,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useEvents } from "@/hooks/events-store";
@@ -45,6 +46,11 @@ export default function HomeScreen() {
     { 
       enabled: !!user?.id,
     }
+  );
+  
+  const w9RequiredQuery = trpc.tax.w9.checkRequired.useQuery(
+    { contractorId: user?.id || '' },
+    { enabled: !!user?.id && user?.role === 'contractor' }
   );
   
   React.useEffect(() => {
@@ -248,6 +254,31 @@ export default function HomeScreen() {
           </Text>
         </View>
       </LinearGradient>
+
+      {/* W9 Required Notification for Contractors */}
+      {user?.role === 'contractor' && w9RequiredQuery.data?.w9Required && !w9RequiredQuery.data?.hasValidW9 && (
+        <View style={styles.w9AlertContainer}>
+          <TouchableOpacity 
+            style={styles.w9Alert}
+            onPress={() => router.push('/w9-form' as const)}
+          >
+            <View style={styles.w9AlertContent}>
+              <FileText size={24} color="#d63384" />
+              <View style={styles.w9AlertText}>
+                <Text style={styles.w9AlertTitle}>W-9 Form Required</Text>
+                <Text style={styles.w9AlertSubtitle}>
+                  Complete your W-9 form to proceed with selected events
+                </Text>
+                {w9RequiredQuery.data.eventsRequiringW9.length > 0 && (
+                  <Text style={styles.w9AlertEvents}>
+                    {w9RequiredQuery.data.eventsRequiringW9.length} event(s) waiting
+                  </Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View style={styles.statsContainer}>
         {stats.map((stat, index) => {
@@ -966,6 +997,42 @@ const styles = StyleSheet.create({
     color: neonTheme.textSecondary,
     lineHeight: 20,
     textAlign: "center",
+  },
+  w9AlertContainer: {
+    paddingHorizontal: 20,
+    marginTop: -10,
+    marginBottom: 10,
+  },
+  w9Alert: {
+    backgroundColor: '#f8d7da',
+    borderColor: '#f5c6cb',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+  },
+  w9AlertContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  w9AlertText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  w9AlertTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#721c24',
+    marginBottom: 4,
+  },
+  w9AlertSubtitle: {
+    fontSize: 14,
+    color: '#721c24',
+    marginBottom: 4,
+  },
+  w9AlertEvents: {
+    fontSize: 12,
+    color: '#721c24',
+    fontWeight: '500',
   },
 
 });

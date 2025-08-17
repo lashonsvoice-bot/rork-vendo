@@ -8,6 +8,7 @@ import profileRoutes from "./routes/profile";
 import uploadsRoutes from "./routes/uploads";
 import webhooksRoutes from "./routes/webhooks";
 import { validateConfig, logConfigStatus, logSecurityRecommendations } from "./config/env";
+import { initializeDatabase } from "./db/user-repo";
 
 // Initialize and validate configuration
 try {
@@ -18,6 +19,11 @@ try {
   console.error('❌ Failed to initialize configuration:', error);
   process.exit(1);
 }
+
+// Initialize database
+initializeDatabase().catch(error => {
+  console.error('❌ Failed to initialize database:', error);
+});
 
 const app = new Hono();
 

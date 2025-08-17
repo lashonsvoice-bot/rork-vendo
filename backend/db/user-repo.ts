@@ -183,6 +183,11 @@ async function update(user: UserRecord): Promise<UserRecord> {
   return user;
 }
 
+export async function initializeDatabase(): Promise<void> {
+  await ensureStorage();
+  console.log('✅ Database initialized');
+}
+
 export const userRepo = {
   readAll,
   writeAll,

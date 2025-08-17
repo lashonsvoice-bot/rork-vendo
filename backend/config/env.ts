@@ -15,6 +15,14 @@ export interface AppConfig {
   apiBaseUrl: string;
   debug: boolean;
   
+  // Database
+  database?: {
+    connectionString: string;
+    username: string;
+    password: string;
+    bucketName: string;
+  };
+  
   // Email
   sendgrid: {
     apiKey: string;
@@ -186,6 +194,15 @@ export const config: AppConfig = {
       apiSecret: getEnvVar('CLOUDINARY_API_SECRET'),
     },
   }),
+  
+  ...(getOptionalEnvVar('COUCHBASE_CONNECTION_STRING') && {
+    database: {
+      connectionString: getEnvVar('COUCHBASE_CONNECTION_STRING'),
+      username: getEnvVar('COUCHBASE_USERNAME'),
+      password: getEnvVar('COUCHBASE_PASSWORD'),
+      bucketName: getEnvVar('COUCHBASE_BUCKET_NAME'),
+    },
+  }),
 };
 
 // Validation function to check configuration on startup
@@ -259,6 +276,7 @@ export function logConfigStatus(): void {
   console.log(`  Google: ${config.google ? '✅ Configured' : '⚪ Optional'}`);
   console.log(`  OpenAI: ${config.openai ? '✅ Configured' : '⚪ Optional'}`);
   console.log(`  Cloudinary: ${config.cloudinary ? '✅ Configured' : '⚪ Optional'}`);
+  console.log(`  Database: ${config.database ? '✅ Configured' : '⚪ Optional'}`);
 }
 
 // Security utilities

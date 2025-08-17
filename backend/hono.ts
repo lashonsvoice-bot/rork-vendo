@@ -6,12 +6,13 @@ import { createContext } from "./trpc/create-context";
 import authRoutes from "./routes/auth";
 import profileRoutes from "./routes/profile";
 import uploadsRoutes from "./routes/uploads";
-import { validateConfig, logConfigStatus } from "./config/env";
+import { validateConfig, logConfigStatus, logSecurityRecommendations } from "./config/env";
 
 // Initialize and validate configuration
 try {
   validateConfig();
   logConfigStatus();
+  logSecurityRecommendations();
 } catch (error) {
   console.error('❌ Failed to initialize configuration:', error);
   process.exit(1);

@@ -3,6 +3,8 @@
  * Centralized configuration management for environment variables
  */
 
+import { randomBytes } from 'crypto';
+
 export interface AppConfig {
   // Environment
   nodeEnv: string;
@@ -64,6 +66,16 @@ export interface AppConfig {
     mapsApiKey: string;
     clientId?: string;
     clientSecret?: string;
+  };
+  
+  openai?: {
+    apiKey: string;
+  };
+  
+  cloudinary?: {
+    cloudName: string;
+    apiKey: string;
+    apiSecret: string;
   };
 }
 
@@ -160,6 +172,20 @@ export const config: AppConfig = {
       clientSecret: getOptionalEnvVar('GOOGLE_CLIENT_SECRET'),
     },
   }),
+  
+  ...(getOptionalEnvVar('OPENAI_API_KEY') && {
+    openai: {
+      apiKey: getEnvVar('OPENAI_API_KEY'),
+    },
+  }),
+  
+  ...(getOptionalEnvVar('CLOUDINARY_CLOUD_NAME') && {
+    cloudinary: {
+      cloudName: getEnvVar('CLOUDINARY_CLOUD_NAME'),
+      apiKey: getEnvVar('CLOUDINARY_API_KEY'),
+      apiSecret: getEnvVar('CLOUDINARY_API_SECRET'),
+    },
+  }),
 };
 
 // Validation function to check configuration on startup
@@ -231,4 +257,26 @@ export function logConfigStatus(): void {
   console.log(`  Expo Push: ${config.expo ? '✅ Configured' : '⚪ Optional'}`);
   console.log(`  AWS: ${config.aws ? '✅ Configured' : '⚪ Optional'}`);
   console.log(`  Google: ${config.google ? '✅ Configured' : '⚪ Optional'}`);
+  console.log(`  OpenAI: ${config.openai ? '✅ Configured' : '⚪ Optional'}`);
+  console.log(`  Cloudinary: ${config.cloudinary ? '✅ Configured' : '⚪ Optional'}`);
+}
+
+// Security utilities
+export function generateSecureSecret(length: number = 32): string {
+  return randomBytes(length).toString('base64');
+}
+
+export function logSecurityRecommendations(): void {
+  if (config.isDevelopment) {
+    console.log('🔒 Security Recommendations for Production:');
+    console.log('  1. Generate secure secrets:');
+    console.log(`     JWT_SECRET=${generateSecureSecret()}`);
+    console.log(`     SESSION_SECRET=${generateSecureSecret()}`);
+    console.log('  2. Set NODE_ENV=production');
+    console.log('  3. Use HTTPS for API_BASE_URL');
+    console.log('  4. Enable proper CORS settings');
+    console.log('  5. Set up proper database with connection pooling');
+    console.log('  6. Configure rate limiting and request validation');
+    console.log('  7. Set up monitoring and error tracking (Sentry)');
+  }
 }

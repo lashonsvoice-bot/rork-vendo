@@ -17,14 +17,19 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useUser } from '@/hooks/user-store';
+import { useEvents } from '@/hooks/events-store';
 import { trpc, trpcClient } from '@/lib/trpc';
 
 export default function SendExternalProposalScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { currentUser, userRole } = useUser();
+  const { markProposalSent } = useEvents();
   const [isLoading, setIsLoading] = useState(false);
+  
+  console.log('[SendExternalProposal] Received params:', params);
   
   const profileQuery = trpc.profile.get.useQuery(
     {},
@@ -32,14 +37,14 @@ export default function SendExternalProposalScreen() {
   );
   
   const [formData, setFormData] = useState({
-    eventTitle: '',
-    eventDate: '',
-    eventLocation: '',
+    eventTitle: (params.eventTitle as string) || '',
+    eventDate: (params.eventDate as string) || '',
+    eventLocation: (params.eventLocation as string) || '',
     hostName: '',
     hostEmail: '',
     hostPhone: '',
-    proposedAmount: '',
-    contractorsNeeded: '',
+    proposedAmount: (params.proposedAmount as string) || '',
+    contractorsNeeded: (params.contractorsNeeded as string) || '',
     contactEmail: '',
     message: 'We would love to participate in your event with our experienced team of contractors. Our team is professional, reliable, and committed to making your event a success.',
   });
@@ -120,6 +125,16 @@ export default function SendExternalProposalScreen() {
       setSendResults(result);
 
       if (result.success) {
+        // Mark the original event as proposal sent if eventId is provided
+        if (params.eventId) {
+          try {
+            markProposalSent(params.eventId as string);
+            console.log('[SendExternalProposal] Marked proposal as sent for event:', params.eventId);
+          } catch (error) {
+            console.error('[SendExternalProposal] Failed to mark proposal as sent:', error);
+          }
+        }
+        
         Alert.alert(
           'Proposal Sent!',
           result.message,

@@ -63,6 +63,7 @@ export default function EventsScreen() {
     { id: "awaiting_contractors", label: "Need Contractors" },
     { id: "ready_to_hire", label: "Ready to Hire" },
     { id: "active", label: "Active" },
+    { id: "remote_opportunities", label: "Remote Opportunities" },
     { id: "contractor_listings", label: "Contractor Listings" },
   ] : userRole === 'contractor' ? [
     { id: "all", label: "Available Jobs" },
@@ -84,11 +85,13 @@ export default function EventsScreen() {
     let eventList: any[] = [];
     
     if (userRole === 'business_owner') {
-      // Business owners see their own events and events they can connect to, plus contractor listings (to propose)
+      // Business owners see their own events, events they can connect to, plus contractor listings (to propose)
+      // Also include events created by event hosts that need business owners (remote opportunities)
       eventList = events.filter(event => 
         event.businessOwnerId === currentUser?.id || 
         event.createdBy === 'business_owner' ||
-        event.createdBy === 'contractor'
+        event.createdBy === 'contractor' ||
+        (event.createdBy === 'event_host' && !event.businessOwnerId)
       );
     } else if (userRole === 'contractor') {
       // Contractors see public listings (events with hosts connected)
@@ -142,6 +145,8 @@ export default function EventsScreen() {
             return (event.selectedContractors?.length ?? 0) > 0;
           case "contractor_listings":
             return event.createdBy === 'contractor';
+          case "remote_opportunities":
+            return event.createdBy === 'event_host' && !event.businessOwnerId;
           default:
             return event.businessOwnerId === currentUser?.id;
         }
@@ -504,19 +509,73 @@ export default function EventsScreen() {
                     </View>
                   )}
 
-                  {userRole === 'business_owner' && !event.hostConnected && (event.proposalSent ?? false) === false && (
+                  {/* Send Proposal button for business owner's own events that need hosts */}
+                  {userRole === 'business_owner' && event.createdBy === 'business_owner' && !event.hostConnected && (event.proposalSent ?? false) === false && (
                     <TouchableOpacity
                       testID={`send-proposal-${event.id}`}
                       style={styles.sendProposalButton}
                       onPress={() => {
-                        try {
-                          markProposalSent(event.id);
-                        } catch (e) {
-                          console.log('Failed to mark proposal sent', e);
-                        }
+                        console.log('[Events] Send Proposal button pressed for event:', event.id);
+                        console.log('[Events] Event details:', {
+                          title: event.title,
+                          date: event.date,
+                          location: `${event.city}, ${event.state}`,
+                          hostConnected: event.hostConnected,
+                          proposalSent: event.proposalSent
+                        });
+                        
+                        // Navigate to send external proposal screen with pre-filled data
+                        router.push({
+                          pathname: '/send-external-proposal',
+                          params: {
+                            eventTitle: event.title,
+                            eventDate: formatDate(event.date),
+                            eventLocation: `${event.city}, ${event.state}`,
+                            proposedAmount: event.contractorPay?.toString() || '',
+                            contractorsNeeded: event.contractorsNeeded?.toString() || '1',
+                            eventId: event.id
+                          }
+                        });
                       }}
                       accessibilityRole="button"
                       accessibilityLabel="Send Proposal"
+                    >
+                      <Text style={styles.sendProposalText}>Send Proposal</Text>
+                    </TouchableOpacity>
+                  )}
+                  
+                  {/* Send Proposal button for remote opportunities (events created by hosts that need business owners) */}
+                  {userRole === 'business_owner' && event.createdBy === 'event_host' && !event.businessOwnerId && (
+                    <TouchableOpacity
+                      testID={`send-remote-proposal-${event.id}`}
+                      style={styles.sendProposalButton}
+                      onPress={() => {
+                        console.log('[Events] Send Remote Proposal button pressed for event:', event.id);
+                        console.log('[Events] Remote opportunity details:', {
+                          title: event.title,
+                          date: event.date,
+                          location: `${event.city}, ${event.state}`,
+                          createdBy: event.createdBy,
+                          businessOwnerId: event.businessOwnerId,
+                          eventHostName: event.eventHostName
+                        });
+                        
+                        // Navigate to send external proposal screen with pre-filled data for remote vending
+                        router.push({
+                          pathname: '/send-external-proposal',
+                          params: {
+                            eventTitle: event.title,
+                            eventDate: formatDate(event.date),
+                            eventLocation: `${event.city}, ${event.state}`,
+                            hostName: event.eventHostName || 'Event Host',
+                            proposedAmount: event.contractorPay?.toString() || '',
+                            contractorsNeeded: event.contractorsNeeded?.toString() || '1',
+                            eventId: event.id
+                          }
+                        });
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Send Remote Proposal"
                     >
                       <Text style={styles.sendProposalText}>Send Proposal</Text>
                     </TouchableOpacity>

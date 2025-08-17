@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Calendar, Plus, User, Book, Users } from "lucide-react-native";
+import { Home, Calendar, Plus, User, Book } from "lucide-react-native";
 import React, { useMemo } from "react";
 import { Platform, StyleSheet } from "react-native";
 import { useUser } from "@/hooks/user-store";
@@ -72,7 +72,7 @@ export default function TabLayout() {
         name="discover"
         options={{
           title: "Discover",
-          tabBarIcon: ({ color }) => <Users size={26} color={color ?? theme.accentCyan} />,
+          tabBarIcon: ({ color }) => <Book size={26} color={color ?? theme.accentCyan} />,
         }}
       />
       <Tabs.Screen

@@ -544,42 +544,7 @@ export default function EventsScreen() {
                     </TouchableOpacity>
                   )}
                   
-                  {/* Send Proposal button for remote opportunities (events created by hosts that need business owners) */}
-                  {userRole === 'business_owner' && event.createdBy === 'event_host' && !event.businessOwnerId && (
-                    <TouchableOpacity
-                      testID={`send-remote-proposal-${event.id}`}
-                      style={styles.sendProposalButton}
-                      onPress={() => {
-                        console.log('[Events] Send Remote Proposal button pressed for event:', event.id);
-                        console.log('[Events] Remote opportunity details:', {
-                          title: event.title,
-                          date: event.date,
-                          location: `${event.city}, ${event.state}`,
-                          createdBy: event.createdBy,
-                          businessOwnerId: event.businessOwnerId,
-                          eventHostName: event.eventHostName
-                        });
-                        
-                        // Navigate to send external proposal screen with pre-filled data for remote vending
-                        router.push({
-                          pathname: '/send-external-proposal',
-                          params: {
-                            eventTitle: event.title,
-                            eventDate: formatDate(event.date),
-                            eventLocation: `${event.city}, ${event.state}`,
-                            hostName: event.eventHostName || 'Event Host',
-                            proposedAmount: event.contractorPay?.toString() || '',
-                            contractorsNeeded: event.contractorsNeeded?.toString() || '1',
-                            eventId: event.id
-                          }
-                        });
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel="Send Remote Proposal"
-                    >
-                      <Text style={styles.sendProposalText}>Send Proposal</Text>
-                    </TouchableOpacity>
-                  )}
+
                   
                   {event.hostSupervisionFee > 0 && userRole === 'event_host' && (
                     <View style={styles.supervisionBadge}>

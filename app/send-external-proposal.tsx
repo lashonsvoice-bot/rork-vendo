@@ -44,12 +44,13 @@ export default function SendExternalProposalScreen() {
     hostEmail: '',
     hostPhone: '',
     proposedAmount: (params.proposedAmount as string) || '',
+    supervisoryFee: '',
     contactEmail: '',
     message: `Greetings,
 
 [Insert business name] located in [insert city state] would like to RevoVend at your ${(params.eventTitle as string) || '[insert name and date of event]'}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.
 
-We want to pay $[insert amount for table or booth and size] today as well as an additional fee of $[×.××] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
+We want to pay $[insert amount for table or booth and size] today as well as an additional supervisory fee of $[insert supervisory fee amount] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
 
 If you accept this proposal please use the invitation code when you log into the RevoVend App. The more vendors see that you are a RevoVend Host the more your events could be filled remotely with vendors from all around the world.
 
@@ -86,7 +87,7 @@ Best regards,
     }
 
     // Validation
-    const requiredFields = ['eventTitle', 'eventDate', 'eventLocation', 'hostName', 'proposedAmount', 'message'];
+    const requiredFields = ['eventTitle', 'eventDate', 'eventLocation', 'hostName', 'proposedAmount', 'supervisoryFee', 'message'];
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
     
     if (missingFields.length > 0) {
@@ -100,9 +101,15 @@ Best regards,
     }
 
     const proposedAmount = parseFloat(formData.proposedAmount);
+    const supervisoryFee = parseFloat(formData.supervisoryFee);
 
     if (isNaN(proposedAmount) || proposedAmount <= 0) {
       Alert.alert('Error', 'Please enter a valid proposed amount');
+      return;
+    }
+
+    if (isNaN(supervisoryFee) || supervisoryFee < 0) {
+      Alert.alert('Error', 'Please enter a valid supervisory fee (0 or greater)');
       return;
     }
 
@@ -120,6 +127,7 @@ Best regards,
         hostEmail: formData.hostEmail || undefined,
         hostPhone: formData.hostPhone || undefined,
         proposedAmount,
+        supervisoryFee,
         message: formData.message,
         eventDate: formData.eventDate,
         eventLocation: formData.eventLocation,
@@ -166,12 +174,13 @@ Best regards,
       hostEmail: '',
       hostPhone: '',
       proposedAmount: '',
+      supervisoryFee: '',
       contactEmail: (profileQuery.data?.role === 'business_owner' ? profileQuery.data.contactEmail : '') || '',
       message: `Greetings,
 
 [Insert business name] located in [insert city state] would like to RevoVend at your ${(params.eventTitle as string) || '[insert name and date of event]'}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.
 
-We want to pay $[insert amount for table or booth and size] today as well as an additional fee of $[×.××] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
+We want to pay $[insert amount for table or booth and size] today as well as an additional supervisory fee of $[insert supervisory fee amount] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
 
 If you accept this proposal please use the invitation code when you log into the RevoVend App. The more vendors see that you are a RevoVend Host the more your events could be filled remotely with vendors from all around the world.
 
@@ -401,6 +410,21 @@ Best regards,
             />
           </View>
 
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Supervisory Fee ($) *</Text>
+            <Text style={styles.inputHelper}>
+              Additional fee you&apos;re willing to pay the host for overseeing your contractors and ensuring smooth operations
+            </Text>
+            <TextInput
+              style={styles.input}
+              value={formData.supervisoryFee}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, supervisoryFee: text }))}
+              placeholder="75"
+              keyboardType="numeric"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Proposal Message *</Text>
@@ -424,7 +448,7 @@ Best regards,
 
 [Insert business name] located in [insert city state] would like to RevoVend at your ${formData.eventTitle || '[insert name and date of event]'}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.
 
-We want to pay $[insert amount for table or booth and size] today as well as an additional fee of $[×.××] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
+We want to pay $[insert amount for table or booth and size] today as well as an additional supervisory fee of $[insert supervisory fee amount] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
 
 If you accept this proposal please use the invitation code when you log into the RevoVend App. The more vendors see that you are a RevoVend Host the more your events could be filled remotely with vendors from all around the world.
 

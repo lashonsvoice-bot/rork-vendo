@@ -95,25 +95,52 @@ export default function DatePickerField({ label, valueISO, onChange, placeholder
             </View>
 
             <View style={styles.pickerRow}>
-              <ScrollView style={styles.column} contentContainerStyle={styles.colContent}>
+              <ScrollView
+                style={styles.column}
+                contentContainerStyle={styles.colContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+              >
                 {months.map((m, i) => (
-                  <TouchableOpacity key={m} style={[styles.option, (temp?.monthIndex ?? parsed?.monthIndex) === i && styles.optionSelected]} onPress={() => setTemp(prev => ({ year: prev?.year ?? parsed?.year ?? new Date().getFullYear(), monthIndex: i, day: prev?.day ?? parsed?.day ?? new Date().getDate() }))}>
+                  <TouchableOpacity
+                    key={m}
+                    style={[styles.option, (temp?.monthIndex ?? parsed?.monthIndex) === i && styles.optionSelected]}
+                    onPress={() => setTemp(prev => ({ year: prev?.year ?? parsed?.year ?? new Date().getFullYear(), monthIndex: i, day: prev?.day ?? parsed?.day ?? new Date().getDate() }))}
+                  >
                     <Text style={[styles.optionText, (temp?.monthIndex ?? parsed?.monthIndex) === i && styles.optionTextSelected]}>{m}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
 
-              <ScrollView style={styles.column} contentContainerStyle={styles.colContent}>
+              <ScrollView
+                style={styles.column}
+                contentContainerStyle={styles.colContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+              >
                 {Array.from({ length: daysInMonth }, (_, idx) => idx + 1).map(d => (
-                  <TouchableOpacity key={`d-${d}`} style={[styles.option, selectedDay === d && styles.optionSelected]} onPress={() => setTemp(prev => ({ year: prev?.year ?? parsed?.year ?? new Date().getFullYear(), monthIndex: prev?.monthIndex ?? parsed?.monthIndex ?? new Date().getMonth(), day: d }))}>
+                  <TouchableOpacity
+                    key={`d-${d}`}
+                    style={[styles.option, selectedDay === d && styles.optionSelected]}
+                    onPress={() => setTemp(prev => ({ year: prev?.year ?? parsed?.year ?? new Date().getFullYear(), monthIndex: prev?.monthIndex ?? parsed?.monthIndex ?? new Date().getMonth(), day: d }))}
+                  >
                     <Text style={[styles.optionText, selectedDay === d && styles.optionTextSelected]}>{d < 10 ? `0${d}` : d}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
 
-              <ScrollView style={styles.column} contentContainerStyle={styles.colContent}>
+              <ScrollView
+                style={styles.column}
+                contentContainerStyle={styles.colContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+              >
                 {years.map(y => (
-                  <TouchableOpacity key={`y-${y}`} style={[styles.option, (temp?.year ?? parsed?.year) === y && styles.optionSelected]} onPress={() => setTemp(prev => ({ year: y, monthIndex: prev?.monthIndex ?? parsed?.monthIndex ?? new Date().getMonth(), day: prev?.day ?? parsed?.day ?? new Date().getDate() }))}>
+                  <TouchableOpacity
+                    key={`y-${y}`}
+                    style={[styles.option, (temp?.year ?? parsed?.year) === y && styles.optionSelected]}
+                    onPress={() => setTemp(prev => ({ year: y, monthIndex: prev?.monthIndex ?? parsed?.monthIndex ?? new Date().getMonth(), day: prev?.day ?? parsed?.day ?? new Date().getDate() }))}
+                  >
                     <Text style={[styles.optionText, (temp?.year ?? parsed?.year) === y && styles.optionTextSelected]}>{y}</Text>
                   </TouchableOpacity>
                 ))}
@@ -159,12 +186,12 @@ const styles = StyleSheet.create({
   valueText: { flex: 1, fontSize: 15, color: '#111827' },
   placeholder: { color: '#9CA3AF' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
-  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden' },
+  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden', width: '100%', maxWidth: 520, alignSelf: 'center' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   iconBtn: { padding: 6 },
-  pickerRow: { flexDirection: 'row', padding: 12, gap: 12, minHeight: 240 },
-  column: { flex: 1 },
+  pickerRow: { flexDirection: 'row', padding: 12, gap: 12, height: 300 },
+  column: { flex: 1, maxHeight: 244, borderWidth: 1, borderColor: '#F3F4F6', borderRadius: 10 },
   colContent: { paddingVertical: 4 },
   option: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8 },
   optionSelected: { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#10B981' },

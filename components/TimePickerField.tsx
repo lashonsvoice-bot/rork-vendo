@@ -14,13 +14,13 @@ export type TimePickerFieldProps = {
 function pad(n: number) { return n < 10 ? `0${n}` : `${n}`; }
 
 function parseTime(value?: string | null) {
-  if (!value) return null as const;
+  if (!value) return null;
   const m = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!m) return null as const;
+  if (!m) return null;
   const h = Math.max(1, Math.min(12, parseInt(m[1], 10)));
   const min = Math.max(0, Math.min(59, parseInt(m[2], 10)));
   const ap = m[3].toUpperCase() as 'AM' | 'PM';
-  return { hour: h, minute: min, ap } as const;
+  return { hour: h, minute: min, ap } as { hour: number; minute: number; ap: 'AM' | 'PM' };
 }
 
 export default function TimePickerField({ label, value, onChange, placeholder = 'HH:MM AM/PM', testID, required }: TimePickerFieldProps) {
@@ -70,7 +70,12 @@ export default function TimePickerField({ label, value, onChange, placeholder = 
             </View>
 
             <View style={styles.pickerRow}>
-              <ScrollView style={styles.column} contentContainerStyle={styles.colContent}>
+              <ScrollView
+                style={styles.column}
+                contentContainerStyle={styles.colContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+              >
                 {hours.map(h => (
                   <TouchableOpacity key={`h-${h}`} style={[styles.option, hourSel === h && styles.optionSelected]} onPress={() => setTemp(prev => ({ hour: h, minute: prev?.minute ?? minSel, ap: prev?.ap ?? apSel }))}>
                     <Text style={[styles.optionText, hourSel === h && styles.optionTextSelected]}>{pad(h)}</Text>
@@ -78,7 +83,12 @@ export default function TimePickerField({ label, value, onChange, placeholder = 
                 ))}
               </ScrollView>
 
-              <ScrollView style={styles.column} contentContainerStyle={styles.colContent}>
+              <ScrollView
+                style={styles.column}
+                contentContainerStyle={styles.colContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+              >
                 {minutes.map(m => (
                   <TouchableOpacity key={`m-${m}`} style={[styles.option, minSel === m && styles.optionSelected]} onPress={() => setTemp(prev => ({ hour: prev?.hour ?? hourSel, minute: m, ap: prev?.ap ?? apSel }))}>
                     <Text style={[styles.optionText, minSel === m && styles.optionTextSelected]}>{pad(m)}</Text>
@@ -86,7 +96,12 @@ export default function TimePickerField({ label, value, onChange, placeholder = 
                 ))}
               </ScrollView>
 
-              <ScrollView style={styles.column} contentContainerStyle={styles.colContent}>
+              <ScrollView
+                style={styles.column}
+                contentContainerStyle={styles.colContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator
+              >
                 {ampm.map(ap => (
                   <TouchableOpacity key={`ap-${ap}`} style={[styles.option, apSel === ap && styles.optionSelected]} onPress={() => setTemp(prev => ({ hour: prev?.hour ?? hourSel, minute: prev?.minute ?? minSel, ap }))}>
                     <Text style={[styles.optionText, apSel === ap && styles.optionTextSelected]}>{ap}</Text>
@@ -134,12 +149,12 @@ const styles = StyleSheet.create({
   valueText: { flex: 1, fontSize: 15, color: '#111827' },
   placeholder: { color: '#9CA3AF' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
-  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden' },
+  modalCard: { backgroundColor: '#FFFFFF', borderRadius: 12, overflow: 'hidden', width: '100%', maxWidth: 520, alignSelf: 'center' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   modalTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   iconBtn: { padding: 6 },
-  pickerRow: { flexDirection: 'row', padding: 12, gap: 12, minHeight: 240 },
-  column: { flex: 1 },
+  pickerRow: { flexDirection: 'row', padding: 12, gap: 12, height: 300 },
+  column: { flex: 1, maxHeight: 244, borderWidth: 1, borderColor: '#F3F4F6', borderRadius: 10 },
   colContent: { paddingVertical: 4 },
   option: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: 8 },
   optionSelected: { backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#FDBA74' },

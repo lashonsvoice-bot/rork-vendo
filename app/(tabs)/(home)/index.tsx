@@ -35,9 +35,9 @@ import { Alert } from "react-native";
 export default function HomeScreen() {
   const router = useRouter();
   const { events } = useEvents();
-  const { userRole, currentUser, logout } = useUser();
+  const { userRole, currentUser, logout: clearUserStore } = useUser();
   const { getUnreadMessagesCount } = useCommunication();
-  const { user, signout, isGuest, isLoading: authLoading } = useAuth();
+  const { user, logout: authLogout, isGuest, isLoading: authLoading } = useAuth();
   const upcomingEvents = events.slice(0, 3);
   
   const profileQuery = trpc.profile.get.useQuery(
@@ -72,7 +72,7 @@ export default function HomeScreen() {
             <Text style={styles.guestTitle}>Welcome to RevoVend</Text>
             <TouchableOpacity 
               style={styles.signUpButton}
-              onPress={() => router.push('/auth/signup')}
+              onPress={() => router.push('/auth/role-selection' as const)}
             >
               <Text style={styles.signUpButtonText}>Sign Up</Text>
             </TouchableOpacity>
@@ -123,7 +123,7 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={[styles.directoryCard, styles.eventsCard]}
-            onPress={() => router.push('/(tabs)/events')}
+            onPress={() => router.push('/(tabs)/events' as const)}
           >
             <View style={[styles.directoryIcon, { backgroundColor: '#EC489915' }]}>
               <Calendar size={32} color="#EC4899" />
@@ -146,7 +146,7 @@ export default function HomeScreen() {
             </Text>
             <TouchableOpacity 
               style={styles.fullAccessButton}
-              onPress={() => router.push('/auth/signup')}
+              onPress={() => router.push('/auth/role-selection' as const)}
             >
               <Text style={styles.fullAccessButtonText}>Create Account</Text>
             </TouchableOpacity>
@@ -224,7 +224,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.logoutButton}
-                onPress={async () => { try { await signout(); } catch {} finally { logout(); } }}
+                onPress={async () => { try { await authLogout(); } catch {} finally { clearUserStore(); } }}
               >
                 <LogOut size={20} color={neonTheme.textPrimary} />
               </TouchableOpacity>

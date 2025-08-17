@@ -1,5 +1,5 @@
-import { publicProcedure } from '../../create-context';
-import { getCouchbaseClient, createDocument } from '../../../db/couchbase-client';
+import { publicProcedure } from '../../../create-context';
+import { getCouchbaseClient, createDocument } from '../../../../db/couchbase-client';
 import { z } from 'zod';
 
 export const testConnectionProcedure = publicProcedure
@@ -25,7 +25,7 @@ export const testConnectionProcedure = publicProcedure
         id: 'test-connection',
         message: 'Hello from RevoVend!',
         timestamp: new Date().toISOString()
-      });
+      } as any);
       
       const key = client.generateKey('test', 'connection');
       console.log('📝 Testing document operations with key:', key);
@@ -81,7 +81,7 @@ export const createSampleDataProcedure = publicProcedure
   .input(z.object({
     count: z.number().min(1).max(100).default(5)
   }))
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input }: { input: { count: number } }) => {
     console.log(`🌱 Creating ${input.count} sample documents...`);
     
     try {
@@ -97,7 +97,7 @@ export const createSampleDataProcedure = publicProcedure
           value: Math.floor(Math.random() * 1000),
           tags: [`tag-${i}`, `category-${i % 3}`],
           active: Math.random() > 0.3
-        });
+        } as any);
         
         const key = client.generateKey('sample', i);
         const result = await client.upsert(key, sampleDoc);
@@ -131,7 +131,7 @@ export const querySampleDataProcedure = publicProcedure
     category: z.enum(['even', 'odd']).optional(),
     limit: z.number().min(1).max(100).default(10)
   }))
-  .query(async ({ input }) => {
+  .query(async ({ input }: { input: { category?: 'even' | 'odd'; limit: number } }) => {
     console.log('🔍 Querying sample data...', input);
     
     try {

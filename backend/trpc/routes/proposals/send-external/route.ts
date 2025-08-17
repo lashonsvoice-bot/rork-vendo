@@ -168,7 +168,7 @@ const sendExternalProposalProcedure = publicProcedure
           results.emailSent = true;
           results.errors.push(errorMsg);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Email sending failed:', error);
         if (error && typeof error === 'object' && 'response' in error) {
           console.error('SendGrid error response:', (error as any).response.body);
@@ -393,7 +393,7 @@ Event Host - ${eventTitle}
           results.emailSent = true;
           results.errors.push(errorMsg);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Reverse proposal email sending failed:', error);
         if (error && typeof error === 'object' && 'response' in error) {
           console.error('SendGrid error response:', (error as any).response.body);

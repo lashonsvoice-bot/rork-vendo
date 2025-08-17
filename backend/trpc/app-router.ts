@@ -1,0 +1,228 @@
+import { createTRPCRouter } from "./create-context";
+import hiRoute from "./routes/example/hi/route";
+import profileRoute from "./routes/profile/get/route";
+import getProfileByIdRoute from "./routes/profile/get-by-id/route";
+import updateProfileRoute from "./routes/profile/update/route";
+import searchProfilesRoute, { searchPublicProfilesProcedure } from "./routes/profile/search/route";
+import sendMessageRoute from "./routes/messages/send/route";
+import getMessagesRoute from "./routes/messages/get/route";
+import markMessageAsReadRoute from "./routes/messages/mark-read/route";
+import sendExternalProposalRoute from "./routes/proposals/send-external/route";
+import { submitW9Procedure, getW9Procedure, updateW9StatusProcedure } from "./routes/tax/w9/route";
+import { recordPaymentProcedure, getContractorPaymentsProcedure, getBusinessOwnerPaymentsProcedure } from "./routes/tax/payments/route";
+import { generate1099Procedure, update1099StatusProcedure, getBusinessOwner1099sProcedure } from "./routes/tax/1099/route";
+import { registerPushTokenProcedure, updateNotificationSettingsProcedure, getNotificationSettingsProcedure, sendPushNotificationProcedure } from "./routes/notifications/push/route";
+import { getSubscriptionProcedure } from "./routes/subscription/get/route";
+import { upgradeSubscriptionProcedure } from "./routes/subscription/upgrade/route";
+import { recordEventUsageProcedure } from "./routes/subscription/record-usage/route";
+import { cancelSubscriptionProcedure } from "./routes/subscription/cancel/route";
+import { getVerificationDiscountProcedure } from "./routes/subscription/verification-discount/route";
+import walletRoutes from "./routes/wallet/router";
+import { 
+  createEventProcedure, 
+  getEventsProcedure, 
+  getEventByIdProcedure, 
+  updateEventProcedure, 
+  deleteEventProcedure, 
+  getPublicListingsProcedure 
+} from "./routes/events/crud/route";
+import {
+  addVendorToEventProcedure,
+  updateVendorCheckInProcedure,
+  addVendorReviewProcedure,
+  releaseVendorFundsProcedure,
+  releaseVendorStipendProcedure,
+  updateTableLabelProcedure,
+} from "./routes/events/vendors/route";
+import {
+  submitContractorApplicationProcedure,
+  selectContractorsProcedure,
+  getContractorApplicationsProcedure,
+} from "./routes/events/contractors/route";
+import {
+  getHostDashboardProcedure,
+  confirmPaymentReceivedProcedure,
+  confirmMaterialsReceivedProcedure,
+  markInventoryCheckedProcedure,
+  connectHostToEventProcedure,
+  sendMaterialsProcedure,
+  updateInventoryProcedure,
+  reportInventoryDiscrepancyProcedure,
+  resolveInventoryDiscrepancyProcedure,
+} from "./routes/events/host/route";
+import {
+  setupEventEscrowProcedure,
+  releaseEscrowFundsProcedure,
+  getEventFinancialsProcedure,
+  uploadEventFundsProcedure,
+} from "./routes/events/payments/route";
+import {
+  recordEventCreationProcedure,
+  getEventUsageStatsProcedure,
+  checkSubscriptionLimitsProcedure,
+} from "./routes/events/subscription/route";
+import {
+  addBusinessToDirectoryProcedure,
+  searchBusinessDirectoryProcedure,
+  getBusinessDirectoryProcedure,
+} from "./routes/business-directory/crud/route";
+import {
+  sendReverseProposalProcedure,
+  updateReverseProposalStatusProcedure,
+  getHostReverseProposalsProcedure,
+  getBusinessReverseProposalsProcedure,
+} from "./routes/business-directory/proposals/route";
+import {
+  sendInvitationEmailProcedure,
+  sendInvitationSMSProcedure,
+} from "./routes/business-directory/notifications/route";
+import { referralRouter } from "./routes/referral/router";
+import {
+  cancelEventProcedure,
+  reportNoShowProcedure,
+  getCancellationStatsProcedure,
+  submitAppealProcedure as submitCancellationAppealProcedure,
+  checkSuspensionStatusProcedure,
+} from "./routes/events/cancellation/route";
+import {
+  getAnalyticsProcedure,
+  getUsersProcedure,
+  suspendUserProcedure,
+  unsuspendUserProcedure,
+  getAppealsProcedure,
+  reviewAppealProcedure,
+  getActivityLogsProcedure,
+  checkSuspensionProcedure,
+  submitAppealProcedure as submitAdminAppealProcedure,
+} from "./routes/admin/dashboard/route";
+
+export const appRouter = createTRPCRouter({
+  example: createTRPCRouter({
+    hi: hiRoute,
+  }),
+  profile: createTRPCRouter({
+    get: profileRoute,
+    getById: getProfileByIdRoute,
+    update: updateProfileRoute,
+    search: searchProfilesRoute,
+    searchPublic: searchPublicProfilesProcedure,
+  }),
+  messages: createTRPCRouter({
+    send: sendMessageRoute,
+    get: getMessagesRoute,
+    markAsRead: markMessageAsReadRoute,
+  }),
+  proposals: createTRPCRouter({
+    sendExternal: sendExternalProposalRoute,
+  }),
+  tax: createTRPCRouter({
+    w9: createTRPCRouter({
+      submit: submitW9Procedure,
+      get: getW9Procedure,
+      updateStatus: updateW9StatusProcedure,
+    }),
+    payments: createTRPCRouter({
+      record: recordPaymentProcedure,
+      getByContractor: getContractorPaymentsProcedure,
+      getByBusinessOwner: getBusinessOwnerPaymentsProcedure,
+    }),
+    form1099: createTRPCRouter({
+      generate: generate1099Procedure,
+      updateStatus: update1099StatusProcedure,
+      getByBusinessOwner: getBusinessOwner1099sProcedure,
+    }),
+  }),
+  notifications: createTRPCRouter({
+    registerToken: registerPushTokenProcedure,
+    updateSettings: updateNotificationSettingsProcedure,
+    getSettings: getNotificationSettingsProcedure,
+    send: sendPushNotificationProcedure,
+  }),
+  subscription: createTRPCRouter({
+    get: getSubscriptionProcedure,
+    upgrade: upgradeSubscriptionProcedure,
+    recordUsage: recordEventUsageProcedure,
+    cancel: cancelSubscriptionProcedure,
+    getVerificationDiscount: getVerificationDiscountProcedure,
+  }),
+  wallet: walletRoutes,
+  events: createTRPCRouter({
+    create: createEventProcedure,
+    getAll: getEventsProcedure,
+    getById: getEventByIdProcedure,
+    update: updateEventProcedure,
+    delete: deleteEventProcedure,
+    getPublicListings: getPublicListingsProcedure,
+    vendors: createTRPCRouter({
+      add: addVendorToEventProcedure,
+      updateCheckIn: updateVendorCheckInProcedure,
+      addReview: addVendorReviewProcedure,
+      releaseFunds: releaseVendorFundsProcedure,
+      releaseStipend: releaseVendorStipendProcedure,
+      updateTableLabel: updateTableLabelProcedure,
+    }),
+    contractors: createTRPCRouter({
+      submitApplication: submitContractorApplicationProcedure,
+      selectContractors: selectContractorsProcedure,
+      getApplications: getContractorApplicationsProcedure,
+    }),
+    host: createTRPCRouter({
+      getDashboard: getHostDashboardProcedure,
+      confirmPayment: confirmPaymentReceivedProcedure,
+      confirmMaterials: confirmMaterialsReceivedProcedure,
+      markInventoryChecked: markInventoryCheckedProcedure,
+      connectToEvent: connectHostToEventProcedure,
+      sendMaterials: sendMaterialsProcedure,
+      updateInventory: updateInventoryProcedure,
+      reportDiscrepancy: reportInventoryDiscrepancyProcedure,
+      resolveDiscrepancy: resolveInventoryDiscrepancyProcedure,
+    }),
+    payments: createTRPCRouter({
+      setupEscrow: setupEventEscrowProcedure,
+      releaseEscrowFunds: releaseEscrowFundsProcedure,
+      getFinancials: getEventFinancialsProcedure,
+      uploadFunds: uploadEventFundsProcedure,
+    }),
+    subscription: createTRPCRouter({
+      recordCreation: recordEventCreationProcedure,
+      getUsageStats: getEventUsageStatsProcedure,
+      checkLimits: checkSubscriptionLimitsProcedure,
+    }),
+    cancellation: createTRPCRouter({
+      cancel: cancelEventProcedure,
+      reportNoShow: reportNoShowProcedure,
+      getStats: getCancellationStatsProcedure,
+      submitAppeal: submitCancellationAppealProcedure,
+      checkSuspension: checkSuspensionStatusProcedure,
+    }),
+  }),
+  businessDirectory: createTRPCRouter({
+    add: addBusinessToDirectoryProcedure,
+    search: searchBusinessDirectoryProcedure,
+    getAll: getBusinessDirectoryProcedure,
+    proposals: createTRPCRouter({
+      send: sendReverseProposalProcedure,
+      updateStatus: updateReverseProposalStatusProcedure,
+      getByHost: getHostReverseProposalsProcedure,
+      getByBusiness: getBusinessReverseProposalsProcedure,
+    }),
+    notifications: createTRPCRouter({
+      sendEmail: sendInvitationEmailProcedure,
+      sendSMS: sendInvitationSMSProcedure,
+    }),
+  }),
+  referral: referralRouter,
+  admin: createTRPCRouter({
+    getAnalytics: getAnalyticsProcedure,
+    getUsers: getUsersProcedure,
+    suspendUser: suspendUserProcedure,
+    unsuspendUser: unsuspendUserProcedure,
+    getAppeals: getAppealsProcedure,
+    reviewAppeal: reviewAppealProcedure,
+    getActivityLogs: getActivityLogsProcedure,
+    checkSuspension: checkSuspensionProcedure,
+    submitAppeal: submitAdminAppealProcedure,
+  }),
+});
+
+export type AppRouter = typeof appRouter;

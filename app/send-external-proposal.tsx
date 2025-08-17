@@ -46,29 +46,13 @@ export default function SendExternalProposalScreen() {
     proposedAmount: (params.proposedAmount as string) || '',
     contractorsNeeded: (params.contractorsNeeded as string) || '',
     contactEmail: '',
-    message: `Dear Event Organizer,
+    message: `Greetings,
 
-We would love to participate in your upcoming event "${(params.eventTitle as string) || '[Event Name]'}" as a remote vendor.
+[Insert business name] located in [insert city state] would like to RevoVend at your ${(params.eventTitle as string) || '[insert name and date of event]'}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.
 
-Our Business Details:
-• Company: [Your Business Name]
-• Product/Service: [Brief description of what you offer]
-• Experience: [Years in business or relevant experience]
-• Professional Team: We work with experienced, reliable contractors
+We want to pay $[insert amount for table or booth and size] today as well as an additional fee of $[×.××] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
 
-What We're Proposing:
-• Table/Booth Space: We're willing to pay for premium positioning
-• Professional Setup: Our contractors will handle all booth management
-• Marketing Materials: We'll provide high-quality brochures and promotional materials
-• Customer Engagement: Professional representation of our brand
-
-We understand the value of your event and are committed to:
-✓ Professional appearance and conduct
-✓ Timely setup and breakdown
-✓ Positive attendee experience
-✓ Full compliance with event guidelines
-
-We're excited about the opportunity to be part of your event and contribute to its success. Please let us know if you'd like to discuss this further or if you need any additional information.
+If you accept this proposal please use the invitation code when you log into the RevoVend App. The more vendors see that you are a RevoVend Host the more your events could be filled remotely with vendors from all around the world.
 
 Best regards,
 [Your Name]
@@ -192,29 +176,13 @@ Best regards,
       proposedAmount: '',
       contractorsNeeded: '',
       contactEmail: (profileQuery.data?.role === 'business_owner' ? profileQuery.data.contactEmail : '') || '',
-      message: `Dear Event Organizer,
+      message: `Greetings,
 
-We would love to participate in your upcoming event "${(params.eventTitle as string) || '[Event Name]'}" as a remote vendor.
+[Insert business name] located in [insert city state] would like to RevoVend at your ${(params.eventTitle as string) || '[insert name and date of event]'}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.
 
-Our Business Details:
-• Company: [Your Business Name]
-• Product/Service: [Brief description of what you offer]
-• Experience: [Years in business or relevant experience]
-• Professional Team: We work with experienced, reliable contractors
+We want to pay $[insert amount for table or booth and size] today as well as an additional fee of $[×.××] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
 
-What We're Proposing:
-• Table/Booth Space: We're willing to pay for premium positioning
-• Professional Setup: Our contractors will handle all booth management
-• Marketing Materials: We'll provide high-quality brochures and promotional materials
-• Customer Engagement: Professional representation of our brand
-
-We understand the value of your event and are committed to:
-✓ Professional appearance and conduct
-✓ Timely setup and breakdown
-✓ Positive attendee experience
-✓ Full compliance with event guidelines
-
-We're excited about the opportunity to be part of your event and contribute to its success. Please let us know if you'd like to discuss this further or if you need any additional information.
+If you accept this proposal please use the invitation code when you log into the RevoVend App. The more vendors see that you are a RevoVend Host the more your events could be filled remotely with vendors from all around the world.
 
 Best regards,
 [Your Name]
@@ -475,29 +443,13 @@ Best regards,
             <TouchableOpacity 
               style={styles.resetTemplateButton}
               onPress={() => {
-                const defaultTemplate = `Dear Event Organizer,
+                const defaultTemplate = `Greetings,
 
-We would love to participate in your upcoming event "${formData.eventTitle || '[Event Name]'}" as a remote vendor.
+[Insert business name] located in [insert city state] would like to RevoVend at your ${formData.eventTitle || '[insert name and date of event]'}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.
 
-Our Business Details:
-• Company: [Your Business Name]
-• Product/Service: [Brief description of what you offer]
-• Experience: [Years in business or relevant experience]
-• Professional Team: We work with experienced, reliable contractors
+We want to pay $[insert amount for table or booth and size] today as well as an additional fee of $[×.××] for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
 
-What We're Proposing:
-• Table/Booth Space: We're willing to pay for premium positioning
-• Professional Setup: Our contractors will handle all booth management
-• Marketing Materials: We'll provide high-quality brochures and promotional materials
-• Customer Engagement: Professional representation of our brand
-
-We understand the value of your event and are committed to:
-✓ Professional appearance and conduct
-✓ Timely setup and breakdown
-✓ Positive attendee experience
-✓ Full compliance with event guidelines
-
-We're excited about the opportunity to be part of your event and contribute to its success. Please let us know if you'd like to discuss this further or if you need any additional information.
+If you accept this proposal please use the invitation code when you log into the RevoVend App. The more vendors see that you are a RevoVend Host the more your events could be filled remotely with vendors from all around the world.
 
 Best regards,
 [Your Name]

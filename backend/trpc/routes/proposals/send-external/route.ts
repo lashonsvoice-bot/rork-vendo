@@ -121,41 +121,31 @@ const sendExternalProposalProcedure = publicProcedure
     // Generate unique invitation code for the host
     const invitationCode = `HOST_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
-    // Email content with invitation code
-    const replyToEmail = businessOwnerContactEmail || 'noreply@yourdomain.com';
+    // Email content with invitation code (using your template)
+    const replyToEmail = businessOwnerContactEmail || 'noreply@revovend.com';
     const emailContent = `
-Hello ${hostName},
+Subject: A RevoVend vendor wants to secure a table at ${eventTitle}
 
-You have received a business proposal for your event "${eventTitle}"!
+Greetings,
 
-Event Details:
-• Date: ${eventDate}
-• Location: ${eventLocation}
+${businessName} located in ${eventLocation.split(',')[1]?.trim() || 'our location'} would like to RevoVend at your ${eventTitle} on ${eventDate}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.
 
-Proposal Details:
-• Business: ${businessName}
-• Contact: ${businessOwnerName}
-• Proposed Amount: ${proposedAmount}
-• Contractors Needed: ${contractorsNeeded}
+We want to pay ${proposedAmount} today for a table or booth as well as an additional fee for you to ensure our contractors have materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.
 
-Message from ${businessOwnerName}:
+Custom Message from ${businessOwnerName}:
 ${message}
 
-To review this proposal and manage your events more efficiently, we invite you to download our event management app. With the app, you can:
-• Review and respond to proposals instantly
-• Manage multiple events in one place
-• Coordinate with business owners and contractors
-• Track event progress and payments
-• Access training materials and resources
+If you accept this proposal, please use the following invite code when you log into the RevoVend App:
 
-Download the app: [App Store Link] | [Google Play Link]
+🔑 INVITATION CODE: ${invitationCode}
 
-🔑 IMPORTANT: When you sign up, use this invitation code to connect to your proposal:
-Invitation Code: ${invitationCode}
+The more vendors see that you are a RevoVend Host, the more your events could be filled remotely with vendors from all around the world.
 
-This code will automatically connect you to ${businessOwnerName} and load your proposal details.
+Download the RevoVend App:
+• iOS: [App Store Link]
+• Android: [Google Play Link]
 
-If you prefer to respond via email, please reply to: ${replyToEmail}
+For questions, please reply to: ${replyToEmail}
 
 Best regards,
 ${businessOwnerName}
@@ -163,7 +153,7 @@ ${businessName}
     `;
 
     // SMS content (shorter version) with invitation code
-    const smsContent = `Hi ${hostName}! ${businessName} sent you a proposal for "${eventTitle}" (${eventDate}). Amount: ${proposedAmount}, ${contractorsNeeded} contractors needed. Download our app and use code: ${invitationCode} to connect. [App Link]`;
+    const smsContent = `A RevoVend Business owner wants to secure a table at your event ${eventTitle} on ${eventDate}. Please download the app [App Link] and use this invite code when registering as a host: ${invitationCode}. Check your email for more information.`;
 
     // Send email if provided
     if (hostEmail) {

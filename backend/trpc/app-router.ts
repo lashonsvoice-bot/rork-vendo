@@ -126,7 +126,6 @@ export const appRouter = createTRPCRouter({
     sendExternal: sendExternalProposalRoute,
     connectHost: connectHostWithInvitationCodeProcedure,
     findByCode: findProposalByCodeProcedure,
-    // Note: Reverse proposal procedures not yet implemented in send-external route
   }),
   tax: createTRPCRouter({
     w9: createTRPCRouter({

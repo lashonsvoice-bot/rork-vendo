@@ -556,6 +556,7 @@ export default function CreateEventScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
+        {userRole !== 'business_owner' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Event Flyer *</Text>
           {flyerImage ? (
@@ -577,13 +578,194 @@ export default function CreateEventScreen() {
             </TouchableOpacity>
           )}
         </View>
+        )}
 
         {userRole === 'business_owner' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Propose To Event Host</Text>
-            <Text style={styles.sectionSubtitle}>Send an external proposal inline while creating your opportunity.</Text>
+            <Text style={styles.sectionTitle}>Proposal Template</Text>
+            <Text style={styles.sectionSubtitle}>Fill details once. Then List & Propose externally or Save as draft.</Text>
+
+            <Text style={styles.label}>Event Flyer *</Text>
+            {flyerImage ? (
+              <View style={styles.flyerContainer}>
+                <Image source={{ uri: flyerImage }} style={styles.flyerImage} resizeMode="cover" />
+                <TouchableOpacity style={styles.removeFlyerButton} onPress={removeFlyerImage}>
+                  <X size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.changeFlyerButton} onPress={pickImage}>
+                  <Upload size={16} color="#10B981" />
+                  <Text style={styles.changeFlyerText}>Change Flyer</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity testID="pick-image" style={styles.uploadButton} onPress={pickImage}>
+                <ImageIcon size={24} color="#10B981" />
+                <Text style={styles.uploadText}>Upload Event Flyer</Text>
+                <Text style={styles.uploadSubtext}>JPG, PNG up to 10MB - Required</Text>
+              </TouchableOpacity>
+            )}
+
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Host Name</Text>
+              <Text style={styles.label}>Event Title *</Text>
+              <View style={styles.inputContainer}>
+                <Info size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="Enter event title"
+                  value={formData.title}
+                  onChangeText={(t) => setFormData({ ...formData, title: t })}
+                  style={styles.input}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Location *</Text>
+              <View style={styles.inputContainer}>
+                <MapPin size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="Event venue address, City, State"
+                  value={formData.location}
+                  onChangeText={(t) => setFormData({ ...formData, location: t })}
+                  style={styles.input}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Date *</Text>
+              <View style={styles.inputContainer}>
+                <Calendar size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <DatePickerField
+                  testID="date-inline"
+                  valueISO={formData.date ? formData.date : null}
+                  onChange={(iso) => setFormData({ ...formData, date: iso })}
+                  placeholder="MM/DD/YYYY"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Start Time *</Text>
+              <View style={styles.inputContainer}>
+                <Clock size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TimePickerField
+                  testID="time-start-inline"
+                  value={formData.startTime}
+                  onChange={(t) => setFormData({ ...formData, startTime: t })}
+                  placeholder="e.g., 10:00 AM"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>End Time *</Text>
+              <View style={styles.inputContainer}>
+                <Clock size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TimePickerField
+                  testID="time-end-inline"
+                  value={formData.endTime}
+                  onChange={(t) => setFormData({ ...formData, endTime: t })}
+                  placeholder="e.g., 6:00 PM"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Description</Text>
+              <View style={styles.inputContainer}>
+                <FileText size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="Describe the event and vendor requirements"
+                  value={formData.description}
+                  onChangeText={(t) => setFormData({ ...formData, description: t })}
+                  style={[styles.input, styles.textArea]}
+                  multiline
+                  numberOfLines={4}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Business Name</Text>
+              <View style={styles.inputContainer}>
+                <Building2 size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="Your business name"
+                  value={formData.businessName}
+                  onChangeText={(t) => setFormData({ ...formData, businessName: t })}
+                  style={styles.input}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Website (Optional)</Text>
+              <View style={styles.inputContainer}>
+                <Globe size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="https://example.com"
+                  value={formData.website}
+                  onChangeText={(t) => setFormData({ ...formData, website: t })}
+                  style={styles.input}
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Number of Contractors *</Text>
+              <View style={styles.inputContainer}>
+                <Users size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="How many contractors needed?"
+                  value={formData.contractorsNeeded}
+                  onChangeText={(t) => setFormData({ ...formData, contractorsNeeded: t })}
+                  style={styles.input}
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Pay per Contractor ($) *</Text>
+              <View style={styles.inputContainer}>
+                <DollarSign size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="150"
+                  value={formData.contractorPay}
+                  onChangeText={(t) => setFormData({ ...formData, contractorPay: t })}
+                  style={styles.input}
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Host Supervision Fee ($)</Text>
+              <View style={styles.inputContainer}>
+                <DollarSign size={18} color="#9CA3AF" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="50"
+                  value={formData.hostSupervisionFee}
+                  onChangeText={(t) => setFormData({ ...formData, hostSupervisionFee: t })}
+                  style={styles.input}
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Propose To Event Host</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Host Name *</Text>
               <View style={styles.inputContainer}>
                 <FileText size={18} color="#9CA3AF" style={styles.inputIcon} />
                 <TextInput
@@ -625,7 +807,7 @@ export default function CreateEventScreen() {
               </View>
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Table/Booth Investment ($)</Text>
+              <Text style={styles.label}>Table/Booth Investment ($) *</Text>
               <View style={styles.inputContainer}>
                 <DollarSign size={18} color="#9CA3AF" style={styles.inputIcon} />
                 <TextInput
@@ -667,23 +849,112 @@ export default function CreateEventScreen() {
                 />
               </View>
             </View>
+
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity
-                testID="send-proposal-inline"
+                testID="list-and-propose"
                 style={[styles.submitButton, { flex: 1 }]}
-                onPress={sendProposalInline}
-                disabled={proposalSending}
+                onPress={async () => {
+                  if (isSubmitting || proposalSending) return;
+                  if (userRole !== 'business_owner' || !currentUser) {
+                    Alert.alert('Unavailable', 'Only business owners can list and send external proposals.');
+                    return;
+                  }
+                  if (!formData.title || !formData.location || !formData.date || !formData.startTime || !formData.endTime) {
+                    Alert.alert('Missing info', 'Title, location, date, start and end time are required.');
+                    return;
+                  }
+                  if (!flyerImage) {
+                    Alert.alert('Missing flyer', 'Please upload an event flyer.');
+                    return;
+                  }
+                  if (!proposalForm.hostName) {
+                    Alert.alert('Missing host', 'Add a host name.');
+                    return;
+                  }
+                  if (!proposalForm.hostEmail && !proposalForm.hostPhone) {
+                    Alert.alert('Contact needed', 'Provide host email or phone.');
+                    return;
+                  }
+                  const amount = parseFloat(proposalForm.proposedAmount);
+                  if (!(amount > 0)) {
+                    Alert.alert('Invalid amount', 'Enter a valid table/booth amount.');
+                    return;
+                  }
+                  setIsSubmitting(true);
+                  setProposalSending(true);
+                  try {
+                    const newEvent = addEvent({
+                      title: formData.title,
+                      description: formData.description,
+                      businessName: formData.businessName || undefined,
+                      businessOwnerId: currentUser.id,
+                      eventHostId: undefined,
+                      eventHostName: undefined,
+                      website: formData.website || undefined,
+                      location: formData.location,
+                      date: formData.date,
+                      time: `${formData.startTime} - ${formData.endTime}`,
+                      contractorsNeeded: parseInt(formData.contractorsNeeded) || 1,
+                      contractorPay: parseFloat(formData.contractorPay) || 0,
+                      hostSupervisionFee: parseFloat(formData.hostSupervisionFee) || 0,
+                      flyerUrl: flyerImage,
+                      createdBy: 'business_owner',
+                      tableOptions: undefined,
+                      totalVendorSpaces: undefined,
+                      hasInsurance,
+                      wantsInsuranceContact: hasInsurance === false ? wantsInsuranceContact : false,
+                      expectedAttendees: undefined,
+                      marketingMethods: undefined,
+                      eventFrequency: undefined,
+                      stipendMode,
+                      optInListings: true,
+                      isPrivateEvent: undefined,
+                      privateNotes: undefined,
+                      privatePremium: undefined,
+                      requirements: undefined,
+                      listVenueInDirectory: undefined,
+                      isPublicListing: true,
+                      proposalSent: true,
+                    } as any);
+
+                    await trpcClient.proposals.sendExternal.mutate({
+                      businessOwnerId: currentUser.id,
+                      businessOwnerName: (currentUser as any).name ?? 'Business Owner',
+                      businessName: (currentUser as any).businessName || formData.businessName || 'My Business',
+                      businessOwnerContactEmail: (currentUser as any).email ?? undefined,
+                      eventId: newEvent?.id ?? `external_${Date.now()}`,
+                      eventTitle: formData.title,
+                      hostName: proposalForm.hostName,
+                      hostEmail: proposalForm.hostEmail || undefined,
+                      hostPhone: proposalForm.hostPhone || undefined,
+                      proposedAmount: parseFloat(proposalForm.proposedAmount),
+                      supervisoryFee: parseFloat(proposalForm.supervisoryFee || '0'),
+                      contractorsNeeded: parseInt(formData.contractorsNeeded || '0') || undefined,
+                      message: proposalForm.message || `Proposal to remote vend at ${formData.title}`,
+                      eventDate: formData.date,
+                      eventLocation: formData.location,
+                    });
+
+                    Alert.alert('Success', 'Your event is listed and the external proposal has been sent.', [
+                      { text: 'OK', onPress: () => router.back() },
+                    ]);
+                  } catch (e) {
+                    Alert.alert('Error', 'Failed to list and send proposal.');
+                  } finally {
+                    setIsSubmitting(false);
+                    setProposalSending(false);
+                  }
+                }}
               >
-                <LinearGradient
-                  colors={proposalSending ? ["#9CA3AF", "#6B7280"] : ["#8B5CF6", "#A78BFA"]}
-                  style={styles.submitGradient}
-                >
-                  {proposalSending ? <ActivityIndicator color="#FFFFFF" /> : <Send size={20} color="#FFFFFF" />}
-                  <Text style={styles.submitText}>{proposalSending ? 'Sending…' : 'Send Proposal'}</Text>
+                <LinearGradient colors={["#10B981", "#34D399"]} style={styles.submitGradient}>
+                  <Send size={20} color="#FFFFFF" />
+                  <Text style={styles.submitText}>List & Propose (External)</Text>
                 </LinearGradient>
               </TouchableOpacity>
+
               <TouchableOpacity
-                testID="save-proposal-draft"
+                testID="save-proposal-draft-bottom"
                 style={[styles.submitButton, { flex: 1 }]}
                 onPress={async () => {
                   try {
@@ -706,19 +977,16 @@ export default function CreateEventScreen() {
                   }
                 }}
               >
-                <LinearGradient
-                  colors={["#F59E0B", "#FCD34D"]}
-                  style={styles.submitGradient}
-                >
+                <LinearGradient colors={["#F59E0B", "#FCD34D"]} style={styles.submitGradient}>
                   <FileText size={20} color="#111827" />
-                  <Text style={[styles.submitText, { color: '#111827' }]}>Save Draft</Text>
+                  <Text style={[styles.submitText, { color: '#111827' }]}>Save as Draft</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
-        {inputSections.map((section, sectionIndex) => (
+        {userRole !== 'business_owner' && inputSections.map((section, sectionIndex) => (
           <View key={sectionIndex} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
             {section.fields.map((field, fieldIndex) => {
@@ -763,7 +1031,7 @@ export default function CreateEventScreen() {
                 </View>
               );
             })}
-            {userRole === 'business_owner' && sectionIndex === 0 && (
+            {false && sectionIndex === 0 && (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Assign Past Contractors (optional)</Text>
                 <TouchableOpacity
@@ -929,6 +1197,7 @@ export default function CreateEventScreen() {
         ))}
 
         {/* Stipend Mode Selection */}
+        {userRole !== 'business_owner' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Stipend Mode</Text>
           <View style={styles.stipendOptions}>
@@ -956,7 +1225,9 @@ export default function CreateEventScreen() {
             })}
           </View>
         </View>
+        )}
 
+        {userRole !== 'business_owner' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Visibility & Policies</Text>
           <View style={styles.toggleRow}>
@@ -1102,6 +1373,7 @@ export default function CreateEventScreen() {
             </>
           )}
         </View>
+        )}
 
         {userRole === 'event_host' && (
           <View style={styles.section}>
@@ -1287,6 +1559,7 @@ export default function CreateEventScreen() {
           </View>
         </Modal>
 
+        {userRole !== 'business_owner' && (
         <TouchableOpacity 
           style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
           onPress={handleSubmit}
@@ -1298,23 +1571,20 @@ export default function CreateEventScreen() {
           >
             <Plus size={20} color="#FFFFFF" />
             <Text style={styles.submitText}>
-              {isSubmitting 
-                ? (userRole === 'business_owner' ? "Listing Opportunity..." : "Listing Event...") 
-                : (userRole === 'business_owner' ? "List Opportunity" : "List Event FREE")
-              }
+              {isSubmitting ? "Listing Event..." : "List Event FREE"}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
+        )}
 
+        {userRole !== 'business_owner' && (
         <View style={styles.helpSection}>
           <Text style={styles.helpTitle}>How it works:</Text>
           <Text style={styles.helpText}>
-            {userRole === 'business_owner' 
-              ? "1. List your opportunity with all details and upload a flyer\n2. Set contractor requirements and payment\n3. Contractors will apply for your opportunity\n4. Review and select the best contractors\n5. Manage your event and pay contractors after completion"
-              : "1. List your event with details and a flyer\n2. Share availability and any vendor info\n3. Business owners can reach out with proposals\n4. Coordinate details in Messages\n5. Manage your event day-of"
-            }
+            {"1. List your event with details and a flyer\n2. Share availability and any vendor info\n3. Business owners can reach out with proposals\n4. Coordinate details in Messages\n5. Manage your event day-of"}
           </Text>
         </View>
+        )}
 
         <View style={styles.bottomSpacing} />
       </ScrollView>

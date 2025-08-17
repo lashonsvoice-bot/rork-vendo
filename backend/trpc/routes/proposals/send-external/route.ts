@@ -137,21 +137,43 @@ const sendExternalProposalProcedure = publicProcedure
       try {
         const apiKey = process.env.SENDGRID_API_KEY;
         const fromEmail = process.env.SENDGRID_FROM || 'noreply@revovend.com';
-        if (apiKey) {
+        
+        console.log('🔑 SendGrid API Key status:', apiKey ? `Present (${apiKey.substring(0, 10)}...)` : 'Missing');
+        console.log('📧 From email:', fromEmail);
+        
+        if (apiKey && apiKey.startsWith('SG.')) {
           sgMail.setApiKey(apiKey);
-          await sgMail.send({ to: hostEmail, from: fromEmail, subject: subjectLine, text: emailContent, html: htmlContent, replyTo: replyToEmail });
+          console.log('📧 Attempting to send email to:', hostEmail);
+          
+          const emailData = {
+            to: hostEmail,
+            from: fromEmail,
+            subject: subjectLine,
+            text: emailContent,
+            html: htmlContent,
+            replyTo: replyToEmail
+          };
+          
+          const response = await sgMail.send(emailData);
+          console.log('✅ Email sent successfully:', response[0].statusCode);
           results.emailSent = true;
         } else {
-          console.log('📧 SENDING EMAIL PROPOSAL (stub):');
+          const errorMsg = !apiKey ? 'SENDGRID_API_KEY environment variable not set' : 'Invalid SendGrid API key format (should start with SG.)';
+          console.error('❌ SendGrid configuration error:', errorMsg);
+          console.log('📧 SENDING EMAIL PROPOSAL (stub mode):');
           console.log('To:', hostEmail);
           console.log('Subject:', subjectLine);
           console.log('Content:', emailContent);
           await new Promise(resolve => setTimeout(resolve, 1000));
           results.emailSent = true;
+          results.errors.push(errorMsg);
         }
       } catch (error) {
-        console.error('Email sending failed:', error);
-        results.errors.push('Failed to send email notification');
+        console.error('❌ Email sending failed:', error);
+        if (error.response) {
+          console.error('SendGrid error response:', error.response.body);
+        }
+        results.errors.push(`Failed to send email: ${error.message}`);
       }
     }
 
@@ -340,21 +362,43 @@ Event Host - ${eventTitle}
       try {
         const apiKey = process.env.SENDGRID_API_KEY;
         const fromEmail = process.env.SENDGRID_FROM || 'noreply@revovend.com';
-        if (apiKey) {
+        
+        console.log('🔑 SendGrid API Key status:', apiKey ? `Present (${apiKey.substring(0, 10)}...)` : 'Missing');
+        console.log('📧 From email:', fromEmail);
+        
+        if (apiKey && apiKey.startsWith('SG.')) {
           sgMail.setApiKey(apiKey);
-          await sgMail.send({ to: businessOwnerEmail, from: fromEmail, subject: `Remote Vending Invitation for ${eventTitle}`, text: emailContent, html: emailContent.replace(/\n/g, '<br/>'), replyTo: replyToEmail });
+          console.log('📧 Attempting to send reverse proposal email to:', businessOwnerEmail);
+          
+          const emailData = {
+            to: businessOwnerEmail,
+            from: fromEmail,
+            subject: `Remote Vending Invitation for ${eventTitle}`,
+            text: emailContent,
+            html: emailContent.replace(/\n/g, '<br/>'),
+            replyTo: replyToEmail
+          };
+          
+          const response = await sgMail.send(emailData);
+          console.log('✅ Reverse proposal email sent successfully:', response[0].statusCode);
           results.emailSent = true;
         } else {
-          console.log('📧 SENDING REVERSE PROPOSAL EMAIL (stub):');
+          const errorMsg = !apiKey ? 'SENDGRID_API_KEY environment variable not set' : 'Invalid SendGrid API key format (should start with SG.)';
+          console.error('❌ SendGrid configuration error:', errorMsg);
+          console.log('📧 SENDING REVERSE PROPOSAL EMAIL (stub mode):');
           console.log('To:', businessOwnerEmail);
           console.log('Subject:', `Remote Vending Invitation for ${eventTitle}`);
           console.log('Content:', emailContent);
           await new Promise(resolve => setTimeout(resolve, 1000));
           results.emailSent = true;
+          results.errors.push(errorMsg);
         }
       } catch (error) {
-        console.error('Email sending failed:', error);
-        results.errors.push('Failed to send email notification');
+        console.error('❌ Reverse proposal email sending failed:', error);
+        if (error.response) {
+          console.error('SendGrid error response:', error.response.body);
+        }
+        results.errors.push(`Failed to send email: ${error.message}`);
       }
     }
 

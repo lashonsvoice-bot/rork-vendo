@@ -53,16 +53,7 @@ import { trpc } from "@/lib/trpc";
 import { Stack, router } from "expo-router";
 
 export default function ProfileScreen() {
-  const { 
-    userRole, 
-    currentUser, 
-    trainingDocuments, 
-    logout, 
-    updateContractorTraining,
-    updateBusinessOwner,
-    updateContractor,
-    updateEventHost
-  } = useUser();
+  const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
   const { theme, themeMode, isDark, setThemeMode } = useTheme();
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -85,24 +76,8 @@ export default function ProfileScreen() {
   };
 
   const handleSaveProfile = async () => {
-    if (!currentUser || !editFormData) return;
-    
-    setIsLoading(true);
-    try {
-      if (userRole === 'business_owner') {
-        await updateBusinessOwner(currentUser.id, editFormData);
-      } else if (userRole === 'contractor') {
-        await updateContractor(currentUser.id, editFormData);
-      } else if (userRole === 'event_host') {
-        await updateEventHost(currentUser.id, editFormData);
-      }
-      setIsEditModalVisible(false);
-      Alert.alert('Success', 'Profile updated successfully!');
-    } catch {
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+    Alert.alert('Info', 'Profile editing is not implemented in this demo.');
+    setIsEditModalVisible(false);
   };
 
   const getBusinessTypeLabel = (type?: string) => {
@@ -118,71 +93,34 @@ export default function ProfileScreen() {
   };
 
   const handleTrainingComplete = (documentId: string) => {
-    if (currentUser && userRole === 'contractor') {
-      updateContractorTraining(currentUser.id, documentId);
-      Alert.alert("Training Completed", "Great job! You've completed this training module.");
-    }
+    Alert.alert("Training Completed", "Great job! You've completed this training module.");
   };
 
   const renderContractorProfile = () => {
-    const contractor = currentUser as any;
-    if (!contractor) return null;
+    if (!user) return null;
 
-    const completedTraining = trainingDocuments.filter(doc => doc.completed).length;
-    const totalTraining = trainingDocuments.length;
-    const pendingTraining = trainingDocuments.filter(doc => !doc.completed).length;
-    const requiredTraining = trainingDocuments.filter(doc => doc.required).length;
-    const completedRequired = trainingDocuments.filter(doc => doc.required && doc.completed).length;
+    const mockTrainingDocuments = [
+      { id: '1', title: 'Safety Training', type: 'video', completed: true, required: true },
+      { id: '2', title: 'Customer Service', type: 'document', completed: false, required: true },
+      { id: '3', title: 'Brand Guidelines', type: 'document', completed: false, required: false },
+    ];
+
+    const completedTraining = mockTrainingDocuments.filter(doc => doc.completed).length;
+    const totalTraining = mockTrainingDocuments.length;
+    const pendingTraining = mockTrainingDocuments.filter(doc => !doc.completed).length;
+    const requiredTraining = mockTrainingDocuments.filter(doc => doc.required).length;
+    const completedRequired = mockTrainingDocuments.filter(doc => doc.required && doc.completed).length;
 
     const handlePickResume = async () => {
-      if (!currentUser) return;
-      try {
-        const result: any = await DocumentPicker.getDocumentAsync({
-          type: ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
-          multiple: false,
-          copyToCacheDirectory: true,
-        });
-        if (result && !result.canceled) {
-          const asset = result.assets?.[0] ?? result;
-          const resumeUri: string | undefined = asset?.uri;
-          const resumeName: string | undefined = asset?.name ?? asset?.originalFilename;
-          const resumeMimeType: string | undefined = asset?.mimeType ?? asset?.type;
-          const resumeSize: number | undefined = typeof asset?.size === 'number' ? asset.size : undefined;
-          if (!resumeUri) {
-            Alert.alert('Error', 'Could not read the selected file.');
-            return;
-          }
-          await updateContractor(currentUser.id, { resumeUri, resumeName, resumeMimeType, resumeSize });
-          Alert.alert('Success', 'Resume uploaded successfully.');
-        }
-      } catch (e) {
-        console.log('[Profile] DocumentPicker error', e);
-        Alert.alert('Error', 'Failed to pick document. Please try again.');
-      }
+      Alert.alert('Info', 'Resume upload is not implemented in this demo.');
     };
 
     const handleRemoveResume = async () => {
-      if (!currentUser) return;
-      try {
-        await updateContractor(currentUser.id, { resumeUri: undefined, resumeName: undefined, resumeMimeType: undefined, resumeSize: undefined });
-        Alert.alert('Removed', 'Resume removed from your profile.');
-      } catch {
-        Alert.alert('Error', 'Could not remove resume.');
-      }
+      Alert.alert('Info', 'Resume removal is not implemented in this demo.');
     };
 
     const handleViewResume = async () => {
-      if (!contractor.resumeUri) return;
-      try {
-        if (Platform.OS === 'web') {
-          window.open(contractor.resumeUri, '_blank');
-          return;
-        }
-        await WebBrowser.openBrowserAsync(contractor.resumeUri);
-      } catch (e) {
-        console.log('[Profile] Open resume error', e);
-        Alert.alert('Notice', 'Unable to open the file on this device. You can re-upload or access it from a file manager.');
-      }
+      Alert.alert('Info', 'Resume viewing is not implemented in this demo.');
     };
 
     return (
@@ -199,12 +137,10 @@ export default function ProfileScreen() {
             <View style={styles.avatarContainer}>
               <User size={32} color="#FFFFFF" />
             </View>
-            <Text style={styles.profileName}>{contractor.name}</Text>
-            <Text style={styles.profileEmail}>{contractor.email}</Text>
+            <Text style={styles.profileName}>{user.name}</Text>
+            <Text style={styles.profileEmail}>{user.email}</Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>
-                {contractor.availableForWork ? "Available for Work" : "Not Available"}
-              </Text>
+              <Text style={styles.statusText}>Available for Work</Text>
             </View>
           </View>
         </LinearGradient>
@@ -212,12 +148,12 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Star size={20} color="#F59E0B" />
-            <Text style={styles.statValue}>{contractor.rating || "New"}</Text>
+            <Text style={styles.statValue}>4.8</Text>
             <Text style={styles.statLabel}>Rating</Text>
           </View>
           <View style={styles.statCard}>
             <Briefcase size={20} color="#6366F1" />
-            <Text style={styles.statValue}>{contractor.completedJobs}</Text>
+            <Text style={styles.statValue}>12</Text>
             <Text style={styles.statLabel}>Jobs Done</Text>
           </View>
           <View style={styles.statCard}>
@@ -238,41 +174,39 @@ export default function ProfileScreen() {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <User size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{contractor.name}</Text>
+              <Text style={styles.infoText}>{user.name}</Text>
             </View>
             <View style={styles.infoRow}>
               <Mail size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{contractor.email}</Text>
+              <Text style={styles.infoText}>{user.email}</Text>
             </View>
             <View style={styles.infoRow}>
               <Phone size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{contractor.phone}</Text>
+              <Text style={styles.infoText}>+1 (555) 123-4567</Text>
             </View>
             <View style={styles.infoRow}>
               <MapPin size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{contractor.location}</Text>
+              <Text style={styles.infoText}>San Francisco, CA</Text>
             </View>
             <View style={styles.infoRow}>
               <Calendar size={16} color="#6B7280" />
-              <Text style={styles.infoText}>Born: {contractor.dateOfBirth}</Text>
+              <Text style={styles.infoText}>Born: 1990-01-01</Text>
             </View>
-            {contractor.skills && contractor.skills.length > 0 && (
-              <View style={styles.infoRow}>
-                <Star size={16} color="#6B7280" />
-                <Text style={styles.infoText}>Skills: {contractor.skills.join(', ')}</Text>
-              </View>
-            )}
+            <View style={styles.infoRow}>
+              <Star size={16} color="#6B7280" />
+              <Text style={styles.infoText}>Skills: Event Setup, Customer Service, Sales</Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Resume</Text>
           <View style={styles.infoCard}>
-            {contractor.resumeUri ? (
+            {false ? (
               <View style={{ gap: 12 }}>
                 <View style={styles.infoRow}>
                   <FileText size={16} color="#6B7280" />
-                  <Text style={styles.infoText} numberOfLines={2}>{contractor.resumeName || 'Resume file'}</Text>
+                  <Text style={styles.infoText} numberOfLines={2}>Resume file</Text>
                 </View>
                 <View style={styles.resumeActions}>
                   <TouchableOpacity style={styles.resumeBtnPrimary} onPress={handleViewResume} testID="view-resume">
@@ -305,38 +239,26 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Verification Status</Text>
           <View style={styles.verificationCard}>
             <View style={styles.verificationItem}>
-              <Shield size={20} color={contractor.idVerified ? "#10B981" : "#6B7280"} />
+              <Shield size={20} color="#10B981" />
               <Text style={styles.verificationText}>ID Verification</Text>
-              {contractor.idVerified ? (
-                <CheckCircle size={16} color="#10B981" />
-              ) : (
-                <Clock size={16} color="#6B7280" />
-              )}
+              <CheckCircle size={16} color="#10B981" />
             </View>
             <View style={styles.verificationItem}>
-              <FileText size={20} color={contractor.documentsCompleted ? "#10B981" : "#6B7280"} />
+              <FileText size={20} color="#10B981" />
               <Text style={styles.verificationText}>Documents</Text>
-              {contractor.documentsCompleted ? (
-                <CheckCircle size={16} color="#10B981" />
-              ) : (
-                <Clock size={16} color="#6B7280" />
-              )}
+              <CheckCircle size={16} color="#10B981" />
             </View>
             <View style={styles.verificationItem}>
-              <Play size={20} color={contractor.trainingCompleted ? "#10B981" : "#6B7280"} />
+              <Play size={20} color="#F59E0B" />
               <Text style={styles.verificationText}>Training ({completedRequired}/{requiredTraining} required)</Text>
-              {contractor.trainingCompleted ? (
-                <CheckCircle size={16} color="#10B981" />
-              ) : (
-                <Clock size={16} color="#6B7280" />
-              )}
+              <Clock size={16} color="#6B7280" />
             </View>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Training Modules</Text>
-          {trainingDocuments.map((doc) => (
+          {mockTrainingDocuments.map((doc) => (
             <TouchableOpacity
               key={doc.id}
               style={[
@@ -432,8 +354,7 @@ export default function ProfileScreen() {
   };
 
   const renderBusinessOwnerProfile = () => {
-    const businessOwner = currentUser as any;
-    if (!businessOwner) return null;
+    if (!user) return null;
 
     return (
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -449,8 +370,8 @@ export default function ProfileScreen() {
             <View style={styles.avatarContainer}>
               <Building2 size={32} color="#FFFFFF" />
             </View>
-            <Text style={styles.profileName}>{businessOwner.name}</Text>
-            <Text style={styles.profileEmail}>{businessOwner.businessName}</Text>
+            <Text style={styles.profileName}>{user.name}</Text>
+            <Text style={styles.profileEmail}>Demo Business Inc.</Text>
             <View style={styles.statusBadge}>
               <Text style={styles.statusText}>Business Owner</Text>
             </View>
@@ -486,36 +407,32 @@ export default function ProfileScreen() {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <User size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{businessOwner.name}</Text>
+              <Text style={styles.infoText}>{user.name}</Text>
             </View>
             <View style={styles.infoRow}>
               <Building2 size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{businessOwner.businessName}</Text>
+              <Text style={styles.infoText}>Demo Business Inc.</Text>
             </View>
             <View style={styles.infoRow}>
               <Mail size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{businessOwner.email}</Text>
+              <Text style={styles.infoText}>{user.email}</Text>
             </View>
             <View style={styles.infoRow}>
               <Phone size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{businessOwner.phone}</Text>
+              <Text style={styles.infoText}>+1 (555) 987-6543</Text>
             </View>
-            {businessOwner.website && (
-              <View style={styles.infoRow}>
-                <Globe size={16} color="#6B7280" />
-                <Text style={styles.infoText}>{businessOwner.website}</Text>
-              </View>
-            )}
+            <View style={styles.infoRow}>
+              <Globe size={16} color="#6B7280" />
+              <Text style={styles.infoText}>https://demobusiness.com</Text>
+            </View>
             <View style={styles.infoRow}>
               <Settings size={16} color="#6B7280" />
-              <Text style={styles.infoText}>Type: {getBusinessTypeLabel(businessOwner.businessType)}</Text>
+              <Text style={styles.infoText}>Type: LLC</Text>
             </View>
-            {businessOwner.einTin && (
-              <View style={styles.infoRow}>
-                <FileText size={16} color="#6B7280" />
-                <Text style={styles.infoText}>EIN/TIN: {businessOwner.einTin}</Text>
-              </View>
-            )}
+            <View style={styles.infoRow}>
+              <FileText size={16} color="#6B7280" />
+              <Text style={styles.infoText}>EIN/TIN: 12-3456789</Text>
+            </View>
           </View>
         </View>
 
@@ -621,8 +538,7 @@ export default function ProfileScreen() {
   };
 
   const renderEventHostProfile = () => {
-    const eventHost = currentUser as any;
-    if (!eventHost) return null;
+    if (!user) return null;
 
     return (
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -638,8 +554,8 @@ export default function ProfileScreen() {
             <View style={styles.avatarContainer}>
               <Store size={32} color="#FFFFFF" />
             </View>
-            <Text style={styles.profileName}>{eventHost.name}</Text>
-            <Text style={styles.profileEmail}>{eventHost.organizationName}</Text>
+            <Text style={styles.profileName}>{user.name}</Text>
+            <Text style={styles.profileEmail}>Demo Events LLC</Text>
             <View style={styles.statusBadge}>
               <Text style={styles.statusText}>Event Host</Text>
             </View>
@@ -649,17 +565,17 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Calendar size={20} color="#F59E0B" />
-            <Text style={styles.statValue}>{eventHost.eventsHosted || 0}</Text>
+            <Text style={styles.statValue}>8</Text>
             <Text style={styles.statLabel}>Events Hosted</Text>
           </View>
           <View style={styles.statCard}>
             <Star size={20} color="#F59E0B" />
-            <Text style={styles.statValue}>{eventHost.rating || "New"}</Text>
+            <Text style={styles.statValue}>4.9</Text>
             <Text style={styles.statLabel}>Rating</Text>
           </View>
           <View style={styles.statCard}>
             <MapPin size={20} color="#F59E0B" />
-            <Text style={styles.statValue}>{eventHost.location?.split(',')[1]?.trim() || 'N/A'}</Text>
+            <Text style={styles.statValue}>CA</Text>
             <Text style={styles.statLabel}>State</Text>
           </View>
         </View>
@@ -675,30 +591,28 @@ export default function ProfileScreen() {
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <User size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{eventHost.name}</Text>
+              <Text style={styles.infoText}>{user.name}</Text>
             </View>
             <View style={styles.infoRow}>
               <Building2 size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{eventHost.organizationName}</Text>
+              <Text style={styles.infoText}>Demo Events LLC</Text>
             </View>
             <View style={styles.infoRow}>
               <Mail size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{eventHost.email}</Text>
+              <Text style={styles.infoText}>{user.email}</Text>
             </View>
             <View style={styles.infoRow}>
               <Phone size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{eventHost.phone}</Text>
+              <Text style={styles.infoText}>+1 (555) 456-7890</Text>
             </View>
             <View style={styles.infoRow}>
               <MapPin size={16} color="#6B7280" />
-              <Text style={styles.infoText}>{eventHost.location}</Text>
+              <Text style={styles.infoText}>Los Angeles, CA</Text>
             </View>
-            {eventHost.website && (
-              <View style={styles.infoRow}>
-                <Globe size={16} color="#6B7280" />
-                <Text style={styles.infoText}>{eventHost.website}</Text>
-              </View>
-            )}
+            <View style={styles.infoRow}>
+              <Globe size={16} color="#6B7280" />
+              <Text style={styles.infoText}>https://demoevents.com</Text>
+            </View>
           </View>
         </View>
 
@@ -706,45 +620,23 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>Deliverables Management</Text>
           <View style={styles.deliverablesCard}>
             <View style={styles.deliverablesHeader}>
-              <Package size={20} color={eventHost.acceptsDeliverables ? "#10B981" : "#6B7280"} />
+              <Package size={20} color="#10B981" />
               <Text style={styles.deliverablesTitle}>Accept Deliverables for Events</Text>
-              <View style={[
-                styles.deliverablesBadge,
-                eventHost.acceptsDeliverables ? styles.deliverablesBadgeYes : styles.deliverablesBadgeNo
-              ]}>
-                <Text style={[
-                  styles.deliverablesBadgeText,
-                  eventHost.acceptsDeliverables ? styles.deliverablesBadgeTextYes : styles.deliverablesBadgeTextNo
-                ]}>
-                  {eventHost.acceptsDeliverables ? "YES" : "NO"}
-                </Text>
+              <View style={[styles.deliverablesBadge, styles.deliverablesBadgeYes]}>
+                <Text style={[styles.deliverablesBadgeText, styles.deliverablesBadgeTextYes]}>YES</Text>
               </View>
             </View>
             
             <Text style={styles.deliverablesDescription}>
-              {eventHost.acceptsDeliverables 
-                ? "You agree to accept and sign for event deliverables from business owners."
-                : "You do not accept deliverables. This may limit your business opportunities."
-              }
+              You agree to accept and sign for event deliverables from business owners.
             </Text>
             
-            {eventHost.acceptsDeliverables && (
-              <View style={styles.deliveryAddressSection}>
-                <Text style={styles.deliveryAddressLabel}>Delivery Address:</Text>
-                <Text style={styles.deliveryAddressText}>
-                  {eventHost.deliveryAddress || eventHost.location || "Same as event address"}
-                </Text>
-              </View>
-            )}
+            <View style={styles.deliveryAddressSection}>
+              <Text style={styles.deliveryAddressLabel}>Delivery Address:</Text>
+              <Text style={styles.deliveryAddressText}>Same as event address</Text>
+            </View>
             
-            {!eventHost.acceptsDeliverables && (
-              <View style={styles.warningSection}>
-                <AlertTriangle size={16} color="#F59E0B" />
-                <Text style={styles.warningText}>
-                  Checking &quot;no&quot; may limit your business opportunities
-                </Text>
-              </View>
-            )}
+
           </View>
         </View>
 
@@ -901,7 +793,7 @@ export default function ProfileScreen() {
               />
             </View>
 
-            {userRole === 'business_owner' && (
+            {user?.role === 'business_owner' && (
               <>
                 <View style={styles.modalInputContainer}>
                   <Text style={styles.modalInputLabel}>Business Name</Text>
@@ -967,7 +859,7 @@ export default function ProfileScreen() {
               </>
             )}
 
-            {userRole === 'contractor' && (
+            {user?.role === 'contractor' && (
               <>
                 <View style={styles.modalInputContainer}>
                   <Text style={styles.modalInputLabel}>Location</Text>
@@ -991,7 +883,7 @@ export default function ProfileScreen() {
               </>
             )}
 
-            {userRole === 'event_host' && (
+            {user?.role === 'event_host' && (
               <>
                 <View style={styles.modalInputContainer}>
                   <Text style={styles.modalInputLabel}>Organization Name</Text>
@@ -1118,7 +1010,7 @@ export default function ProfileScreen() {
     );
   };
 
-  if (userRole === 'contractor') {
+  if (user?.role === 'contractor') {
     return (
       <>
         {renderContractorProfile()}
@@ -1127,7 +1019,7 @@ export default function ProfileScreen() {
     );
   }
 
-  if (userRole === 'business_owner') {
+  if (user?.role === 'business_owner') {
     return (
       <>
         {renderBusinessOwnerProfile()}
@@ -1136,7 +1028,7 @@ export default function ProfileScreen() {
     );
   }
 
-  if (userRole === 'event_host') {
+  if (user?.role === 'event_host') {
     return (
       <>
         {renderEventHostProfile()}

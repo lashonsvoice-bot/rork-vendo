@@ -43,9 +43,7 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="auth/role-selection" options={{ headerShown: true, title: 'RevoVend' }} />
-      <Stack.Screen name="auth/login" options={{ headerShown: true, title: 'Sign in' }} />
-      <Stack.Screen name="auth/signup" options={{ headerShown: true, title: 'Create account' }} />
+      <Stack.Screen name="auth/role-selection" options={{ headerShown: false }} />
 
       <Stack.Screen name="auth/forgot-password" options={{ headerShown: true, title: "Forgot Password" }} />
       <Stack.Screen name="auth/reset-password" options={{ headerShown: true, title: "Reset Password" }} />

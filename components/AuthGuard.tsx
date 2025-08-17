@@ -8,43 +8,28 @@ interface AuthGuardProps {
   children: React.ReactNode;
 }
 
-const publicRoutes = [
-  '/auth/role-selection',
-  '/auth/login', 
-  '/auth/signup', 
-  '/auth/forgot-password', 
-  '/auth/reset-password', 
-  '/guest-directories'
-];
-
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { user, isLoading, isInitialized } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   
   const currentPath = '/' + segments.join('/');
-  const isPublicRoute = publicRoutes.some(route => currentPath.startsWith(route));
   const isAuthRoute = currentPath.startsWith('/auth/');
   const isRootRoute = currentPath === '/' || currentPath === '';
-  const isTabsRoute = currentPath.startsWith('/(tabs)');
   
   React.useEffect(() => {
-    if (!isInitialized || isLoading) {
-      return;
-    }
+    if (isLoading) return;
     
-    console.log('[AuthGuard] Checking route:', currentPath, '| User:', user?.email, user?.role);
+    console.log('[AuthGuard] Current path:', currentPath, '| User:', user?.email, user?.role);
 
-    // No user - redirect to role selection unless on public route
     if (!user) {
-      if (!isPublicRoute) {
+      if (!isAuthRoute) {
         console.log('[AuthGuard] No user, redirecting to role selection');
         router.replace('/auth/role-selection');
       }
       return;
     }
 
-    // Guest user - redirect to guest directories unless already there
     if (user.role === 'guest') {
       if (!currentPath.startsWith('/guest-directories')) {
         console.log('[AuthGuard] Guest user, redirecting to guest directories');
@@ -53,15 +38,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return;
     }
 
-    // Authenticated user on auth or root route - redirect to home
-    if ((isAuthRoute || isRootRoute) && !isTabsRoute) {
-      console.log('[AuthGuard] Authenticated user on auth/root route, redirecting to home');
+    if (isAuthRoute || isRootRoute) {
+      console.log('[AuthGuard] Authenticated user, redirecting to home');
       router.replace('/(tabs)/(home)/');
       return;
     }
-  }, [user, isLoading, isInitialized, currentPath, isPublicRoute, isAuthRoute, isRootRoute, isTabsRoute, router]);
+  }, [user, isLoading, currentPath, isAuthRoute, isRootRoute, router]);
   
-  if (!isInitialized || isLoading) {
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer} testID="auth-loading">
         <LinearGradient 
@@ -69,7 +53,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
           style={styles.loadingGradient}
         >
           <ActivityIndicator size="large" color="#FFFFFF" />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={styles.loadingText}>RevoVend</Text>
         </LinearGradient>
       </View>
     );
@@ -90,35 +74,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  errorContainer: {
-    flex: 1,
-  },
-  errorGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  errorTitle: {
-    color: '#FFFFFF',
     fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  errorText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    textAlign: 'center',
-    opacity: 0.9,
-  },
-  errorSubtext: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    textAlign: 'center',
-    opacity: 0.7,
+    fontWeight: '800',
   },
 });

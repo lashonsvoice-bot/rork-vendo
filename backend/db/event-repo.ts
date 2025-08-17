@@ -182,77 +182,7 @@ class EventRepository {
   private noShowRecords: NoShowRecord[] = [];
   private nextId = 1;
 
-  constructor() {
-    // Initialize with some mock data
-    this.seedData();
-  }
 
-  private seedData() {
-    const mockEvents: Event[] = [
-      {
-        id: "1",
-        title: "Tech Expo 2024",
-        description: "Annual technology exhibition showcasing the latest innovations in AI, robotics, and software development.",
-        businessName: "TechVentures Inc.",
-        website: "https://techventures.com",
-        location: "San Francisco Convention Center",
-        city: "San Francisco",
-        state: "CA",
-        date: "2024-03-15",
-        time: "9:00 AM - 6:00 PM",
-        contractorsNeeded: 5,
-        contractorPay: 250,
-        hostSupervisionFee: 75,
-        foodStipend: 30,
-        travelStipend: 50,
-        flyerUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800",
-        createdBy: 'business_owner',
-        status: 'completed',
-        stipendMode: 'in_app',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: "2",
-        title: "Farmers Market Weekend",
-        description: "Local farmers market featuring organic produce, artisanal goods, and live music.",
-        eventHostId: "eh1",
-        eventHostName: "Downtown Events Co.",
-        location: "Downtown Plaza",
-        city: "Oakland",
-        state: "CA",
-        date: "2024-03-22",
-        time: "7:00 AM - 2:00 PM",
-        contractorsNeeded: 0,
-        contractorPay: 150,
-        hostSupervisionFee: 50,
-        foodStipend: 20,
-        flyerUrl: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800",
-        createdBy: 'event_host',
-        status: 'active',
-        businessOwnerSelected: false,
-        stipendMode: 'gift_card',
-        tableOptions: [
-          {
-            id: "t1",
-            size: "Small (6ft)",
-            price: 75,
-            quantity: 8,
-            contractorsPerTable: 1,
-            availableQuantity: 8,
-          },
-        ],
-        totalVendorSpaces: 8,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
-
-    mockEvents.forEach(event => {
-      this.events.set(event.id, event);
-      this.nextId = Math.max(this.nextId, parseInt(event.id) + 1);
-    });
-  }
 
   async create(eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> {
     const id = this.nextId.toString();

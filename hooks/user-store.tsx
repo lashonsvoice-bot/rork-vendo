@@ -94,114 +94,16 @@ const EVENT_HOSTS_STORAGE_KEY = "event_hosts_data";
 const TRAINING_MATERIALS_STORAGE_KEY = "training_materials_data";
 const TRAINING_PROGRESS_STORAGE_KEY = "training_progress_data";
 
-const mockContractors: Contractor[] = [
-  {
-    id: "c1",
-    name: "Sarah Johnson",
-    email: "sarah.j@email.com",
-    phone: "+1 (555) 123-4567",
-    dateOfBirth: "1995-03-15",
-    idVerified: true,
-    documentsCompleted: true,
-    trainingCompleted: true,
-    availableForWork: true,
-    rating: 4.8,
-    completedJobs: 23,
-    skills: ["Customer Service", "Event Setup", "Product Demo"],
-    location: "CA",
-    reliableTransportation: true,
-    agreedToTermsAt: "2024-01-10T09:00:00Z",
-    createdAt: "2024-01-15T10:00:00Z",
-    oneStarCount: 0,
-    suspended: false,
-  },
-  {
-    id: "c2",
-    name: "Mike Chen",
-    email: "mike.chen@email.com",
-    phone: "+1 (555) 234-5678",
-    dateOfBirth: "1992-07-22",
-    idVerified: true,
-    documentsCompleted: true,
-    trainingCompleted: false,
-    availableForWork: false,
-    rating: 4.6,
-    completedJobs: 18,
-    skills: ["Sales", "Tech Support", "Crowd Management"],
-    location: "CA",
-    reliableTransportation: false,
-    agreedToTermsAt: "2024-01-20T12:00:00Z",
-    createdAt: "2024-02-01T14:30:00Z",
-    oneStarCount: 0,
-    suspended: false,
-  },
-];
 
-const mockEventHosts: EventHost[] = [
-  {
-    id: "eh1",
-    name: "Downtown Events Co.",
-    email: "contact@downtownevents.com",
-    organizationName: "Downtown Events Co.",
-    phone: "+1 (555) 987-6543",
-    website: "https://downtownevents.com",
-    location: "Oakland, CA",
-    eventsHosted: 12,
-    rating: 4.7,
-    acceptsDeliverables: true,
-    deliveryAddress: "123 Downtown Plaza, Oakland, CA 94612",
-    createdAt: "2024-01-05T08:00:00Z",
-  },
-  {
-    id: "eh3",
-    name: "Seattle Events Group",
-    email: "info@seattleevents.org",
-    organizationName: "Seattle Events Group",
-    phone: "+1 (206) 555-0123",
-    location: "Seattle, WA",
-    eventsHosted: 8,
-    rating: 4.5,
-    acceptsDeliverables: true,
-    deliveryAddress: "456 Pike Place Market, Seattle, WA 98101",
-    createdAt: "2024-02-10T10:30:00Z",
-  },
-];
-
-const mockTrainingDocuments: TrainingDocument[] = [
-  {
-    id: "t1",
-    title: "Customer Service Excellence",
-    type: "video",
-    url: "https://example.com/training/customer-service",
-    required: true,
-    completed: false,
-  },
-  {
-    id: "t2",
-    title: "Event Safety Guidelines",
-    type: "document",
-    url: "https://example.com/docs/safety-guidelines.pdf",
-    required: true,
-    completed: false,
-  },
-  {
-    id: "t3",
-    title: "Product Demonstration Techniques",
-    type: "video",
-    url: "https://example.com/training/product-demo",
-    required: false,
-    completed: false,
-  },
-];
 
 export const [UserProvider, useUser] = createContextHook(() => {
   const [userRole, setUserRole] = useState<UserRole>(null);
   const [currentUser, setCurrentUser] = useState<BusinessOwner | Contractor | EventHost | null>(null);
   const { user: authUser } = useAuth();
-  const [contractors, setContractors] = useState<Contractor[]>(mockContractors);
+  const [contractors, setContractors] = useState<Contractor[]>([]);
   const [businessOwners, setBusinessOwners] = useState<BusinessOwner[]>([]);
-  const [eventHosts, setEventHosts] = useState<EventHost[]>(mockEventHosts);
-  const [trainingDocuments, setTrainingDocuments] = useState<TrainingDocument[]>(mockTrainingDocuments);
+  const [eventHosts, setEventHosts] = useState<EventHost[]>([]);
+  const [trainingDocuments, setTrainingDocuments] = useState<TrainingDocument[]>([]);
   const [trainingMaterials, setTrainingMaterials] = useState<TrainingDocument[]>([]);
   const [trainingProgress, setTrainingProgress] = useState<ContractorTrainingProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -293,7 +195,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
       if (contractorsData) {
         const parsed = JSON.parse(contractorsData);
-        setContractors([...mockContractors, ...parsed]);
+        setContractors(parsed);
       }
 
       if (businessOwnersData) {
@@ -303,7 +205,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
 
       if (eventHostsData) {
         const parsed = JSON.parse(eventHostsData);
-        setEventHosts([...mockEventHosts, ...parsed]);
+        setEventHosts(parsed);
       }
 
       if (trainingMaterialsData) {
@@ -367,7 +269,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
     
     try {
-      const customBusinessOwners = updatedBusinessOwners.filter(bo => !mockContractors.find(mc => mc.id === bo.id));
+      const customBusinessOwners = updatedBusinessOwners;
       await AsyncStorage.setItem(BUSINESS_OWNERS_STORAGE_KEY, JSON.stringify(customBusinessOwners));
     } catch (error) {
       console.error("Error updating business owner:", error);
@@ -387,7 +289,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     }
     
     try {
-      const customContractors = updatedContractors.filter(c => !mockContractors.find(mc => mc.id === c.id));
+      const customContractors = updatedContractors;
       await AsyncStorage.setItem(CONTRACTORS_STORAGE_KEY, JSON.stringify(customContractors));
     } catch (error) {
       console.error("Error updating contractor:", error);
@@ -424,7 +326,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     setBusinessOwners(updatedBusinessOwners);
     
     try {
-      await AsyncStorage.setItem(BUSINESS_OWNERS_STORAGE_KEY, JSON.stringify(updatedBusinessOwners.filter(bo => !mockContractors.find(mc => mc.id === bo.id))));
+      await AsyncStorage.setItem(BUSINESS_OWNERS_STORAGE_KEY, JSON.stringify(updatedBusinessOwners));
     } catch (error) {
       console.error("Error saving business owner:", error);
     }
@@ -453,7 +355,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
     setContractors(updatedContractors);
     
     try {
-      const customContractors = updatedContractors.filter(c => !mockContractors.find(mc => mc.id === c.id));
+      const customContractors = updatedContractors;
       await AsyncStorage.setItem(CONTRACTORS_STORAGE_KEY, JSON.stringify(customContractors));
     } catch (error) {
       console.error("Error saving contractor:", error);

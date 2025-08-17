@@ -153,217 +153,10 @@ export interface ContractorApplication {
   experience?: string;
 }
 
-const mockEvents: Event[] = [
-  {
-    id: "1",
-    title: "Tech Expo 2024",
-    description: "Annual technology exhibition showcasing the latest innovations in AI, robotics, and software development. We need contractors to manage vendor booths and assist with product demonstrations.",
-    businessName: "TechVentures Inc.",
-    website: "https://techventures.com",
-    location: "San Francisco Convention Center",
-    city: "San Francisco",
-    state: "CA",
-    date: "2024-03-15",
-    time: "9:00 AM - 6:00 PM",
-    contractorsNeeded: 5,
-    contractorPay: 250,
-    hostSupervisionFee: 75,
-    foodStipend: 30,
-    travelStipend: 50,
-    flyerUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800",
-    createdBy: 'business_owner',
-    status: 'completed',
-    vendors: [
-      {
-        id: "v1",
-        vendorName: "Acme Robotics",
-        contractorId: "c1",
-        arrivalConfirmed: true,
-        idVerified: true,
-        halfwayConfirmed: true,
-        endConfirmed: true,
-        eventPhotos: [],
-        fundsReleased: true,
-        notes: "Completed successfully"
-      }
-    ],
-  },
-  {
-    id: "2",
-    title: "Farmers Market Weekend",
-    description: "Local farmers market featuring organic produce, artisanal goods, and live music. Looking for contractors to help vendors with setup, sales, and customer engagement.",
-    eventHostId: "eh1",
-    eventHostName: "Downtown Events Co.",
-    location: "Downtown Plaza",
-    city: "Oakland",
-    state: "CA",
-    date: "2024-03-22",
-    time: "7:00 AM - 2:00 PM",
-    contractorsNeeded: 0,
-    contractorPay: 150,
-    hostSupervisionFee: 50,
-    foodStipend: 20,
-    flyerUrl: "https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800",
-    createdBy: 'event_host',
-    status: 'active',
-    businessOwnerSelected: false,
-    tableOptions: [
-      {
-        id: "t1",
-        size: "Small (6ft)",
-        price: 75,
-        quantity: 8,
-        contractorsPerTable: 1,
-        availableQuantity: 8,
-      },
-      {
-        id: "t2",
-        size: "Medium (8ft)",
-        price: 100,
-        quantity: 6,
-        contractorsPerTable: 2,
-        availableQuantity: 6,
-      },
-      {
-        id: "t3",
-        size: "Large (10ft)",
-        price: 150,
-        quantity: 4,
-        contractorsPerTable: 3,
-        availableQuantity: 4,
-      },
-    ],
-    totalVendorSpaces: 32,
-  },
-  {
-    id: "3",
-    title: "Health & Wellness Fair",
-    description: "Community health fair with free screenings, wellness workshops, and vendor booths. Need contractors to assist healthcare providers and manage information tables.",
-    eventHostId: "eh2",
-    eventHostName: "City Community Events",
-    location: "City Community Center",
-    city: "Austin",
-    state: "TX",
-    date: "2024-04-05",
-    time: "10:00 AM - 4:00 PM",
-    contractorsNeeded: 0,
-    contractorPay: 200,
-    hostSupervisionFee: 60,
-    foodStipend: 25,
-    travelStipend: 30,
-    flyerUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800",
-    createdBy: 'event_host',
-    status: 'active',
-    businessOwnerSelected: false,
-    tableOptions: [
-      {
-        id: "t4",
-        size: "Standard (8ft)",
-        price: 120,
-        quantity: 10,
-        contractorsPerTable: 2,
-        availableQuantity: 10,
-      },
-      {
-        id: "t5",
-        size: "Premium (10ft)",
-        price: 180,
-        quantity: 5,
-        contractorsPerTable: 3,
-        availableQuantity: 5,
-      },
-    ],
-    totalVendorSpaces: 35,
-  },
-  {
-    id: "4",
-    title: "Art & Craft Festival",
-    description: "Annual arts and crafts festival featuring local artists, handmade goods, and interactive workshops. Contractors needed for vendor assistance and crowd management.",
-    businessName: "Creative Arts Alliance",
-    location: "Riverside Park",
-    city: "Miami",
-    state: "FL",
-    date: "2024-04-12",
-    time: "11:00 AM - 7:00 PM",
-    contractorsNeeded: 6,
-    contractorPay: 180,
-    hostSupervisionFee: 70,
-    travelStipend: 40,
-    flyerUrl: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=800",
-    createdBy: 'business_owner',
-    status: 'active',
-    proposalSent: true,
-  },
-  {
-    id: "5",
-    title: "Food Truck Festival",
-    description: "Weekend food truck festival with live music and family activities. Need contractors to help with vendor coordination and customer service.",
-    eventHostId: "eh3",
-    eventHostName: "Seattle Events Group",
-    location: "Pike Place Market",
-    city: "Seattle",
-    state: "WA",
-    date: "2024-03-30",
-    time: "12:00 PM - 8:00 PM",
-    contractorsNeeded: 0,
-    contractorPay: 175,
-    hostSupervisionFee: 55,
-    foodStipend: 35,
-    flyerUrl: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800",
-    createdBy: 'event_host',
-    status: 'active',
-    businessOwnerSelected: false,
-    tableOptions: [
-      {
-        id: "t6",
-        size: "Food Vendor (12ft)",
-        price: 200,
-        quantity: 12,
-        contractorsPerTable: 2,
-        availableQuantity: 12,
-      },
-      {
-        id: "t7",
-        size: "Merchandise (6ft)",
-        price: 80,
-        quantity: 15,
-        contractorsPerTable: 1,
-        availableQuantity: 15,
-      },
-      {
-        id: "t8",
-        size: "Premium Corner (10ft)",
-        price: 250,
-        quantity: 4,
-        contractorsPerTable: 3,
-        availableQuantity: 4,
-      },
-    ],
-    totalVendorSpaces: 51,
-  },
-  {
-    id: "6",
-    title: "Business Networking Expo",
-    description: "Professional networking event with business showcases and seminars. Looking for contractors to assist with registration and booth management.",
-    businessName: "Business Connect NY",
-    location: "Jacob Javits Center",
-    city: "New York",
-    state: "NY",
-    date: "2024-04-20",
-    time: "8:00 AM - 5:00 PM",
-    contractorsNeeded: 8,
-    contractorPay: 220,
-    hostSupervisionFee: 80,
-    foodStipend: 40,
-    travelStipend: 60,
-    flyerUrl: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800",
-    createdBy: 'business_owner',
-    status: 'active',
-  },
-];
+
 
 export const [EventsProvider, useEvents] = createContextHook(() => {
-  const [events, setEvents] = useState<Event[]>(mockEvents);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   type PendingAction = { id: string; type: 'updateVendor'; payload: { eventId: string; vendorId: string; updates: Partial<VendorCheckIn> } };
@@ -378,7 +171,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsedEvents: Event[] = JSON.parse(stored);
-        setEvents([...mockEvents, ...parsedEvents]);
+        setEvents(parsedEvents);
       }
       const q = await AsyncStorage.getItem(QUEUE_KEY);
       if (q) {
@@ -399,9 +192,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
 
   const saveEvents = useCallback(async (eventsToSave: Event[]) => {
     try {
-      const customEvents = eventsToSave.filter(
-        (e) => !mockEvents.find((m) => m.id === e.id)
-      );
+      const customEvents = eventsToSave;
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(customEvents));
     } catch (error) {
       console.error("Error saving events:", error);

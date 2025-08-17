@@ -49,9 +49,13 @@ export const [ThemeProvider, useTheme] = createContextHook<ThemeContextType>(() 
     return () => subscription?.remove();
   }, []);
 
-  const isDark = themeMode === 'dark' || themeMode === 'system';
+  const isDark = useMemo(() => {
+    if (themeMode === 'dark') return true;
+    if (themeMode === 'light') return false;
+    return systemColorScheme === 'dark';
+  }, [themeMode, systemColorScheme]);
 
-  const theme = isDark ? darkTheme : lightTheme;
+  const theme = useMemo<AppTheme>(() => (isDark ? darkTheme : lightTheme), [isDark]);
 
   const setThemeMode = useCallback(async (mode: ThemeMode) => {
     try {

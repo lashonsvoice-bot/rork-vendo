@@ -22,7 +22,7 @@ export default function SendProposalTestNow() {
   const [error, setError] = useState<string | null>(null);
 
   const targetEmail = useMemo(() => 'lashonsvoice@gmail.com', []);
-  const targetPhone = useMemo(() => '706.464.0213', []);
+  const targetPhone = useMemo<string | null>(() => null, []);
 
   useEffect(() => {
     const run = async () => {
@@ -47,7 +47,7 @@ export default function SendProposalTestNow() {
           eventTitle: 'Test Event (Automated) ',
           hostName: 'Test Host',
           hostEmail: targetEmail,
-          hostPhone: targetPhone,
+          // Email only test: do not include hostPhone
           proposedAmount: 500,
           contractorsNeeded: 2,
           message: `Greetings,\n\n${businessName} located in ${cityState} would like to RevoVend at your Test Event on ${prettyDate}. This is a test dispatch generated to validate email and SMS delivery.\n\nIf you received this message, the external proposal flow is working.`,
@@ -87,7 +87,7 @@ export default function SendProposalTestNow() {
             <Text style={styles.title}>One-tap Test Dispatch</Text>
           </View>
           <Text style={styles.subtext}>Email: {targetEmail}</Text>
-          <Text style={styles.subtext}>SMS: {targetPhone}</Text>
+          <Text style={styles.subtext}>Mode: Email only</Text>
         </View>
 
         {isSending && (
@@ -130,7 +130,7 @@ export default function SendProposalTestNow() {
                         eventTitle: 'Test Event (Automated) ',
                         hostName: 'Test Host',
                         hostEmail: targetEmail,
-                        hostPhone: targetPhone,
+                        // Email only test: do not include hostPhone
                         proposedAmount: 500,
                         contractorsNeeded: 2,
                         message: `Greetings,\n\n${businessName} located in ${cityState} would like to RevoVend at your Test Event on ${prettyDate}. This is a test dispatch generated to validate email and SMS delivery.\n\nIf you received this message, the external proposal flow is working.`,
@@ -181,8 +181,8 @@ export default function SendProposalTestNow() {
                 <Text style={[styles.statText, { color: result.emailSent ? '#10B981' : '#9CA3AF' }]}>Email {result.emailSent ? 'sent' : 'not sent'}</Text>
               </View>
               <View style={styles.stat}>
-                <MessageSquare size={16} color={result.smsSent ? '#10B981' : '#9CA3AF'} />
-                <Text style={[styles.statText, { color: result.smsSent ? '#10B981' : '#9CA3AF' }]}>SMS {result.smsSent ? 'sent' : 'not sent'}</Text>
+                <MessageSquare size={16} color={'#9CA3AF'} />
+                <Text style={[styles.statText, { color: '#9CA3AF' }]}>SMS not sent (email-only test)</Text>
               </View>
             </View>
 

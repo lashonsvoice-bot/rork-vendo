@@ -3,6 +3,11 @@ import { publicProcedure } from "../../../create-context";
 import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
 import sgMail from "@sendgrid/mail";
 
+const BRAND_NAME = '[[YOUR BRAND NAME]]';
+const BRAND_ADDRESS = '[[1234 Placeholder St, Suite 100, City, ST 00000]]';
+const BRAND_LOGO_URL = '[[https://example.com/your-logo.png]]';
+const COMPLIANCE_FOOTER_TEXT = '[[This is a placeholder compliance disclosure. Replace with your legal/compliance text before going live.]]';
+
 function generateSimplePdf(params: {
   title: string;
   subtitle?: string;
@@ -33,6 +38,14 @@ function generateSimplePdf(params: {
 
   lines.push(`/F1 ${bodyFontSize} Tf`);
 
+  // Brand header block (placeholders)
+  lines.push(`${leftMargin} ${y} Td`);
+  lines.push(`(${esc(`${BRAND_NAME} • ${BRAND_ADDRESS}`)}) Tj`);
+  y -= 16;
+  lines.push(`${leftMargin} ${y} Td`);
+  lines.push(`(${esc(`Logo: ${BRAND_LOGO_URL}`)}) Tj`);
+  y -= 18;
+
   params.sections.forEach((sec) => {
     y -= 10;
     lines.push(`${leftMargin} ${y} Td`);
@@ -48,6 +61,13 @@ function generateSimplePdf(params: {
       y -= 14;
     });
   });
+
+  // Compliance footer
+  if (y > 120) {
+    y = 96;
+  }
+  lines.push(`${leftMargin} ${96} Td`);
+  lines.push(`(${esc(COMPLIANCE_FOOTER_TEXT)}) Tj`);
 
   lines.push("ET");
 
@@ -243,7 +263,7 @@ const sendExternalProposalProcedure = publicProcedure
     // Email content with invitation code (using your template)
     const replyToEmail = businessOwnerContactEmail || 'noreply@revovend.com';
     const subjectLine = `A RevoVend vendor wants to secure a table at ${eventTitle}`;
-    const emailContent = `Greetings,\n\n${businessName} located in ${eventLocation.split(',')[1]?.trim() || 'our location'} would like to RevoVend at your ${eventTitle} on ${eventDate}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.\n\nWe want to pay ${proposedAmount} today for a table or booth as well as an additional supervisory fee of ${supervisoryFee} for you to ensure our team has materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.\n\nCustom Message from ${businessOwnerName}:\n${message}\n\nIf you accept this proposal, please use the following invite code when you log into the RevoVend App:\n\nINVITATION CODE: ${invitationCode}\n\nThe more vendors see that you are a RevoVend Host, the more your events could be filled remotely with vendors from all around the world.\n\nDownload the RevoVend App:\n• iOS: [App Store Link]\n• Android: [Google Play Link]\n\nFor questions, please reply to: ${replyToEmail}\n\nBest regards,\n${businessOwnerName}\n${businessName}`;
+    const emailContent = `Greetings,\n\n${businessName} located in ${eventLocation.split(',')[1]?.trim() || 'our location'} would like to RevoVend at your ${eventTitle} on ${eventDate}. This means we are going to remotely vend at your event with trained professionals who will man our booth for us. We are reaching out to you in advance because we have researched the details of your event and believe your target market will be a great opportunity for both of us.\n\nWe want to pay ${proposedAmount} today for a table or booth as well as an additional supervisory fee of ${supervisoryFee} for you to ensure our team has materials that we will send to an address you provide, arrive on time, and receive pay at the end of the event. Don't worry - other than receiving the materials everything is hands off, we just need your eyes.\n\nCustom Message from ${businessOwnerName}:\n${message}\n\nIf you accept this proposal, please use the following invite code when you log into the RevoVend App:\n\nINVITATION CODE: ${invitationCode}\n\nThe more vendors see that you are a RevoVend Host, the more your events could be filled remotely with vendors from all around the world.\n\nDownload the RevoVend App:\n• iOS: [App Store Link]\n• Android: [Google Play Link]\n\nFor questions, please reply to: ${replyToEmail}\n\n—\n${BRAND_NAME}\n${BRAND_ADDRESS}\nLogo: ${BRAND_LOGO_URL}\n${COMPLIANCE_FOOTER_TEXT}\n\nBest regards,\n${businessOwnerName}\n${businessName}`;
     const htmlContent = emailContent.replace(/\n/g, '<br/>');
 
     // SMS content (shorter version) with invitation code
@@ -517,6 +537,12 @@ Download the RevoVend App:
 I'm excited about the possibility of having ${businessName} as part of our event. Remote vending allows you to expand your market reach without the travel costs and time commitment of traditional vending.
 
 For questions, please reply to: ${replyToEmail}
+
+—
+${BRAND_NAME}
+${BRAND_ADDRESS}
+Logo: ${BRAND_LOGO_URL}
+${COMPLIANCE_FOOTER_TEXT}
 
 Best regards,
 ${hostName}

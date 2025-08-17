@@ -52,6 +52,9 @@ export default function ManageVendorScreen() {
   const [editingTableLabel, setEditingTableLabel] = useState<string | null>(null);
   const [tempTableLabel, setTempTableLabel] = useState("");
   const [stipendMode, setStipendMode] = useState<import("@/hooks/events-store").Event["stipendReleaseMethod"]>((event?.stipendReleaseMethod ?? 'notification'));
+  const [showQuickNoteModal, setShowQuickNoteModal] = useState(false);
+  const [quickNoteVendorId, setQuickNoteVendorId] = useState<string | null>(null);
+  const [quickNoteText, setQuickNoteText] = useState("");
 
   if (!event) {
     return (
@@ -241,6 +244,15 @@ export default function ManageVendorScreen() {
 
     return (
       <View key={vendor.id} style={styles.vendorCard}>
+        <TouchableOpacity
+          activeOpacity={1}
+          delayLongPress={400}
+          onLongPress={() => {
+            setQuickNoteVendorId(vendor.id);
+            setQuickNoteText(vendor.notes ?? "");
+            setShowQuickNoteModal(true);
+          }}
+        >
         <View style={styles.vendorHeader}>
           <View style={styles.vendorInfo}>
             <View style={styles.vendorAvatar}>
@@ -495,6 +507,8 @@ export default function ManageVendorScreen() {
             </Text>
           )}
         </View>
+
+        </TouchableOpacity>
 
         {vendor.review && (
           <View style={styles.reviewSection}>
@@ -824,6 +838,55 @@ export default function ManageVendorScreen() {
           </View>
         </Modal>
       </ScrollView>
+
+      <Modal
+        visible={showQuickNoteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowQuickNoteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.quickNoteContent}>
+            <View style={styles.quickNoteHeader}>
+              <Text style={styles.quickNoteTitle}>Private Note</Text>
+              <TouchableOpacity onPress={() => setShowQuickNoteModal(false)}>
+                <X size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.quickNoteSub}>Visible to owner and considered during ratings</Text>
+            <TextInput
+              testID={quickNoteVendorId ? `quick-note-input-${quickNoteVendorId}` : 'quick-note-input'}
+              style={styles.quickNoteInput}
+              value={quickNoteText}
+              onChangeText={setQuickNoteText}
+              placeholder="Type a private note..."
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+            <View style={styles.quickNoteActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowQuickNoteModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                testID={quickNoteVendorId ? `quick-note-save-${quickNoteVendorId}` : 'quick-note-save'}
+                style={styles.modalAddButton}
+                onPress={() => {
+                  if (quickNoteVendorId) {
+                    updateVendorCheckIn(event.id, quickNoteVendorId, { notes: quickNoteText.trim() });
+                  }
+                  setShowQuickNoteModal(false);
+                }}
+              >
+                <Text style={styles.modalAddText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -1266,6 +1329,45 @@ const styles = StyleSheet.create({
     padding: 20,
     width: "100%",
     maxWidth: 400,
+  },
+  quickNoteContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    width: "100%",
+    maxWidth: 420,
+  },
+  quickNoteHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  quickNoteTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  quickNoteSub: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 8,
+  },
+  quickNoteInput: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 100,
+    fontSize: 14,
+    color: "#111827",
+    textAlignVertical: "top",
+    backgroundColor: "#F9FAFB",
+  },
+  quickNoteActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 12,
   },
   modalTitle: {
     fontSize: 18,

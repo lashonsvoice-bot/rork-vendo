@@ -121,15 +121,13 @@ export default function EventsScreen() {
   }, [events, userRole, currentUser, selectedState, contractorHomeState, getPublicListings, getSortedEvents]);
   
   const filteredEvents = useMemo(() => {
-    return baseEvents.filter((event) => {
+    const list = baseEvents.filter((event) => {
       const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
         event.state.toLowerCase().includes(searchQuery.toLowerCase());
-      
       if (!matchesSearch) return false;
-      
-      // Filter based on user role and selected filter
+
       if (userRole === 'business_owner') {
         switch (selectedFilter) {
           case "drafts":
@@ -174,9 +172,33 @@ export default function EventsScreen() {
             return true;
         }
       }
-      
+
       return true;
     });
+
+    if (userRole === 'business_owner') {
+      const priority = (e: any) => {
+        const hasApplications = (e.contractorApplications?.length ?? 0) > 0;
+        const hasHires = (e.selectedContractors?.length ?? 0) > 0;
+        if (e.hostConnected && !hasHires && hasApplications) return 0; // ready to hire
+        if (e.hostConnected && !hasHires && !hasApplications) return 1; // awaiting contractors
+        if (!e.hostConnected && (e.proposalSent ?? false) === true) return 2; // awaiting host
+        if (!e.hostConnected && (e.proposalSent ?? false) === false && e.createdBy === 'business_owner') return 3; // drafts
+        if (hasHires) return 4; // active/ongoing
+        return 5; // everything else
+      };
+      return [...list].sort((a, b) => {
+        const pa = priority(a);
+        const pb = priority(b);
+        if (pa !== pb) return pa - pb;
+        const da = new Date(a.date).getTime();
+        const db = new Date(b.date).getTime();
+        if (da !== db) return da - db;
+        return a.title.localeCompare(b.title);
+      });
+    }
+
+    return list;
   }, [baseEvents, searchQuery, selectedFilter, userRole, currentUser]);
   
   const formatDate = (dateString: string) => {

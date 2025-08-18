@@ -132,7 +132,26 @@ class TwilioService {
   async sendPaymentReminder(phoneNumber: string, amount: number, dueDate: string): Promise<SMSResponse> {
     const message = {
       to: phoneNumber,
-      body: `Payment Reminder: You have a pending payment of $${amount.toFixed(2)} due on ${dueDate}. Please complete your payment to avoid service interruption.`
+      body: `Payment Reminder: You have a pending payment of ${amount.toFixed(2)} due on ${dueDate}. Please complete your payment to avoid service interruption.`
+    };
+
+    return this.sendSMS(message);
+  }
+
+  /**
+   * Send proposal SMS notification
+   */
+  async sendProposalNotification(phoneNumber: string, proposalDetails: {
+    eventTitle: string;
+    eventDate: string;
+    invitationCode: string;
+    appDownloadLink?: string;
+  }): Promise<SMSResponse> {
+    const appLink = proposalDetails.appDownloadLink || 'https://revovend.com/app';
+    
+    const message = {
+      to: phoneNumber,
+      body: `A RevoVend Business would like to request a table at your event ${proposalDetails.eventTitle} for ${proposalDetails.eventDate}. Please check your email for more details or download the RevoVend App at ${appLink} and use this invite code: ${proposalDetails.invitationCode}`
     };
 
     return this.sendSMS(message);

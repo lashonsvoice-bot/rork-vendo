@@ -115,6 +115,7 @@ import {
   sendEventNotificationProcedure,
   sendBookingConfirmationProcedure,
   sendPaymentReminderProcedure,
+  sendProposalSMSProcedure,
   getSMSStatusProcedure
 } from "./routes/sms/route";
 
@@ -194,6 +195,7 @@ export const appRouter = createTRPCRouter({
     sendEventNotification: sendEventNotificationProcedure,
     sendBookingConfirmation: sendBookingConfirmationProcedure,
     sendPaymentReminder: sendPaymentReminderProcedure,
+    sendProposal: sendProposalSMSProcedure,
     getStatus: getSMSStatusProcedure,
   }),
   wallet: walletRoutes,

@@ -141,6 +141,38 @@ export const sendPaymentReminderProcedure = protectedProcedure
     };
   });
 
+// Send proposal SMS procedure
+export const sendProposalSMSProcedure = protectedProcedure
+  .input(z.object({
+    phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
+    proposalDetails: z.object({
+      eventTitle: z.string().min(1, 'Event title is required'),
+      eventDate: z.string().min(1, 'Event date is required'),
+      invitationCode: z.string().min(1, 'Invitation code is required'),
+      appDownloadLink: z.string().url().optional()
+    })
+  }))
+  .mutation(async ({ input }) => {
+    console.log('📱 Sending proposal SMS:', { 
+      event: input.proposalDetails.eventTitle, 
+      to: input.phoneNumber 
+    });
+    
+    const result = await twilioService.sendProposalNotification(
+      input.phoneNumber,
+      input.proposalDetails
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to send proposal SMS');
+    }
+
+    return {
+      success: true,
+      messageId: result.messageId
+    };
+  });
+
 // Get SMS service status procedure
 export const getSMSStatusProcedure = protectedProcedure
   .query(async () => {

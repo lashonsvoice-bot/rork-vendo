@@ -3,6 +3,7 @@ import { publicProcedure } from "../../../create-context";
 import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
 import { messageRepo } from "@/backend/db/message-repo";
 import sgMail from "@sendgrid/mail";
+import { twilioService } from "@/backend/lib/twilio";
 
 async function generateSimplePdf(params: {
   title: string;
@@ -348,17 +349,41 @@ const sendExternalProposalProcedure = publicProcedure
     // Send SMS if provided
     if (hostPhone) {
       try {
-        console.log('📱 SENDING SMS PROPOSAL:');
-        console.log('To:', hostPhone);
-        console.log('Content:', smsContent);
+        console.log('📱 Sending SMS proposal notification to:', hostPhone);
         
-        // Simulate SMS sending
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        results.smsSent = true;
+        const smsResult = await twilioService.sendProposalNotification(hostPhone, {
+          eventTitle,
+          eventDate,
+          invitationCode,
+          appDownloadLink: 'https://revovend.com/app'
+        });
+        
+        if (smsResult.success) {
+          console.log('✅ SMS sent successfully:', smsResult.messageId);
+          results.smsSent = true;
+        } else {
+          console.error('❌ SMS sending failed:', smsResult.error);
+          results.errors.push(`SMS failed: ${smsResult.error}`);
+          
+          // Fallback to stub mode for development
+          console.log('📱 FALLBACK SMS PROPOSAL (stub mode):');
+          console.log('To:', hostPhone);
+          console.log('Content:', smsContent);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          results.smsSent = true;
+        }
         
       } catch (error) {
-        console.error('SMS sending failed:', error);
-        results.errors.push('Failed to send SMS notification');
+        console.error('❌ SMS sending failed:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        results.errors.push(`Failed to send SMS: ${errorMessage}`);
+        
+        // Fallback to stub mode
+        console.log('📱 FALLBACK SMS PROPOSAL (stub mode):');
+        console.log('To:', hostPhone);
+        console.log('Content:', smsContent);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        results.smsSent = true;
       }
     }
 

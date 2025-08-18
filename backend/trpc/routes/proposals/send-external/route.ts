@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
 import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
-import { messageRepo } from "@/backend/db/message-repo";
 import { sendGridService } from "@/backend/lib/sendgrid";
 import { twilioService } from "@/backend/lib/twilio";
 
@@ -140,19 +139,8 @@ export const connectHostWithInvitationCodeProcedure = publicProcedure
         throw new Error('Invalid invitation code or proposal not found');
       }
       
-      // Create messaging connection between business owner and host
-      const connection = {
-        id: Date.now().toString(),
-        userId1: connectedProposal.businessOwnerId,
-        userId2: input.hostId,
-        eventId: connectedProposal.eventId,
-        connectionType: 'proposal' as const,
-        connectedAt: new Date().toISOString(),
-        isActive: true,
-      };
-      
-      messageRepo.addConnection(connection);
-      console.log('[ConnectHost] Messaging connection created:', connection.id);
+      // Note: Messaging connection can be created later when needed
+      console.log('[ConnectHost] Host connected to external proposal');
       
       console.log('[ConnectHost] Host connected successfully:', connectedProposal.id);
       return {

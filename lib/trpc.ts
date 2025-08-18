@@ -40,9 +40,9 @@ export const getBaseUrl = (): string => {
   if (hostUri && hostUri.length > 0) {
     const host = hostUri.split(":")[0];
     const protocol = host.includes("localhost") || host.match(/\d+\.\d+\.\d+\.\d+/) ? "http" : "https";
-    return `${protocol}://${host}`;
+    return `${protocol}://${host}:3000`;
   }
-  return "http://localhost:8081";
+  return "http://localhost:3000";
 };
 
 export const createTRPCClient = () => {
@@ -68,22 +68,29 @@ export const createTRPCClient = () => {
             console.warn('[tRPC] Failed to get session from storage:', e);
           }
           
-          const response = await fetch(url, {
-            ...options,
-            headers,
-            credentials: "include",
-          });
-          
-          if (!response.ok && response.status === 401) {
-            console.log('[tRPC] Unauthorized request, clearing session');
-            try {
-              await AsyncStorage.removeItem("auth.sessionUser");
-            } catch (e) {
-              console.warn('[tRPC] Failed to clear session:', e);
+          try {
+            const response = await fetch(url, {
+              ...options,
+              headers,
+              credentials: "include",
+            });
+            
+            if (!response.ok && response.status === 401) {
+              console.log('[tRPC] Unauthorized request, clearing session');
+              try {
+                await AsyncStorage.removeItem("auth.sessionUser");
+              } catch (e) {
+                console.warn('[tRPC] Failed to clear session:', e);
+              }
             }
+            
+            return response;
+          } catch (error) {
+            console.error('[tRPC] Network error:', error);
+            console.error('[tRPC] Attempted URL:', url);
+            console.error('[tRPC] Base URL:', getBaseUrl());
+            throw new Error(`Network error: Unable to connect to server at ${getBaseUrl()}. Please ensure the backend server is running.`);
           }
-          
-          return response;
         },
       }),
     ],

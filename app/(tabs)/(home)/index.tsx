@@ -62,12 +62,21 @@ export default function HomeScreen() {
   React.useEffect(() => {
     if (profileQuery.error && !isGuest) {
       console.error('[Home] Profile query error:', profileQuery.error);
-      // Only show alert for non-network errors
-      if (!profileQuery.error.message.includes('Failed to fetch')) {
+      // Show user-friendly error message
+      if (profileQuery.error.message.includes('Network error') || profileQuery.error.message.includes('Failed to fetch')) {
+        Alert.alert(
+          'Connection Error', 
+          'Unable to connect to the server. Please check your internet connection and try again.',
+          [
+            { text: 'Retry', onPress: () => profileQuery.refetch() },
+            { text: 'OK', style: 'cancel' }
+          ]
+        );
+      } else {
         Alert.alert('Error', handleTRPCError(profileQuery.error));
       }
     }
-  }, [profileQuery.error, isGuest]);
+  }, [profileQuery.error, isGuest, profileQuery.refetch]);
   
   console.log('[Home] Profile data:', profileQuery.data);
   console.log('[Home] Profile loading:', profileQuery.isLoading);

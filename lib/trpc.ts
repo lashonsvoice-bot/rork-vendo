@@ -28,7 +28,6 @@ export const handleTRPCError = (error: unknown): string => {
 };
 
 export const getBaseUrl = (): string => {
-  // Check for explicit environment variables first
   const extra = (Constants?.expoConfig?.extra ?? {}) as Record<string, unknown>;
   const fromExtra = typeof extra.EXPO_PUBLIC_RORK_API_BASE_URL === "string" ? (extra.EXPO_PUBLIC_RORK_API_BASE_URL as string) : undefined;
   const fromEnv = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
@@ -38,19 +37,12 @@ export const getBaseUrl = (): string => {
     fromEnv,
     platform: Platform.OS,
     hostUri: (Constants as any)?.expoConfig?.hostUri,
-    windowOrigin: Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : 'N/A',
+    windowOrigin: Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : 'N/A',
     nodeEnv: process.env.NODE_ENV,
     __DEV__: __DEV__
   });
 
-  // Always use localhost for development (when __DEV__ is true)
-  if (__DEV__) {
-    const devUrl = "http://localhost:3000";
-    console.log('[tRPC] Using local development backend (DEV mode):', devUrl);
-    return devUrl;
-  }
-
-  // For production, check environment variables first
+  // 1) Explicit config wins in ALL environments
   if (fromExtra && fromExtra.length > 0) {
     console.log('[tRPC] Using base URL from extra:', fromExtra);
     return fromExtra;
@@ -59,16 +51,25 @@ export const getBaseUrl = (): string => {
     console.log('[tRPC] Using base URL from env:', fromEnv);
     return fromEnv;
   }
-  
-  // For web production, use current origin
-  if (Platform.OS === "web" && typeof window !== "undefined") {
+
+  // 2) Web: use the current origin (works on rorktest.dev previews and localhost)
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
     const origin = window.location.origin;
-    console.log('[tRPC] Using web origin as fallback:', origin);
+    console.log('[tRPC] Using web origin:', origin);
     return origin;
   }
-  
-  // Final fallback
-  const fallback = "http://localhost:3000";
+
+  // 3) Native dev: try to construct LAN URL from Expo hostUri
+  const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
+  if (hostUri) {
+    const host = hostUri.split(':')[0];
+    const url = `http://${host}:3000`;
+    console.log('[tRPC] Using Expo hostUri-derived URL:', url);
+    return url;
+  }
+
+  // 4) Fallback to localhost
+  const fallback = 'http://localhost:3000';
   console.log('[tRPC] Using final fallback URL:', fallback);
   return fallback;
 };
@@ -102,7 +103,7 @@ export const createTRPCClient = () => {
             const response = await fetch(url, {
               ...options,
               headers,
-              credentials: "include",
+              credentials: 'include',
             });
             
             console.log('[tRPC] Response status:', response.status, response.statusText);
@@ -110,7 +111,7 @@ export const createTRPCClient = () => {
             if (!response.ok && response.status === 401) {
               console.log('[tRPC] Unauthorized request, clearing session');
               try {
-                await AsyncStorage.removeItem("auth.sessionUser");
+                await AsyncStorage.removeItem('auth.sessionUser');
               } catch (e) {
                 console.warn('[tRPC] Failed to clear session:', e);
               }
@@ -150,24 +151,25 @@ export const createTRPCClient = () => {
 export const testTRPCConnection = async (): Promise<boolean> => {
   try {
     const baseUrl = getBaseUrl();
-    console.log('[tRPC] Testing connection to:', `${baseUrl}/api/trpc`);
+    console.log('[tRPC] Testing connection to:', `${baseUrl}/api`);
     
     const response = await fetch(`${baseUrl}/api`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
     
     console.log('[tRPC] Test response status:', response.status);
     
-    if (response.ok) {
-      const data = await response.json();
-      console.log('[tRPC] Test response data:', data);
-      return true;
+    if (!response.ok) return false;
+
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      console.warn('[tRPC] Test endpoint did not return JSON. content-type:', contentType);
+      return false;
     }
-    
-    return false;
+
+    const data = await response.json();
+    console.log('[tRPC] Test response data:', data);
+    return true;
   } catch (error) {
     console.error('[tRPC] Connection test failed:', error);
     return false;

@@ -10,7 +10,7 @@ interface UpgradePromptProps {
   style?: object;
 }
 
-export function UpgradePrompt({ feature, onPress, style }: UpgradePromptProps): JSX.Element {
+export function UpgradePrompt({ feature, onPress, style }: UpgradePromptProps) {
   const router = useRouter();
   const { subscription, isTrialExpired } = useSubscription();
 

@@ -57,28 +57,10 @@ export const getBaseUrl = (): string => {
     return origin;
   }
   
-  // For Rork platform, detect the deployment URL
-  const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
-  if (hostUri && hostUri.length > 0) {
-    const host = hostUri.split(":")[0];
-    
-    // Check if this is a Rork deployment
-    if (host.includes("rorktest.dev") || host.includes("rork.com")) {
-      const url = `https://${host}`;
-      console.log('[tRPC] Using Rork deployment URL:', url);
-      return url;
-    }
-    
-    // Local development
-    const protocol = host.includes("localhost") || host.match(/\d+\.\d+\.\d+\.\d+/) ? "http" : "https";
-    const url = `${protocol}://${host}:3000`;
-    console.log('[tRPC] Using local development URL:', url);
-    return url;
-  }
-  
-  // Default to localhost for development
+  // For development, always use localhost with port 3000
+  // This assumes the backend is running locally on port 3000
   const fallback = "http://localhost:3000";
-  console.log('[tRPC] Using fallback URL:', fallback);
+  console.log('[tRPC] Using local development URL:', fallback);
   return fallback;
 };
 

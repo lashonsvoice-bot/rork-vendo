@@ -131,7 +131,21 @@ initializeDatabase().catch(error => {
 
 const app = new Hono();
 
-app.use("*", cors({ origin: (origin) => origin ?? "*", credentials: true }));
+app.use("*", cors({
+  origin: (origin) => origin ?? "*",
+  credentials: true,
+  allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowHeaders: [
+    "Content-Type",
+    "x-session",
+    "x-requested-with",
+    "Accept",
+    "Accept-Language",
+    "Cache-Control",
+    "Pragma",
+  ],
+  maxAge: 86400,
+}));
 
 app.route("/auth", authRoutes);
 app.route("/profile", profileRoutes);

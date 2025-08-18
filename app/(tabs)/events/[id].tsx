@@ -129,6 +129,19 @@ export default function EventDetailsScreen() {
                   </View>
                 </View>
               ))}
+              <TouchableOpacity
+                style={[styles.manageButton, { marginTop: 8 }]}
+                onPress={() => router.push({ pathname: '/(tabs)/events/manage-tables', params: { eventId: event.id } })}
+              >
+                <LinearGradient
+                  colors={["#10B981", "#059669"]}
+                  style={styles.buttonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Text style={styles.buttonText}>Manage Tables</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           </View>
         )}

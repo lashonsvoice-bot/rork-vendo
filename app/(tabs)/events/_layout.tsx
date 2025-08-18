@@ -51,6 +51,19 @@ export default function EventsLayout() {
         }}
       />
       <Stack.Screen
+        name="manage-tables"
+        options={{
+          title: "Manage Tables",
+          headerStyle: {
+            backgroundColor: neonTheme.surface,
+          },
+          headerTintColor: neonTheme.textPrimary,
+          headerTitleStyle: {
+            fontWeight: "bold" as const,
+          },
+        }}
+      />
+      <Stack.Screen
         name="owner-checkins"
         options={{
           title: "Owner Check-ins",

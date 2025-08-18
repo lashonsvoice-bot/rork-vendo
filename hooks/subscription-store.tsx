@@ -42,10 +42,10 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     monthlyPrice: 0,
     yearlyPrice: 0,
     features: [
-      "5 events per month",
+      "5 events OR 30 days (whichever comes first)",
       "Basic event management",
       "Email support",
-      "30-day trial period"
+      "Full access to all features during trial"
     ]
   },
   {
@@ -207,11 +207,20 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const canCreateEvent = useMemo(() => {
     if (!subscription) return false;
     
-    // Check if trial has expired
-    if (subscription.status === "trialing" && subscription.trialEnd) {
-      const trialEndDate = new Date(subscription.trialEnd);
+    // Check if trial has expired (30 days OR 5 events, whichever comes first)
+    if (subscription.status === "trialing") {
       const now = new Date();
-      if (now > trialEndDate) return false;
+      
+      // Check if 30 days have passed
+      if (subscription.trialEnd) {
+        const trialEndDate = new Date(subscription.trialEnd);
+        if (now > trialEndDate) return false;
+      }
+      
+      // Check if 5 events have been used
+      if (subscription.eventsUsed >= subscription.eventsLimit) {
+        return false;
+      }
     }
 
     // Check if subscription is active
@@ -219,9 +228,13 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       return false;
     }
 
-    // Check event limits
-    if (subscription.eventsLimit === -1) return true; // unlimited
-    return subscription.eventsUsed < subscription.eventsLimit;
+    // Check event limits for paid subscriptions
+    if (subscription.status === "active") {
+      if (subscription.eventsLimit === -1) return true; // unlimited
+      return subscription.eventsUsed < subscription.eventsLimit;
+    }
+    
+    return true;
   }, [subscription]);
 
   const remainingEvents = useMemo(() => {
@@ -234,9 +247,35 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     if (!subscription || subscription.status !== "trialing" || !subscription.trialEnd) {
       return false;
     }
-    const trialEndDate = new Date(subscription.trialEnd);
     const now = new Date();
-    return now > trialEndDate;
+    const trialEndDate = new Date(subscription.trialEnd);
+    
+    // Trial expires if either 30 days have passed OR 5 events have been used
+    const timeExpired = now > trialEndDate;
+    const eventsExpired = subscription.eventsUsed >= subscription.eventsLimit;
+    
+    return timeExpired || eventsExpired;
+  }, [subscription]);
+
+  const trialExpirationReason = useMemo(() => {
+    if (!subscription || subscription.status !== "trialing" || !subscription.trialEnd) {
+      return null;
+    }
+    const now = new Date();
+    const trialEndDate = new Date(subscription.trialEnd);
+    
+    const timeExpired = now > trialEndDate;
+    const eventsExpired = subscription.eventsUsed >= subscription.eventsLimit;
+    
+    if (timeExpired && eventsExpired) {
+      return "Both 30-day period and 5-event limit reached";
+    } else if (timeExpired) {
+      return "30-day trial period expired";
+    } else if (eventsExpired) {
+      return "5-event trial limit reached";
+    }
+    
+    return null;
   }, [subscription]);
 
   const daysUntilTrialExpires = useMemo(() => {
@@ -299,6 +338,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     canCreateEvent,
     remainingEvents,
     isTrialExpired,
+    trialExpirationReason,
     daysUntilTrialExpires,
     isVerified,
     upgradeSubscription,
@@ -317,6 +357,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     canCreateEvent,
     remainingEvents,
     isTrialExpired,
+    trialExpirationReason,
     daysUntilTrialExpires,
     isVerified,
     upgradeSubscription,

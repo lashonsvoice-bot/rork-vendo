@@ -41,6 +41,8 @@ export default function SubscriptionScreen() {
     isUpgrading,
     daysUntilTrialExpires,
     isTrialExpired,
+    trialExpirationReason,
+    remainingEvents,
   } = useSubscription();
 
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<BillingCycle>("monthly");
@@ -103,13 +105,23 @@ export default function SubscriptionScreen() {
                 <Text style={styles.currentPlanDetails}>
                   {subscription.eventsUsed} / {subscription.eventsLimit === -1 ? "∞" : subscription.eventsLimit} events used
                 </Text>
-                {subscription.status === "trialing" && daysUntilTrialExpires !== null && (
-                  <Text style={[styles.trialInfo, isTrialExpired && styles.trialExpired]}>
-                    {isTrialExpired 
-                      ? "Trial expired - Upgrade to continue" 
-                      : `${daysUntilTrialExpires} days left in trial`
-                    }
-                  </Text>
+                {subscription.status === "trialing" && (
+                  <View style={styles.trialInfoContainer}>
+                    {isTrialExpired ? (
+                      <Text style={[styles.trialInfo, styles.trialExpired]}>
+                        {trialExpirationReason ? `Trial expired: ${trialExpirationReason}` : "Trial expired - Upgrade to continue"}
+                      </Text>
+                    ) : (
+                      <>
+                        <Text style={styles.trialInfo}>
+                          Trial: {remainingEvents} events or {daysUntilTrialExpires} days remaining
+                        </Text>
+                        <Text style={styles.trialSubInfo}>
+                          (whichever comes first)
+                        </Text>
+                      </>
+                    )}
+                  </View>
                 )}
               </View>
             </View>
@@ -325,6 +337,15 @@ const styles = StyleSheet.create({
   },
   trialExpired: {
     color: theme.colors.red[600],
+  },
+  trialInfoContainer: {
+    marginTop: 4,
+  },
+  trialSubInfo: {
+    fontSize: 10,
+    color: theme.colors.text.secondary,
+    fontStyle: "italic",
+    marginTop: 2,
   },
   billingToggleContainer: {
     margin: 16,

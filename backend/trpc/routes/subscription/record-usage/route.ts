@@ -23,18 +23,39 @@ export const recordEventUsageProcedure = protectedProcedure
       throw new Error("No subscription found");
     }
 
-    // Check if user has exceeded their limit
-    if (subscription.eventsLimit !== -1 && subscription.eventsUsed >= subscription.eventsLimit) {
-      throw new Error("Event limit exceeded. Please upgrade your subscription.");
+    // Check if trial has expired (30 days OR 5 events, whichever comes first)
+    if (subscription.status === "trialing") {
+      const now = new Date();
+      let trialExpired = false;
+      let expiredReason = "";
+      
+      // Check if 30 days have passed
+      if (subscription.trialEnd) {
+        const trialEndDate = new Date(subscription.trialEnd);
+        if (now > trialEndDate) {
+          trialExpired = true;
+          expiredReason = "30-day trial period has expired";
+        }
+      }
+      
+      // Check if 5 events have been used (including this one)
+      if (!trialExpired && subscription.eventsUsed >= subscription.eventsLimit) {
+        trialExpired = true;
+        expiredReason = "5-event trial limit reached";
+      }
+      
+      if (trialExpired) {
+        // Update subscription status to expired
+        await subscriptionRepo.updateSubscription(ctx.user.id, {
+          status: "past_due"
+        });
+        throw new Error(`Free trial has expired: ${expiredReason}. Please upgrade your subscription to continue creating events.`);
+      }
     }
 
-    // Check if trial has expired
-    if (subscription.status === "trialing" && subscription.trialEnd) {
-      const trialEndDate = new Date(subscription.trialEnd);
-      const now = new Date();
-      if (now > trialEndDate) {
-        throw new Error("Free trial has expired. Please upgrade your subscription.");
-      }
+    // Check if user has exceeded their limit for paid subscriptions
+    if (subscription.status === "active" && subscription.eventsLimit !== -1 && subscription.eventsUsed >= subscription.eventsLimit) {
+      throw new Error("Event limit exceeded. Please upgrade your subscription.");
     }
 
     const usage = {

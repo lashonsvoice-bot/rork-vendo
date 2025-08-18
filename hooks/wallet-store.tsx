@@ -1,5 +1,5 @@
 import createContextHook from "@nkzw/create-context-hook";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 
 export type WalletBalance = {
@@ -31,8 +31,27 @@ export type WalletTransaction = {
 };
 
 export const [WalletProvider, useWallet] = createContextHook(() => {
-  const balanceQuery = trpc.wallet.getBalance.useQuery(undefined, { staleTime: 15_000 });
-  const txQuery = trpc.wallet.listTransactions.useQuery({ limit: 50 }, { staleTime: 15_000 });
+  const balanceQuery = trpc.wallet.getBalance.useQuery(undefined, { 
+    staleTime: 15_000,
+    retry: (failureCount, error) => {
+      console.log('[Wallet] Balance query retry:', failureCount, error?.message);
+      if (error?.message?.includes('Network error') || error?.message?.includes('Failed to fetch')) {
+        return failureCount < 1;
+      }
+      return failureCount < 2;
+    }
+  });
+  
+  const txQuery = trpc.wallet.listTransactions.useQuery({ limit: 50 }, { 
+    staleTime: 15_000,
+    retry: (failureCount, error) => {
+      console.log('[Wallet] Transactions query retry:', failureCount, error?.message);
+      if (error?.message?.includes('Network error') || error?.message?.includes('Failed to fetch')) {
+        return failureCount < 1;
+      }
+      return failureCount < 2;
+    }
+  });
 
   const depositMutation = trpc.wallet.deposit.useMutation();
   const withdrawMutation = trpc.wallet.withdraw.useMutation();

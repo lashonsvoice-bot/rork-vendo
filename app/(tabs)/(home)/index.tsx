@@ -31,7 +31,7 @@ import { useUser } from "@/hooks/user-store";
 import { useCommunication } from "@/hooks/communication-store";
 import { useTheme } from "@/hooks/theme-store";
 import { useAuth } from "@/hooks/auth-store";
-import { trpc, handleTRPCError } from "@/lib/trpc";
+import { trpc, handleTRPCError, testTRPCConnection } from "@/lib/trpc";
 import { Alert } from "react-native";
 
 export default function HomeScreen() {
@@ -59,6 +59,19 @@ export default function HomeScreen() {
     { enabled: !!user?.id && user?.role === 'contractor' }
   );
   
+  // Test connection on mount
+  React.useEffect(() => {
+    const testConnection = async () => {
+      console.log('[Home] Testing tRPC connection...');
+      const isConnected = await testTRPCConnection();
+      console.log('[Home] Connection test result:', isConnected);
+    };
+    
+    if (!isGuest && user?.id) {
+      testConnection();
+    }
+  }, [isGuest, user?.id]);
+  
   React.useEffect(() => {
     if (profileQuery.error && !isGuest) {
       console.error('[Home] Profile query error:', profileQuery.error);
@@ -68,6 +81,10 @@ export default function HomeScreen() {
           'Connection Error', 
           'Unable to connect to the server. Please check your internet connection and try again.',
           [
+            { text: 'Test Connection', onPress: async () => {
+              const isConnected = await testTRPCConnection();
+              Alert.alert('Connection Test', isConnected ? 'Connection successful!' : 'Connection failed. Please check server status.');
+            }},
             { text: 'Retry', onPress: () => profileQuery.refetch() },
             { text: 'OK', style: 'cancel' }
           ]
@@ -81,6 +98,8 @@ export default function HomeScreen() {
   console.log('[Home] Profile data:', profileQuery.data);
   console.log('[Home] Profile loading:', profileQuery.isLoading);
   console.log('[Home] Profile error:', profileQuery.error);
+  console.log('[Home] User info:', { id: user?.id, role: user?.role, isGuest });
+  console.log('[Home] Query enabled:', !!user?.id && !isGuest);
 
   const styles = StyleSheet.create({
     container: {

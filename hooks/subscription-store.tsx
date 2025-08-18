@@ -109,6 +109,13 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const subscriptionQuery = trpc.subscription.get.useQuery(undefined, {
     enabled: !!authUser && authUser.role === "business_owner",
     refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      console.log('[Subscription] Query retry:', failureCount, error?.message);
+      if (error?.message?.includes('Network error') || error?.message?.includes('Failed to fetch')) {
+        return failureCount < 1;
+      }
+      return failureCount < 2;
+    }
   });
 
   const upgradeSubscriptionMutation = trpc.subscription.upgrade.useMutation({
@@ -251,7 +258,16 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   // Get profile to check verification status
   const profileQuery = trpc.profile.get.useQuery(
     { userId: authUser?.id },
-    { enabled: !!authUser?.id && authUser.role === "business_owner" }
+    { 
+      enabled: !!authUser?.id && authUser.role === "business_owner",
+      retry: (failureCount, error) => {
+        console.log('[Subscription] Profile query retry:', failureCount, error?.message);
+        if (error?.message?.includes('Network error') || error?.message?.includes('Failed to fetch')) {
+          return failureCount < 1;
+        }
+        return failureCount < 2;
+      }
+    }
   );
 
   const isVerified = useMemo(() => {

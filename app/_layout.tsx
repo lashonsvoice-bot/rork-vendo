@@ -9,7 +9,7 @@ import { CommunicationProvider } from "@/hooks/communication-store";
 import { NotificationProvider } from "@/hooks/notifications-store";
 import { SubscriptionProvider } from "@/hooks/subscription-store";
 import { ThemeProvider } from "@/hooks/theme-store";
-import { trpc, createTRPCClient } from "@/lib/trpc";
+import { trpc, createTRPCClient, testTRPCConnection } from "@/lib/trpc";
 import { AuthProvider } from "@/hooks/auth-store";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -24,13 +24,19 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
+        console.log('[QueryClient] Query retry:', failureCount, error?.message);
         if (error && 'data' in error && (error as any).data?.code === 'UNAUTHORIZED') {
           return false;
+        }
+        // Don't retry network errors more than once
+        if (error?.message?.includes('Network error') || error?.message?.includes('Failed to fetch')) {
+          return failureCount < 1;
         }
         return failureCount < 3;
       },
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
       retry: false,
@@ -60,6 +66,7 @@ function RootLayoutNav() {
       <Stack.Screen name="terms" options={{ headerShown: true, title: "Terms & Conditions" }} />
       <Stack.Screen name="privacy" options={{ headerShown: true, title: "Privacy Policy" }} />
       <Stack.Screen name="contact" options={{ headerShown: true, title: "Contact" }} />
+      <Stack.Screen name="debug-connection" options={{ headerShown: true, title: "Connection Debug" }} />
     </Stack>
   );
 }
@@ -89,6 +96,20 @@ function AppContent() {
 }
 
 export default function RootLayout() {
+  // Test tRPC connection on app start
+  useEffect(() => {
+    const testConnection = async () => {
+      console.log('[RootLayout] Testing tRPC connection on app start...');
+      const isConnected = await testTRPCConnection();
+      console.log('[RootLayout] Initial connection test result:', isConnected);
+      if (!isConnected) {
+        console.warn('[RootLayout] ⚠️ Backend server appears to be unavailable. Some features may not work.');
+      }
+    };
+    
+    testConnection();
+  }, []);
+  
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);

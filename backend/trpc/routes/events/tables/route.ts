@@ -2,6 +2,7 @@ import { z } from "zod";
 import { protectedProcedure } from "../../../create-context";
 import { eventRepo } from "../../../../db/event-repo";
 import { walletRepo } from "../../../../db/wallet-repo";
+import { messageRepo } from "@/backend/db/message-repo";
 
 const PLATFORM_USER_ID = "platform_fees";
 
@@ -35,7 +36,7 @@ export const purchaseTableProcedure = protectedProcedure
     if (!hostId) throw new Error('Host is not connected to this event yet');
 
     const price = table.price;
-    const hostFee = Math.round(price * 0.15 * 100) / 100; // 15% fee
+    const hostFee = Math.round(price * 0.05 * 100) / 100; // 5% fee
     const hostNet = Math.round((price - hostFee) * 100) / 100;
 
     // Charge buyer (local vendor)
@@ -43,7 +44,7 @@ export const purchaseTableProcedure = protectedProcedure
     // Credit host minus fee
     await walletRepo.deposit(hostId, hostNet, `Table sale for ${event.title} (${table.size})`);
     // Credit platform fee
-    await walletRepo.deposit(PLATFORM_USER_ID, hostFee, `15% host fee for table sale ${event.title}`);
+    await walletRepo.deposit(PLATFORM_USER_ID, hostFee, `5% platform fee for table sale ${event.title}`);
 
     // Update event: decrement availableQuantity and append vendor record
     const updatedTableOptions = event.tableOptions.map(t =>
@@ -71,6 +72,21 @@ export const purchaseTableProcedure = protectedProcedure
       vendors: updatedVendors,
       totalVendorSpaces: (event.totalVendorSpaces ?? 0),
     });
+
+    // Ensure messaging connection between buyer and host
+    try {
+      messageRepo.addConnection({
+        id: Date.now().toString(),
+        userId1: ctx.user.id,
+        userId2: hostId,
+        eventId: input.eventId,
+        connectionType: 'hired',
+        connectedAt: new Date().toISOString(),
+        isActive: true,
+      });
+    } catch (e) {
+      console.warn('[Events][Tables] Failed to create messaging connection', e);
+    }
 
     return {
       success: true,

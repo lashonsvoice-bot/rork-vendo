@@ -1,6 +1,7 @@
 import { protectedProcedure } from "@/backend/trpc/create-context";
 import { z } from "zod";
 import { messageRepo, MessageSchema, type Message } from "@/backend/db/message-repo";
+import { userRepo } from "@/backend/db/user-repo";
 
 export const sendMessageProcedure = protectedProcedure
   .input(z.object({
@@ -18,10 +19,21 @@ export const sendMessageProcedure = protectedProcedure
 
     console.log('[tRPC] Sending message:', input);
 
+    // Role-based restriction: Local vendors may only message Event Hosts
+    const senderRole = ctx.user.role;
+    const recipient = await userRepo.findById(input.recipientId);
+    const recipientRole = recipient?.role;
+
+    if (senderRole === 'local_vendor') {
+      if (recipientRole !== 'event_host') {
+        throw new Error('Local vendors can only message event hosts');
+      }
+    }
+
     // Check if users are connected and can message each other
     const messagingPermission = messageRepo.canUsersMessage(
-      ctx.user.id, 
-      input.recipientId, 
+      ctx.user.id,
+      input.recipientId,
       input.eventId
     );
 

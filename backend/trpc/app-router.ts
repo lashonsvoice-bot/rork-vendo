@@ -23,7 +23,8 @@ import { getVerificationDiscountProcedure } from "./routes/subscription/verifica
 import { 
   createStripeCheckoutProcedure, 
   createSetupIntentProcedure, 
-  getStripeSubscriptionStatusProcedure 
+  getStripeSubscriptionStatusProcedure,
+  createStripeProductsProcedure
 } from "./routes/subscription/stripe/route";
 import walletRoutes from "./routes/wallet/router";
 import { 
@@ -167,6 +168,7 @@ export const appRouter = createTRPCRouter({
       createCheckout: createStripeCheckoutProcedure,
       createSetupIntent: createSetupIntentProcedure,
       getStatus: getStripeSubscriptionStatusProcedure,
+      createProducts: createStripeProductsProcedure,
     }),
   }),
   maps: createTRPCRouter({

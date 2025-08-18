@@ -9,21 +9,70 @@ export const stripe = new Stripe(config.stripe.secretKey, {
   typescript: true,
 });
 
-// Stripe Product and Price IDs - Update these with your actual Stripe product/price IDs
-// Get these from your Stripe Dashboard → Products → [Product] → Pricing
+// Stripe Product and Price IDs for Revovend Subscription Plans
+// These will be updated with actual Stripe price IDs after creating products in Stripe Dashboard
 export const STRIPE_PRODUCTS = {
   starter: {
-    monthly: 'price_1234567890abcdef', // Replace with actual price ID from Stripe
-    yearly: 'price_1234567890abcdef',   // Replace with actual price ID from Stripe
+    monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || 'price_starter_monthly_placeholder',
+    yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID || 'price_starter_yearly_placeholder',
   },
   professional: {
-    monthly: 'price_1234567890abcdef', // Replace with actual price ID from Stripe
-    yearly: 'price_1234567890abcdef',   // Replace with actual price ID from Stripe
+    monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || 'price_professional_monthly_placeholder',
+    yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID || 'price_professional_yearly_placeholder',
   },
   enterprise: {
-    monthly: 'price_1234567890abcdef', // Replace with actual price ID from Stripe
-    yearly: 'price_1234567890abcdef',   // Replace with actual price ID from Stripe
+    monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || 'price_enterprise_monthly_placeholder',
+    yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || 'price_enterprise_yearly_placeholder',
   },
+} as const;
+
+// Revovend Subscription Plan Details
+export const REVOVEND_PLANS = {
+  starter: {
+    name: 'Starter Plan',
+    eventsLimit: 10,
+    monthlyPrice: 29, // $29/month
+    yearlyPrice: 23,  // $23/month when billed yearly (20% discount)
+    features: [
+      '10 events per month',
+      'Advanced event management',
+      'Priority email support',
+      'Basic analytics',
+      'Custom branding'
+    ]
+  },
+  professional: {
+    name: 'Professional Plan',
+    eventsLimit: 20,
+    monthlyPrice: 59, // $59/month
+    yearlyPrice: 47,  // $47/month when billed yearly (20% discount)
+    features: [
+      '20 events per month',
+      'Full event management suite',
+      'Phone & email support',
+      'Advanced analytics',
+      'Custom branding',
+      'API access',
+      'Team collaboration'
+    ]
+  },
+  enterprise: {
+    name: 'Enterprise Plan',
+    eventsLimit: -1, // Unlimited
+    monthlyPrice: 99, // $99/month
+    yearlyPrice: 79,  // $79/month when billed yearly (20% discount)
+    features: [
+      'Unlimited events',
+      'Enterprise event management',
+      '24/7 priority support',
+      'Advanced analytics & reporting',
+      'White-label solution',
+      'API access',
+      'Team collaboration',
+      'Custom integrations',
+      'Dedicated account manager'
+    ]
+  }
 } as const;
 
 export type SubscriptionTier = keyof typeof STRIPE_PRODUCTS;
@@ -162,4 +211,118 @@ export async function createSetupIntent(customerId: string): Promise<Stripe.Setu
     payment_method_types: ['card'],
     usage: 'off_session',
   });
+}
+
+// Helper function to create Revovend subscription products in Stripe
+// Run this once to set up your products in Stripe Dashboard
+export async function createRevovendProducts(): Promise<{
+  starter: { monthly: string; yearly: string };
+  professional: { monthly: string; yearly: string };
+  enterprise: { monthly: string; yearly: string };
+}> {
+  console.log('Creating Revovend subscription products in Stripe...');
+  
+  // Create Starter Plan
+  const starterProduct = await stripe.products.create({
+    name: 'Revovend Starter Plan',
+    description: 'Perfect for small event organizers. 10 events per month with advanced management tools.',
+    metadata: {
+      tier: 'starter',
+      eventsLimit: '10',
+    },
+  });
+  
+  const starterMonthly = await stripe.prices.create({
+    product: starterProduct.id,
+    unit_amount: 2900, // $29.00
+    currency: 'usd',
+    recurring: { interval: 'month' },
+    metadata: { tier: 'starter', cycle: 'monthly' },
+  });
+  
+  const starterYearly = await stripe.prices.create({
+    product: starterProduct.id,
+    unit_amount: 27600, // $276.00 ($23/month * 12)
+    currency: 'usd',
+    recurring: { interval: 'year' },
+    metadata: { tier: 'starter', cycle: 'yearly' },
+  });
+  
+  // Create Professional Plan
+  const professionalProduct = await stripe.products.create({
+    name: 'Revovend Professional Plan',
+    description: 'Ideal for growing businesses. 20 events per month with full feature access.',
+    metadata: {
+      tier: 'professional',
+      eventsLimit: '20',
+    },
+  });
+  
+  const professionalMonthly = await stripe.prices.create({
+    product: professionalProduct.id,
+    unit_amount: 5900, // $59.00
+    currency: 'usd',
+    recurring: { interval: 'month' },
+    metadata: { tier: 'professional', cycle: 'monthly' },
+  });
+  
+  const professionalYearly = await stripe.prices.create({
+    product: professionalProduct.id,
+    unit_amount: 56400, // $564.00 ($47/month * 12)
+    currency: 'usd',
+    recurring: { interval: 'year' },
+    metadata: { tier: 'professional', cycle: 'yearly' },
+  });
+  
+  // Create Enterprise Plan
+  const enterpriseProduct = await stripe.products.create({
+    name: 'Revovend Enterprise Plan',
+    description: 'For large organizations. Unlimited events with premium support and features.',
+    metadata: {
+      tier: 'enterprise',
+      eventsLimit: '-1',
+    },
+  });
+  
+  const enterpriseMonthly = await stripe.prices.create({
+    product: enterpriseProduct.id,
+    unit_amount: 9900, // $99.00
+    currency: 'usd',
+    recurring: { interval: 'month' },
+    metadata: { tier: 'enterprise', cycle: 'monthly' },
+  });
+  
+  const enterpriseYearly = await stripe.prices.create({
+    product: enterpriseProduct.id,
+    unit_amount: 94800, // $948.00 ($79/month * 12)
+    currency: 'usd',
+    recurring: { interval: 'year' },
+    metadata: { tier: 'enterprise', cycle: 'yearly' },
+  });
+  
+  const priceIds = {
+    starter: {
+      monthly: starterMonthly.id,
+      yearly: starterYearly.id,
+    },
+    professional: {
+      monthly: professionalMonthly.id,
+      yearly: professionalYearly.id,
+    },
+    enterprise: {
+      monthly: enterpriseMonthly.id,
+      yearly: enterpriseYearly.id,
+    },
+  };
+  
+  console.log('✅ Revovend products created successfully!');
+  console.log('Add these price IDs to your .env file:');
+  console.log(`STRIPE_STARTER_MONTHLY_PRICE_ID=${priceIds.starter.monthly}`);
+  console.log(`STRIPE_STARTER_YEARLY_PRICE_ID=${priceIds.starter.yearly}`);
+  console.log(`STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID=${priceIds.professional.monthly}`);
+  console.log(`STRIPE_PROFESSIONAL_YEARLY_PRICE_ID=${priceIds.professional.yearly}`);
+  console.log(`STRIPE_ENTERPRISE_MONTHLY_PRICE_ID=${priceIds.enterprise.monthly}`);
+  console.log(`STRIPE_ENTERPRISE_YEARLY_PRICE_ID=${priceIds.enterprise.yearly}`);
+  
+  return priceIds;
 }

@@ -176,3 +176,27 @@ export const getStripeSubscriptionStatusProcedure = protectedProcedure
       return { hasStripeSubscription: false, subscription, error: "Failed to fetch Stripe subscription" };
     }
   });
+
+// Admin procedure to create Stripe products (run once during setup)
+export const createStripeProductsProcedure = protectedProcedure
+  .mutation(async ({ ctx }) => {
+    if (!ctx.user || ctx.user.role !== "admin") {
+      throw new Error("Only admins can create Stripe products");
+    }
+
+    console.log("Creating Stripe products for Revovend...");
+
+    try {
+      const { createRevovendProducts } = await import("@/backend/lib/stripe");
+      const priceIds = await createRevovendProducts();
+      
+      return {
+        success: true,
+        priceIds,
+        message: "Stripe products created successfully! Add the price IDs to your .env file.",
+      };
+    } catch (error) {
+      console.error("Error creating Stripe products:", error);
+      throw new Error(`Failed to create Stripe products: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  });

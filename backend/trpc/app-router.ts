@@ -39,6 +39,7 @@ import {
   deleteEventProcedure, 
   getPublicListingsProcedure 
 } from "./routes/events/crud/route";
+import purchaseTableProcedure from "./routes/events/tables/route";
 import {
   addVendorToEventProcedure,
   updateVendorCheckInProcedure,
@@ -247,6 +248,9 @@ export const appRouter = createTRPCRouter({
       releaseEscrowFunds: releaseEscrowFundsProcedure,
       getFinancials: getEventFinancialsProcedure,
       uploadFunds: uploadEventFundsProcedure,
+    }),
+    tables: createTRPCRouter({
+      purchase: purchaseTableProcedure,
     }),
     subscription: createTRPCRouter({
       recordCreation: recordEventCreationProcedure,

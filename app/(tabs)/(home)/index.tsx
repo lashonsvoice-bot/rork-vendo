@@ -839,7 +839,7 @@ export default function HomeScreen() {
               >
                 <View style={styles.actionOutline}>
                   <DollarSign size={24} color={theme.accentCyan} />
-                  <Text style={styles.actionTextOutline}>Manage Vendors</Text>
+                  <Text style={styles.actionTextOutline}>Event Management</Text>
                 </View>
               </TouchableOpacity>
             </>

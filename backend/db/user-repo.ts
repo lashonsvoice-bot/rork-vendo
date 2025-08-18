@@ -2,7 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 
-export type SessionRole = "business_owner" | "contractor" | "event_host" | "admin" | "guest";
+export type SessionRole = "business_owner" | "contractor" | "event_host" | "admin" | "guest" | "local_vendor";
 export type UserRecord = {
   id: string;
   email: string;

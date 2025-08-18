@@ -6,7 +6,7 @@ import { Building2, UserCheck, Store, Users, Mail, Key } from 'lucide-react-nati
 import { useAuth, type AuthRole } from '@/hooks/auth-store';
 import { trpcClient } from '@/lib/trpc';
 
-type RoleKey = 'business_owner' | 'contractor' | 'event_host' | 'guest';
+type RoleKey = 'business_owner' | 'contractor' | 'event_host' | 'guest' | 'local_vendor';
 
 interface RoleOption {
   key: RoleKey;
@@ -28,8 +28,15 @@ const roles: RoleOption[] = [
     key: 'contractor',
     title: 'Contractor',
     subtitle: 'Work events, represent brands, build your career',
-    colors: ['#0EA5E9', '#22D3EE'],
+    colors: ['#8B5CF6', '#A78BFA'],
     icon: UserCheck,
+  },
+  {
+    key: 'local_vendor',
+    title: 'Local Vendors',
+    subtitle: 'Resource for Small local crafters and businesses • increase local clientele • build your network',
+    colors: ['#3B82F6', '#60A5FA'],
+    icon: Store,
   },
   {
     key: 'event_host',

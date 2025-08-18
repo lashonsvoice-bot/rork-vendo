@@ -189,8 +189,8 @@ export default function HomeScreen() {
     { label: "This Month", value: "$8.5K", icon: DollarSign, color: "#F59E0B" },
     { label: "Growth", value: "+23%", icon: TrendingUp, color: "#EC4899" },
   ] : userRole === 'contractor' ? [
-    { label: "Available Jobs", value: "8", icon: Calendar, color: neonTheme.accentCyan },
-    { label: "Completed", value: "23", icon: UserCheck, color: neonTheme.accentCyan },
+    { label: "Available Jobs", value: "8", icon: Calendar, color: "#8B5CF6" },
+    { label: "Completed", value: "23", icon: UserCheck, color: "#8B5CF6" },
     { label: "This Month", value: "$2.1K", icon: DollarSign, color: "#F59E0B" },
     { label: "Rating", value: "4.8★", icon: TrendingUp, color: "#EC4899" },
   ] : [
@@ -358,7 +358,7 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/profile' as const)}
               >
                 <View style={styles.actionOutline}>
-                  <UserCheck size={24} color={neonTheme.accentCyan} />
+                  <UserCheck size={24} color="#8B5CF6" />
                   <Text style={styles.actionTextOutline}>Complete Training</Text>
                 </View>
               </TouchableOpacity>

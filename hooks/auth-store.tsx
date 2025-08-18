@@ -2,7 +2,7 @@ import createContextHook from "@nkzw/create-context-hook";
 import { useCallback, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export type AuthRole = "business_owner" | "contractor" | "event_host" | "admin" | "guest";
+export type AuthRole = "business_owner" | "contractor" | "event_host" | "admin" | "guest" | "local_vendor";
 
 export interface SessionUser {
   id: string;

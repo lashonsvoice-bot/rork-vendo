@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@/hooks/auth-store";
 
-export type UserRole = 'business_owner' | 'contractor' | 'event_host' | 'guest' | null;
+export type UserRole = 'business_owner' | 'contractor' | 'event_host' | 'guest' | 'local_vendor' | null;
 
 export interface BusinessOwner {
   id: string;
@@ -130,7 +130,7 @@ export const [UserProvider, useUser] = createContextHook(() => {
           };
           setCurrentUser(minimal);
           saveUserData('business_owner', minimal);
-        } else if (authUser.role === 'contractor') {
+        } else if (authUser.role === 'contractor' || authUser.role === 'local_vendor') {
           const minimal: Contractor = {
             id: authUser.id,
             name: authUser.name,

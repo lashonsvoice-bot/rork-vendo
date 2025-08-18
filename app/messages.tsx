@@ -142,7 +142,7 @@ export default function MessagesScreen() {
       case 'business_owner':
         return <Building2 size={16} color="#10B981" />;
       case 'contractor':
-        return <UserCheck size={16} color="#10B981" />;
+        return <UserCheck size={16} color="#8B5CF6" />;
       case 'event_host':
         return <Store size={16} color="#F59E0B" />;
       default:

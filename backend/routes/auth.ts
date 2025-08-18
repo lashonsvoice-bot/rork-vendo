@@ -53,7 +53,7 @@ const SignupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(1),
-  role: z.enum(["business_owner", "contractor", "event_host", "admin"]),
+  role: z.enum(["business_owner", "contractor", "event_host", "admin", "local_vendor"]),
   profile: AnyProfileSignupInput.optional(),
 });
 
@@ -152,8 +152,8 @@ auth.post("/signup", async (c) => {
         profile = (
           record.role === "business_owner"
             ? { id: randomUUID(), userId: record.id, role: "business_owner", companyName: record.name, createdAt: now, updatedAt: now }
-            : record.role === "contractor"
-            ? { id: randomUUID(), userId: record.id, role: "contractor", skills: [], createdAt: now, updatedAt: now }
+            : record.role === "contractor" || record.role === "local_vendor"
+            ? { id: randomUUID(), userId: record.id, role: record.role === "local_vendor" ? "local_vendor" : "contractor", skills: [], createdAt: now, updatedAt: now }
             : { id: randomUUID(), userId: record.id, role: "event_host", organizationName: record.name, createdAt: now, updatedAt: now }
         ) as AnyProfile;
       }

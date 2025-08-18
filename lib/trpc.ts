@@ -38,9 +38,32 @@ export const getBaseUrl = (): string => {
     fromEnv,
     platform: Platform.OS,
     hostUri: (Constants as any)?.expoConfig?.hostUri,
-    windowOrigin: Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : 'N/A'
+    windowOrigin: Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : 'N/A',
+    nodeEnv: process.env.NODE_ENV
   });
 
+  // For development, always use localhost backend
+  if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      // Check if we're running on localhost (development)
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const devUrl = "http://localhost:3000";
+        console.log('[tRPC] Using local development backend:', devUrl);
+        return devUrl;
+      }
+      // If web but not localhost, use current origin (for deployed web)
+      const origin = window.location.origin;
+      console.log('[tRPC] Using web origin:', origin);
+      return origin;
+    } else {
+      // For mobile development, use localhost
+      const devUrl = "http://localhost:3000";
+      console.log('[tRPC] Using local development backend for mobile:', devUrl);
+      return devUrl;
+    }
+  }
+
+  // For production, use environment variables
   if (fromExtra && fromExtra.length > 0) {
     console.log('[tRPC] Using base URL from extra:', fromExtra);
     return fromExtra;
@@ -50,17 +73,16 @@ export const getBaseUrl = (): string => {
     return fromEnv;
   }
   
-  // For web, use current origin
+  // For web production, use current origin
   if (Platform.OS === "web" && typeof window !== "undefined") {
     const origin = window.location.origin;
-    console.log('[tRPC] Using web origin:', origin);
+    console.log('[tRPC] Using web origin as fallback:', origin);
     return origin;
   }
   
-  // For development, always use localhost with port 3000
-  // This assumes the backend is running locally on port 3000
+  // Final fallback
   const fallback = "http://localhost:3000";
-  console.log('[tRPC] Using local development URL:', fallback);
+  console.log('[tRPC] Using final fallback URL:', fallback);
   return fallback;
 };
 

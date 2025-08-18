@@ -36,7 +36,7 @@ import {
   Store,
   Package,
   AlertTriangle,
-  TestTube,
+
   Upload,
   Trash2,
   ExternalLink,
@@ -527,13 +527,6 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.settingItem}>
             <User size={20} color="#6B7280" />
             <Text style={styles.settingText}>Contractor Management</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.settingItem}
-            onPress={() => router.push('/proposal-test')}
-          >
-            <TestTube size={20} color="#8B5CF6" />
-            <Text style={styles.settingText}>Test Proposal Flow</Text>
           </TouchableOpacity>
         </View>
 

@@ -80,6 +80,8 @@ export default function DiscoverScreen() {
         },
         {
           enabled: targetRoles.includes('business_owner') || isGuest,
+          retry: 1,
+          retryDelay: 1000,
         }
       )
     : trpc.profile.search.useQuery(
@@ -90,6 +92,8 @@ export default function DiscoverScreen() {
         },
         {
           enabled: targetRoles.includes('business_owner'),
+          retry: 1,
+          retryDelay: 1000,
         }
       );
 
@@ -102,6 +106,8 @@ export default function DiscoverScreen() {
         },
         {
           enabled: false, // Don't show contractors to guests
+          retry: 1,
+          retryDelay: 1000,
         }
       )
     : trpc.profile.search.useQuery(
@@ -112,6 +118,8 @@ export default function DiscoverScreen() {
         },
         {
           enabled: targetRoles.includes('contractor'),
+          retry: 1,
+          retryDelay: 1000,
         }
       );
 
@@ -124,6 +132,8 @@ export default function DiscoverScreen() {
         },
         {
           enabled: true, // Show event hosts to guests
+          retry: 1,
+          retryDelay: 1000,
         }
       )
     : trpc.profile.search.useQuery(
@@ -134,6 +144,8 @@ export default function DiscoverScreen() {
         },
         {
           enabled: targetRoles.includes('event_host'),
+          retry: 1,
+          retryDelay: 1000,
         }
       );
 
@@ -143,7 +155,11 @@ export default function DiscoverScreen() {
   React.useEffect(() => {
     if (hasError) {
       console.error('[Discover] Profile search error:', hasError);
-      Alert.alert('Error', handleTRPCError(hasError));
+      // Don't show alert for network errors in development
+      const errorMessage = handleTRPCError(hasError);
+      if (!errorMessage.includes('Development server not running')) {
+        Alert.alert('Error', errorMessage);
+      }
     }
   }, [hasError]);
 
@@ -483,7 +499,24 @@ export default function DiscoverScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
       >
-        {allProfiles.length === 0 && !isLoading ? (
+        {hasError ? (
+          <View style={styles.emptyState}>
+            <Users size={64} color="#D1D5DB" />
+            <Text style={styles.emptyStateTitle}>Connection Error</Text>
+            <Text style={styles.emptyStateText}>
+              {handleTRPCError(hasError).includes('Development server not running') 
+                ? 'Backend server is not running. Please start the development server.'
+                : 'Unable to load profiles. Please check your connection and try again.'
+              }
+            </Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={handleRefresh}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : allProfiles.length === 0 && !isLoading ? (
           <View style={styles.emptyState}>
             <Users size={64} color="#D1D5DB" />
             <Text style={styles.emptyStateTitle}>No Professionals Found</Text>
@@ -785,6 +818,18 @@ const styles = StyleSheet.create({
   guestSignUpText: {
     color: '#FFFFFF',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  retryButton: {
+    backgroundColor: neonTheme.accentCyan,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

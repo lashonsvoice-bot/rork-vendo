@@ -76,6 +76,7 @@ export const getBaseUrl = (): string => {
     return url;
   }
   
+  // Default to localhost for development
   const fallback = "http://localhost:3000";
   console.log('[tRPC] Using fallback URL:', fallback);
   return fallback;
@@ -137,7 +138,13 @@ export const createTRPCClient = () => {
             
             // Check if this is a CORS or network connectivity issue
             if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-              throw new Error(`Network connectivity error: Cannot reach server at ${baseUrl}. This could be due to:\n1. Backend server not running\n2. CORS configuration issues\n3. Network connectivity problems\n4. Incorrect base URL configuration`);
+              // For development, provide a more helpful error message
+              const isDev = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+              if (isDev) {
+                throw new Error(`Development server not running: Cannot reach backend at ${baseUrl}. Please start the backend server with 'bun run dev' or check if it's running on the correct port.`);
+              } else {
+                throw new Error(`Network connectivity error: Cannot reach server at ${baseUrl}. This could be due to:\n1. Backend server not running\n2. CORS configuration issues\n3. Network connectivity problems\n4. Incorrect base URL configuration`);
+              }
             }
             
             throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'} when connecting to ${baseUrl}`);

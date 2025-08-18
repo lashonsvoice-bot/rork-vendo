@@ -5,7 +5,7 @@ import { messageRepo } from "@/backend/db/message-repo";
 import { sendGridService } from "@/backend/lib/sendgrid";
 import { twilioService } from "@/backend/lib/twilio";
 
-async function generateSimplePdf(params: {
+async function generateReverseProposalPdf(params: {
   title: string;
   subtitle?: string;
   sections: { heading: string; lines: string[] }[];
@@ -103,79 +103,76 @@ async function generateSimplePdf(params: {
   return { base64, bytes: Buffer.byteLength(pdf, "utf8") };
 }
 
-const sendExternalProposalSchema = z.object({
-  businessOwnerId: z.string(),
-  businessOwnerName: z.string(),
-  businessName: z.string(),
-  businessOwnerContactEmail: z.string().email().optional(),
+const sendReverseProposalSchema = z.object({
+  hostId: z.string(),
+  hostName: z.string(),
+  hostEmail: z.string().email(),
+  hostPhone: z.string().optional(),
+  businessEmail: z.string().email(),
+  businessPhone: z.string().optional(),
+  businessName: z.string().optional(),
   eventId: z.string(),
   eventTitle: z.string(),
-  hostName: z.string(),
-  hostEmail: z.string().email().optional(),
-  hostPhone: z.string().optional(),
-  proposedAmount: z.number(),
-  supervisoryFee: z.number(),
-  contractorsNeeded: z.number().optional(),
-  message: z.string(),
   eventDate: z.string(),
   eventLocation: z.string(),
+  message: z.string(),
 });
 
-// Procedure to connect host using invitation code
-export const connectHostWithInvitationCodeProcedure = publicProcedure
+// Procedure to connect business using invitation code (reverse proposal)
+export const connectBusinessWithInvitationCodeProcedure = publicProcedure
   .input(z.object({
     invitationCode: z.string().min(1),
-    hostId: z.string().min(1),
+    businessId: z.string().min(1),
   }))
   .mutation(async ({ input }) => {
-    console.log('[ConnectHost] Connecting host with invitation code:', input.invitationCode);
+    console.log('[ConnectBusiness] Connecting business with invitation code:', input.invitationCode);
     
     try {
-      const connectedProposal = await businessDirectoryRepo.connectHostToExternalProposal(
+      const connectedProposal = await businessDirectoryRepo.connectBusinessOwnerToReverseProposal(
         input.invitationCode,
-        input.hostId
+        input.businessId
       );
       
       if (!connectedProposal) {
         throw new Error('Invalid invitation code or proposal not found');
       }
       
-      // Create messaging connection between business owner and host
+      // Create messaging connection between host and business
       const connection = {
         id: Date.now().toString(),
-        userId1: connectedProposal.businessOwnerId,
-        userId2: input.hostId,
+        userId1: connectedProposal.hostId || connectedProposal.businessOwnerId,
+        userId2: input.businessId,
         eventId: connectedProposal.eventId,
-        connectionType: 'proposal' as const,
+        connectionType: 'reverse_proposal' as const,
         connectedAt: new Date().toISOString(),
         isActive: true,
       };
       
       messageRepo.addConnection(connection);
-      console.log('[ConnectHost] Messaging connection created:', connection.id);
+      console.log('[ConnectBusiness] Messaging connection created:', connection.id);
       
-      console.log('[ConnectHost] Host connected successfully:', connectedProposal.id);
+      console.log('[ConnectBusiness] Business connected successfully:', connectedProposal.id);
       return {
         success: true,
         proposal: connectedProposal,
-        message: `Successfully connected to proposal from ${connectedProposal.businessName}`,
+        message: `Successfully connected to invitation from ${connectedProposal.hostName}`,
       };
     } catch (error) {
-      console.error('[ConnectHost] Error connecting host:', error);
+      console.error('[ConnectBusiness] Error connecting business:', error);
       throw error;
     }
   });
 
-// Procedure to find proposal by invitation code (for preview)
-export const findProposalByCodeProcedure = publicProcedure
+// Procedure to find reverse proposal by invitation code (for preview)
+export const findReverseProposalByCodeProcedure = publicProcedure
   .input(z.object({
     invitationCode: z.string().min(1),
   }))
   .query(async ({ input }) => {
-    console.log('[FindProposal] Looking up invitation code:', input.invitationCode);
+    console.log('[FindReverseProposal] Looking up invitation code:', input.invitationCode);
     
     try {
-      const proposal = await businessDirectoryRepo.findExternalProposalByCode(input.invitationCode);
+      const proposal = await businessDirectoryRepo.findReverseProposalByCode(input.invitationCode);
       
       if (!proposal) {
         return {
@@ -187,20 +184,17 @@ export const findProposalByCodeProcedure = publicProcedure
       return {
         found: true,
         proposal: {
-          businessName: proposal.businessName,
-          businessOwnerName: proposal.businessOwnerName,
+          hostName: proposal.hostName,
           eventTitle: proposal.eventTitle,
           eventDate: proposal.eventDate,
           eventLocation: proposal.eventLocation,
-          proposedAmount: proposal.proposedAmount,
-          contractorsNeeded: proposal.contractorsNeeded,
           message: proposal.message,
           status: proposal.status,
         },
-        message: `Invitation from ${proposal.businessName} for ${proposal.eventTitle}`,
+        message: `Invitation from ${proposal.hostName} for ${proposal.eventTitle}`,
       };
     } catch (error) {
-      console.error('[FindProposal] Error finding proposal:', error);
+      console.error('[FindReverseProposal] Error finding proposal:', error);
       return {
         found: false,
         message: 'Error looking up invitation code',
@@ -208,25 +202,22 @@ export const findProposalByCodeProcedure = publicProcedure
     }
   });
 
-const sendExternalProposalProcedure = publicProcedure
-  .input(sendExternalProposalSchema)
+const sendReverseProposalProcedure = publicProcedure
+  .input(sendReverseProposalSchema)
   .mutation(async ({ input }) => {
     const {
-      businessOwnerId,
-      businessOwnerName,
-      businessName,
-      businessOwnerContactEmail,
-      eventId,
-      eventTitle,
+      hostId,
       hostName,
       hostEmail,
       hostPhone,
-      proposedAmount,
-      supervisoryFee,
-      contractorsNeeded,
-      message,
+      businessEmail,
+      businessPhone,
+      businessName,
+      eventId,
+      eventTitle,
       eventDate,
       eventLocation,
+      message,
     } = input;
 
     const results = {
@@ -235,45 +226,43 @@ const sendExternalProposalProcedure = publicProcedure
       errors: [] as string[],
     };
 
-
-
-    // Generate unique invitation code for the host
-    const invitationCode = `HOST_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    // Generate unique invitation code for the business
+    const invitationCode = `BUSINESS_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
     // SMS content (shorter version) with invitation code
-    const smsContent = `A RevoVend Business owner wants to secure a table at your event ${eventTitle} on ${eventDate}. Please download the app [App Link] and use this invite code when registering as a host: ${invitationCode}. Check your email for more information.`;
+    const smsContent = `A RevoVend Host would like to invite you to set up a remote vendor table at ${eventTitle} on ${eventDate}. We feel your business would be a great fit at our event. With RevoVend, distance is no issue!! Please check your email ${hostEmail} for more information and use the invitation code to connect directly with me through the app.`;
 
     // Build PDF attachment summary
-    const pdf = await generateSimplePdf({
-      title: `RevoVend Proposal: ${eventTitle}`,
-      subtitle: `${businessName} ➝ ${hostName} • ${eventDate} • ${eventLocation}`,
+    const pdf = await generateReverseProposalPdf({
+      title: `RevoVend Host Invitation: ${eventTitle}`,
+      subtitle: `${hostName} ➝ ${businessName || 'External Business'} • ${eventDate} • ${eventLocation}`,
       sections: [
         {
-          heading: 'Business Owner',
-          lines: [
-            `Name: ${businessOwnerName}`,
-            `Business: ${businessName}`,
-            `Email: ${businessOwnerContactEmail ?? 'N/A'}`,
-          ],
-        },
-        {
-          heading: 'Host',
+          heading: 'Host Details',
           lines: [
             `Name: ${hostName}`,
-            `Email: ${hostEmail ?? 'N/A'}`,
+            `Email: ${hostEmail}`,
             `Phone: ${hostPhone ?? 'N/A'}`,
           ],
         },
         {
-          heading: 'Proposal Details',
+          heading: 'Business Contact',
           lines: [
-            `Proposed Amount: ${proposedAmount.toFixed(2)}`,
-            `Supervisory Fee: ${supervisoryFee.toFixed(2)}`,
-            `Contractors Needed: ${contractorsNeeded ?? 'N/A'}`,
+            `Name: ${businessName ?? 'N/A'}`,
+            `Email: ${businessEmail}`,
+            `Phone: ${businessPhone ?? 'N/A'}`,
           ],
         },
         {
-          heading: 'Message',
+          heading: 'Event Details',
+          lines: [
+            `Event: ${eventTitle}`,
+            `Date: ${eventDate}`,
+            `Location: ${eventLocation}`,
+          ],
+        },
+        {
+          heading: 'Personal Message',
           lines: message.split(/\\r?\\n/).slice(0, 12),
         },
         {
@@ -283,66 +272,62 @@ const sendExternalProposalProcedure = publicProcedure
       ],
     });
 
-    // Send email if provided
-    if (hostEmail) {
-      try {
-        console.log('📧 Attempting to send proposal email to:', hostEmail);
-        console.log(`📎 PDF size: ${pdf.bytes} bytes`);
-        
-        const emailResult = await sendGridService.sendProposalEmail(hostEmail, {
-          businessName,
-          businessOwnerName,
-          businessOwnerContactEmail,
-          eventTitle,
-          eventDate,
-          eventLocation,
-          proposedAmount,
-          supervisoryFee,
-          message,
-          invitationCode,
-          pdfAttachment: {
-            content: pdf.base64,
-            filename: 'RevoVend-Proposal.pdf'
-          }
-        });
-        
-        if (emailResult.success) {
-          console.log('✅ Email sent successfully:', emailResult.messageId);
-          results.emailSent = true;
-        } else {
-          console.error('❌ Email sending failed:', emailResult.error);
-          results.errors.push(`Failed to send email: ${emailResult.error}`);
-          
-          // Fallback to stub mode for development
-          console.log('📧 FALLBACK EMAIL PROPOSAL (stub mode):');
-          console.log('To:', hostEmail);
-          console.log('Attachment: RevoVend-Proposal.pdf', `(${pdf.bytes} bytes)`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          results.emailSent = true;
+    // Send email to business
+    try {
+      console.log('📧 Attempting to send reverse proposal email to:', businessEmail);
+      console.log(`📎 PDF size: ${pdf.bytes} bytes`);
+      
+      const emailResult = await sendGridService.sendReverseProposalEmail(businessEmail, {
+        hostName,
+        hostEmail,
+        eventTitle,
+        eventDate,
+        eventLocation,
+        message,
+        invitationCode,
+        pdfAttachment: {
+          content: pdf.base64,
+          filename: 'RevoVend-Host-Invitation.pdf'
         }
+      });
+      
+      if (emailResult.success) {
+        console.log('✅ Email sent successfully:', emailResult.messageId);
+        results.emailSent = true;
+      } else {
+        console.error('❌ Email sending failed:', emailResult.error);
+        results.errors.push(`Failed to send email: ${emailResult.error}`);
         
-      } catch (error: unknown) {
-        console.error('❌ Email sending failed:', error);
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        results.errors.push(`Failed to send email: ${errorMessage}`);
-        
-        // Fallback to stub mode
-        console.log('📧 FALLBACK EMAIL PROPOSAL (stub mode):');
-        console.log('To:', hostEmail);
-        console.log('Attachment: RevoVend-Proposal.pdf', `(${pdf.bytes} bytes)`);
+        // Fallback to stub mode for development
+        console.log('📧 FALLBACK REVERSE PROPOSAL EMAIL (stub mode):');
+        console.log('To:', businessEmail);
+        console.log('Attachment: RevoVend-Host-Invitation.pdf', `(${pdf.bytes} bytes)`);
         await new Promise(resolve => setTimeout(resolve, 1000));
         results.emailSent = true;
       }
+      
+    } catch (error: unknown) {
+      console.error('❌ Email sending failed:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      results.errors.push(`Failed to send email: ${errorMessage}`);
+      
+      // Fallback to stub mode
+      console.log('📧 FALLBACK REVERSE PROPOSAL EMAIL (stub mode):');
+      console.log('To:', businessEmail);
+      console.log('Attachment: RevoVend-Host-Invitation.pdf', `(${pdf.bytes} bytes)`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      results.emailSent = true;
     }
 
     // Send SMS if provided
-    if (hostPhone) {
+    if (businessPhone) {
       try {
-        console.log('📱 Sending SMS proposal notification to:', hostPhone);
+        console.log('📱 Sending SMS reverse proposal notification to:', businessPhone);
         
-        const smsResult = await twilioService.sendProposalNotification(hostPhone, {
+        const smsResult = await twilioService.sendReverseProposalNotification(businessPhone, {
           eventTitle,
           eventDate,
+          hostEmail,
           invitationCode,
           appDownloadLink: 'https://revovend.com/app'
         });
@@ -355,8 +340,8 @@ const sendExternalProposalProcedure = publicProcedure
           results.errors.push(`SMS failed: ${smsResult.error}`);
           
           // Fallback to stub mode for development
-          console.log('📱 FALLBACK SMS PROPOSAL (stub mode):');
-          console.log('To:', hostPhone);
+          console.log('📱 FALLBACK SMS REVERSE PROPOSAL (stub mode):');
+          console.log('To:', businessPhone);
           console.log('Content:', smsContent);
           await new Promise(resolve => setTimeout(resolve, 500));
           results.smsSent = true;
@@ -368,62 +353,48 @@ const sendExternalProposalProcedure = publicProcedure
         results.errors.push(`Failed to send SMS: ${errorMessage}`);
         
         // Fallback to stub mode
-        console.log('📱 FALLBACK SMS PROPOSAL (stub mode):');
-        console.log('To:', hostPhone);
+        console.log('📱 FALLBACK SMS REVERSE PROPOSAL (stub mode):');
+        console.log('To:', businessPhone);
         console.log('Content:', smsContent);
         await new Promise(resolve => setTimeout(resolve, 500));
         results.smsSent = true;
       }
     }
 
-    // Store the proposal in database with invitation code
+    // Store the reverse proposal in database with invitation code
     const proposalRecord = {
-      id: `proposal_${Date.now()}`,
-      businessOwnerId,
-      businessOwnerName,
-      businessName,
-      businessOwnerContactEmail,
+      hostId,
+      businessId: 'external_business_' + Date.now(), // Temporary ID for external business
       eventId,
-      eventTitle,
-      hostName,
-      hostEmail,
-      hostPhone,
-      proposedAmount,
-      supervisoryFee,
-      contractorsNeeded,
-      message,
-      eventDate,
-      eventLocation,
-      status: 'sent',
-      createdAt: new Date().toISOString(),
+      invitationCost: 1, // $1 per invitation as per the interface
+      status: 'sent' as const,
       emailSent: results.emailSent,
       smsSent: results.smsSent,
-      invitationCode,
-      isExternal: true,
     };
 
-    // Store in business directory as external proposal
+    // Store in business directory as reverse proposal
+    let storedProposal;
     try {
-      await businessDirectoryRepo.storeExternalProposal(proposalRecord);
-      console.log('💾 EXTERNAL PROPOSAL STORED:', proposalRecord.id);
+      storedProposal = await businessDirectoryRepo.sendReverseProposal(proposalRecord);
+      console.log('💾 REVERSE PROPOSAL STORED:', storedProposal.id);
     } catch (error) {
-      console.error('Failed to store external proposal:', error);
+      console.error('Failed to store reverse proposal:', error);
       results.errors.push('Failed to store proposal record');
     }
 
-    console.log('💾 PROPOSAL RECORD CREATED:', proposalRecord);
+    console.log('💾 REVERSE PROPOSAL RECORD CREATED:', storedProposal);
 
     return {
       success: results.emailSent || results.smsSent,
-      proposalId: proposalRecord.id,
+      proposalId: storedProposal?.id || 'unknown',
       invitationCode,
       emailSent: results.emailSent,
       smsSent: results.smsSent,
       errors: results.errors,
       message: results.errors.length > 0 
-        ? `Proposal sent with some issues: ${results.errors.join(', ')}`
-        : `Proposal sent successfully! Host invitation code: ${invitationCode}`
+        ? `Reverse proposal sent with some issues: ${results.errors.join(', ')}`
+        : `Reverse proposal sent successfully! Business invitation code: ${invitationCode}`
     };
   });
 
-export default sendExternalProposalProcedure;
+export default sendReverseProposalProcedure;

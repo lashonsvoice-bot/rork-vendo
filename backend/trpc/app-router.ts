@@ -11,6 +11,10 @@ import sendExternalProposalRoute, {
   connectHostWithInvitationCodeProcedure, 
   findProposalByCodeProcedure
 } from "./routes/proposals/send-external/route";
+import sendReverseProposalRoute, {
+  connectBusinessWithInvitationCodeProcedure as connectBusinessToReverseProposal,
+  findReverseProposalByCodeProcedure as findReverseProposalByCode
+} from "./routes/proposals/send-reverse/route";
 import { submitW9Procedure, getW9Procedure, updateW9StatusProcedure, checkW9RequiredProcedure } from "./routes/tax/w9/route";
 import { recordPaymentProcedure, getContractorPaymentsProcedure, getBusinessOwnerPaymentsProcedure } from "./routes/tax/payments/route";
 import { generate1099Procedure, update1099StatusProcedure, getBusinessOwner1099sProcedure } from "./routes/tax/1099/route";
@@ -144,8 +148,11 @@ export const appRouter = createTRPCRouter({
   }),
   proposals: createTRPCRouter({
     sendExternal: sendExternalProposalRoute,
+    sendReverse: sendReverseProposalRoute,
     connectHost: connectHostWithInvitationCodeProcedure,
+    connectBusiness: connectBusinessToReverseProposal,
     findByCode: findProposalByCodeProcedure,
+    findReverseByCode: findReverseProposalByCode,
   }),
   tax: createTRPCRouter({
     w9: createTRPCRouter({

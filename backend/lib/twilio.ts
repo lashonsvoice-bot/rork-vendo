@@ -158,6 +158,26 @@ class TwilioService {
   }
 
   /**
+   * Send reverse proposal SMS notification (Host to External Business)
+   */
+  async sendReverseProposalNotification(phoneNumber: string, proposalDetails: {
+    eventTitle: string;
+    eventDate: string;
+    hostEmail: string;
+    invitationCode: string;
+    appDownloadLink?: string;
+  }): Promise<SMSResponse> {
+    const appLink = proposalDetails.appDownloadLink || 'https://revovend.com/app';
+    
+    const message = {
+      to: phoneNumber,
+      body: `A RevoVend Host would like to invite you to set up a remote vendor table at ${proposalDetails.eventTitle} on ${proposalDetails.eventDate}. We feel your business would be a great fit at our event. With RevoVend, distance is no issue!! Please check your email ${proposalDetails.hostEmail} for more information and use the invitation code to connect directly with me through the app.`
+    };
+
+    return this.sendSMS(message);
+  }
+
+  /**
    * Check if Twilio is configured and ready
    */
   isReady(): boolean {

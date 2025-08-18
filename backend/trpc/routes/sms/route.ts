@@ -173,6 +173,39 @@ export const sendProposalSMSProcedure = protectedProcedure
     };
   });
 
+// Send reverse proposal SMS procedure (Host to External Business)
+export const sendReverseProposalSMSProcedure = protectedProcedure
+  .input(z.object({
+    phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
+    proposalDetails: z.object({
+      eventTitle: z.string().min(1, 'Event title is required'),
+      eventDate: z.string().min(1, 'Event date is required'),
+      hostEmail: z.string().email('Valid host email is required'),
+      invitationCode: z.string().min(1, 'Invitation code is required'),
+      appDownloadLink: z.string().url().optional()
+    })
+  }))
+  .mutation(async ({ input }) => {
+    console.log('📱 Sending reverse proposal SMS:', { 
+      event: input.proposalDetails.eventTitle, 
+      to: input.phoneNumber 
+    });
+    
+    const result = await twilioService.sendReverseProposalNotification(
+      input.phoneNumber,
+      input.proposalDetails
+    );
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to send reverse proposal SMS');
+    }
+
+    return {
+      success: true,
+      messageId: result.messageId
+    };
+  });
+
 // Get SMS service status procedure
 export const getSMSStatusProcedure = protectedProcedure
   .query(async () => {

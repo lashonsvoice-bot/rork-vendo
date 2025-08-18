@@ -78,9 +78,12 @@ import {
 } from "./routes/business-directory/crud/route";
 import {
   sendReverseProposalProcedure,
+  sendReverseProposalWithNotificationsProcedure,
   updateReverseProposalStatusProcedure,
   getHostReverseProposalsProcedure,
   getBusinessReverseProposalsProcedure,
+  connectBusinessWithInvitationCodeProcedure,
+  findReverseProposalByCodeProcedure,
 } from "./routes/business-directory/proposals/route";
 import {
   sendInvitationEmailProcedure,
@@ -116,6 +119,7 @@ import {
   sendBookingConfirmationProcedure,
   sendPaymentReminderProcedure,
   sendProposalSMSProcedure,
+  sendReverseProposalSMSProcedure,
   getSMSStatusProcedure
 } from "./routes/sms/route";
 
@@ -196,6 +200,7 @@ export const appRouter = createTRPCRouter({
     sendBookingConfirmation: sendBookingConfirmationProcedure,
     sendPaymentReminder: sendPaymentReminderProcedure,
     sendProposal: sendProposalSMSProcedure,
+    sendReverseProposal: sendReverseProposalSMSProcedure,
     getStatus: getSMSStatusProcedure,
   }),
   wallet: walletRoutes,
@@ -257,9 +262,12 @@ export const appRouter = createTRPCRouter({
     getAll: getBusinessDirectoryProcedure,
     proposals: createTRPCRouter({
       send: sendReverseProposalProcedure,
+      sendWithNotifications: sendReverseProposalWithNotificationsProcedure,
       updateStatus: updateReverseProposalStatusProcedure,
       getByHost: getHostReverseProposalsProcedure,
       getByBusiness: getBusinessReverseProposalsProcedure,
+      connectBusiness: connectBusinessWithInvitationCodeProcedure,
+      findByCode: findReverseProposalByCodeProcedure,
     }),
     notifications: createTRPCRouter({
       sendEmail: sendInvitationEmailProcedure,

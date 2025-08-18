@@ -140,9 +140,8 @@ app.route("/webhooks", webhooksRoutes);
 app.route("/stripe-webhooks", stripeWebhooksRoutes);
 
 app.use(
-  "/trpc/*",
+  "/api/trpc/*",
   trpcServer({
-    endpoint: "/api/trpc",
     router: appRouter,
     createContext,
   })
@@ -150,6 +149,10 @@ app.use(
 
 app.get("/", (c) => {
   return c.json({ status: "ok", message: "API is running" });
+});
+
+app.get("/api", (c) => {
+  return c.json({ status: "ok", message: "tRPC API is running", endpoint: "/api/trpc" });
 });
 
 export default app;

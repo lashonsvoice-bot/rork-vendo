@@ -56,7 +56,7 @@ export default function HomeScreen() {
   
   const w9RequiredQuery = trpc.tax.w9.checkRequired.useQuery(
     { contractorId: user?.id || '' },
-    { enabled: !!user?.id && user?.role === 'contractor' }
+    { enabled: !!user?.id && user?.role === 'contractor' && !isGuest }
   );
   
   // Test connection on mount
@@ -103,8 +103,11 @@ export default function HomeScreen() {
   console.log('[Home] Profile error:', profileQuery.error);
   console.log('[Home] User info:', { id: user?.id, role: user?.role, isGuest });
   console.log('[Home] Query enabled:', !!user?.id && !isGuest);
+  
+  // Compute styles after all hooks
+  const upcomingEventsComputed = React.useMemo(() => events.slice(0, 3), [events]);
 
-  const styles = StyleSheet.create({
+  const styles = React.useMemo(() => StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.background,
@@ -555,7 +558,7 @@ export default function HomeScreen() {
       color: '#721c24',
       fontWeight: '500',
     },
-  });
+  }), [theme]);
 
   // Guest user screen - redirect to public directories
   if (isGuest) {
@@ -677,22 +680,30 @@ export default function HomeScreen() {
   }
 
   // Different stats based on user role
-  const stats = userRole === 'business_owner' ? [
-    { label: "Active Events", value: "12", icon: Calendar, color: theme.accentCyan },
-    { label: "Contractors", value: "48", icon: Users, color: theme.accentCyan },
-    { label: "This Month", value: "$8.5K", icon: DollarSign, color: theme.accentAmber },
-    { label: "Growth", value: "+23%", icon: TrendingUp, color: theme.accentPink },
-  ] : userRole === 'contractor' ? [
-    { label: "Available Jobs", value: "8", icon: Calendar, color: "#8B5CF6" },
-    { label: "Completed", value: "23", icon: UserCheck, color: "#8B5CF6" },
-    { label: "This Month", value: "$2.1K", icon: DollarSign, color: theme.accentAmber },
-    { label: "Rating", value: "4.8★", icon: TrendingUp, color: theme.accentPink },
-  ] : [
-    { label: "Listed Events", value: "15", icon: Store, color: theme.accentCyan },
-    { label: "Vendors", value: "127", icon: Users, color: theme.accentCyan },
-    { label: "This Month", value: "$3.2K", icon: DollarSign, color: theme.accentAmber },
-    { label: "Rating", value: "4.9★", icon: TrendingUp, color: theme.accentPink },
-  ];
+  const stats = React.useMemo(() => {
+    if (userRole === 'business_owner') {
+      return [
+        { label: "Active Events", value: "12", icon: Calendar, color: theme.accentCyan },
+        { label: "Contractors", value: "48", icon: Users, color: theme.accentCyan },
+        { label: "This Month", value: "$8.5K", icon: DollarSign, color: theme.accentAmber },
+        { label: "Growth", value: "+23%", icon: TrendingUp, color: theme.accentPink },
+      ];
+    } else if (userRole === 'contractor') {
+      return [
+        { label: "Available Jobs", value: "8", icon: Calendar, color: "#8B5CF6" },
+        { label: "Completed", value: "23", icon: UserCheck, color: "#8B5CF6" },
+        { label: "This Month", value: "$2.1K", icon: DollarSign, color: theme.accentAmber },
+        { label: "Rating", value: "4.8★", icon: TrendingUp, color: theme.accentPink },
+      ];
+    } else {
+      return [
+        { label: "Listed Events", value: "15", icon: Store, color: theme.accentCyan },
+        { label: "Vendors", value: "127", icon: Users, color: theme.accentCyan },
+        { label: "This Month", value: "$3.2K", icon: DollarSign, color: theme.accentAmber },
+        { label: "Rating", value: "4.9★", icon: TrendingUp, color: theme.accentPink },
+      ];
+    }
+  }, [userRole, theme]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -899,7 +910,7 @@ export default function HomeScreen() {
             <Text style={styles.seeAll}>See all</Text>
           </TouchableOpacity>
         </View>
-        {upcomingEvents.map((event) => {
+        {upcomingEventsComputed.map((event) => {
           const isHighlighted = event.contractorsNeeded === 0 && event.createdBy === 'event_host' && !event.businessOwnerSelected;
           
           // Color coding based on who posted the event

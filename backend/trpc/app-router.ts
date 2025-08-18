@@ -109,6 +109,14 @@ import {
 import placesAutocompleteProcedure from "./routes/maps/autocomplete/route";
 import geocodeProcedure from "./routes/maps/geocode/route";
 import { testConnectionProcedure, createSampleDataProcedure, querySampleDataProcedure } from "./routes/database/test/route";
+import {
+  sendSMSProcedure,
+  sendVerificationCodeProcedure,
+  sendEventNotificationProcedure,
+  sendBookingConfirmationProcedure,
+  sendPaymentReminderProcedure,
+  getSMSStatusProcedure
+} from "./routes/sms/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -179,6 +187,14 @@ export const appRouter = createTRPCRouter({
     testConnection: testConnectionProcedure,
     createSampleData: createSampleDataProcedure,
     querySampleData: querySampleDataProcedure,
+  }),
+  sms: createTRPCRouter({
+    send: sendSMSProcedure,
+    sendVerificationCode: sendVerificationCodeProcedure,
+    sendEventNotification: sendEventNotificationProcedure,
+    sendBookingConfirmation: sendBookingConfirmationProcedure,
+    sendPaymentReminder: sendPaymentReminderProcedure,
+    getStatus: getSMSStatusProcedure,
   }),
   wallet: walletRoutes,
   events: createTRPCRouter({

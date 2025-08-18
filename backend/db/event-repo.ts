@@ -21,9 +21,13 @@ export interface VendorCheckIn {
   eventPhotos: string[];
   notes?: string;
   fundsReleased: boolean;
+  fundsReleasedAt?: string;
+  fundsReleasedBy?: string;
   review?: VendorReview;
   tableLabel?: string;
   stipendReleased?: boolean;
+  stipendReleasedAt?: string;
+  stipendReleasedBy?: string;
 }
 
 export interface TableOption {

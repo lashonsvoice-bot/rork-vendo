@@ -69,6 +69,8 @@ import {
   releaseEscrowFundsProcedure,
   getEventFinancialsProcedure,
   uploadEventFundsProcedure,
+  approveEarlyReleaseProcedure,
+  getEarlyReleaseRequestsProcedure,
 } from "./routes/events/payments/route";
 import {
   recordEventCreationProcedure,
@@ -248,6 +250,8 @@ export const appRouter = createTRPCRouter({
       releaseEscrowFunds: releaseEscrowFundsProcedure,
       getFinancials: getEventFinancialsProcedure,
       uploadFunds: uploadEventFundsProcedure,
+      approveEarlyRelease: approveEarlyReleaseProcedure,
+      getEarlyReleaseRequests: getEarlyReleaseRequestsProcedure,
     }),
     tables: createTRPCRouter({
       purchase: purchaseTableProcedure,

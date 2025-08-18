@@ -6,23 +6,23 @@ if (!config.stripe?.secretKey) {
 }
 
 export const stripe = new Stripe(config.stripe.secretKey, {
-  apiVersion: '2024-12-18.acacia',
   typescript: true,
 });
 
 // Stripe Product and Price IDs - Update these with your actual Stripe product/price IDs
+// Get these from your Stripe Dashboard → Products → [Product] → Pricing
 export const STRIPE_PRODUCTS = {
   starter: {
-    monthly: 'price_starter_monthly', // Replace with actual price ID
-    yearly: 'price_starter_yearly',   // Replace with actual price ID
+    monthly: 'price_1234567890abcdef', // Replace with actual price ID from Stripe
+    yearly: 'price_1234567890abcdef',   // Replace with actual price ID from Stripe
   },
   professional: {
-    monthly: 'price_professional_monthly', // Replace with actual price ID
-    yearly: 'price_professional_yearly',   // Replace with actual price ID
+    monthly: 'price_1234567890abcdef', // Replace with actual price ID from Stripe
+    yearly: 'price_1234567890abcdef',   // Replace with actual price ID from Stripe
   },
   enterprise: {
-    monthly: 'price_enterprise_monthly', // Replace with actual price ID
-    yearly: 'price_enterprise_yearly',   // Replace with actual price ID
+    monthly: 'price_1234567890abcdef', // Replace with actual price ID from Stripe
+    yearly: 'price_1234567890abcdef',   // Replace with actual price ID from Stripe
   },
 } as const;
 

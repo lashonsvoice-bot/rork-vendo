@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useStripe, CardField, CardFieldInput } from '@stripe/stripe-react-native';
 import { trpc } from '@/lib/trpc';
 
@@ -91,19 +91,22 @@ export function StripePaymentForm({
       </View>
 
       <View style={styles.buttonContainer}>
-        <Text 
+        <TouchableOpacity 
           style={[
             styles.payButton, 
             (!cardComplete || loading) && styles.payButtonDisabled
           ]}
           onPress={!cardComplete || loading ? undefined : handlePayment}
+          disabled={!cardComplete || loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            `Subscribe to ${tier} (${billingCycle})`
+            <Text style={styles.payButtonText}>
+              Subscribe to {tier} ({billingCycle})
+            </Text>
           )}
-        </Text>
+        </TouchableOpacity>
       </View>
 
       {createCheckoutMutation.error && (
@@ -150,6 +153,12 @@ const styles = StyleSheet.create({
   },
   payButtonDisabled: {
     backgroundColor: '#CCCCCC',
+  },
+  payButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   errorText: {
     color: '#FF3B30',

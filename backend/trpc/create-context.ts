@@ -6,20 +6,40 @@ import type { SessionUser } from "../routes/auth";
 export type ContextUser = SessionUser | null;
 
 export const createContext = async (opts: FetchCreateContextFnOptions) => {
-  const cookieHeader = opts.req.headers.get("cookie") ?? "";
-  const match = cookieHeader.split(/;\s*/).find((p) => p.startsWith("session="));
   let user: ContextUser = null;
-  try {
-    if (match) {
-      const raw = decodeURIComponent(match.split("=")[1] ?? "");
-      const json = Buffer.from(raw, "base64").toString("utf8");
+  
+  // First try to get session from x-session header (mobile app)
+  const sessionHeader = opts.req.headers.get("x-session");
+  if (sessionHeader) {
+    try {
+      const json = Buffer.from(sessionHeader, "base64").toString("utf8");
       const parsed = JSON.parse(json) as SessionUser;
       if (parsed && parsed.id && parsed.email) {
         user = parsed;
+        console.log('[tRPC Context] User authenticated via header:', user.email);
       }
+    } catch (e) {
+      console.error("Failed to parse session header", e);
     }
-  } catch (e) {
-    console.error("Failed to parse session cookie", e);
+  }
+  
+  // Fallback to cookie-based session (web)
+  if (!user) {
+    const cookieHeader = opts.req.headers.get("cookie") ?? "";
+    const match = cookieHeader.split(/;\s*/).find((p) => p.startsWith("session="));
+    try {
+      if (match) {
+        const raw = decodeURIComponent(match.split("=")[1] ?? "");
+        const json = Buffer.from(raw, "base64").toString("utf8");
+        const parsed = JSON.parse(json) as SessionUser;
+        if (parsed && parsed.id && parsed.email) {
+          user = parsed;
+          console.log('[tRPC Context] User authenticated via cookie:', user.email);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse session cookie", e);
+    }
   }
 
   return {

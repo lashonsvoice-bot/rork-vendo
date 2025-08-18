@@ -46,7 +46,11 @@ export default function HomeScreen() {
   const profileQuery = trpc.profile.get.useQuery(
     { userId: user?.id },
     { 
-      enabled: !!user?.id,
+      enabled: !!user?.id && !isGuest,
+      retry: (failureCount, error) => {
+        console.log('[Home] Profile query retry:', failureCount, error?.message);
+        return failureCount < 2;
+      },
     }
   );
   
@@ -56,11 +60,14 @@ export default function HomeScreen() {
   );
   
   React.useEffect(() => {
-    if (profileQuery.error) {
+    if (profileQuery.error && !isGuest) {
       console.error('[Home] Profile query error:', profileQuery.error);
-      Alert.alert('Error', handleTRPCError(profileQuery.error));
+      // Only show alert for non-network errors
+      if (!profileQuery.error.message.includes('Failed to fetch')) {
+        Alert.alert('Error', handleTRPCError(profileQuery.error));
+      }
     }
-  }, [profileQuery.error]);
+  }, [profileQuery.error, isGuest]);
   
   console.log('[Home] Profile data:', profileQuery.data);
   console.log('[Home] Profile loading:', profileQuery.isLoading);

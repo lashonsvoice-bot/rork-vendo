@@ -1,5 +1,5 @@
 import createContextHook from "@nkzw/create-context-hook";
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type AuthRole = "business_owner" | "contractor" | "event_host" | "admin" | "guest" | "local_vendor";
@@ -15,7 +15,8 @@ const STORAGE_KEY = "auth.sessionUser";
 
 export const [AuthProvider, useAuth] = createContextHook(() => {
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const login = useCallback(async (email: string, role: AuthRole) => {
     console.log('[auth] Logging in:', email, role);
@@ -52,6 +53,35 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, []);
 
+  // Load user from storage on app start
+  const loadStoredUser = useCallback(async () => {
+    if (isInitialized) return;
+    
+    console.log('[auth] Loading stored user...');
+    setIsLoading(true);
+    
+    try {
+      const storedUser = await AsyncStorage.getItem(STORAGE_KEY);
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser) as SessionUser;
+        setUser(parsed);
+        console.log('[auth] Loaded stored user:', parsed.email);
+      } else {
+        console.log('[auth] No stored user found');
+      }
+    } catch (e) {
+      console.error('[auth] Failed to load stored user:', e);
+    } finally {
+      setIsLoading(false);
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
+
+  // Load user on mount
+  React.useEffect(() => {
+    loadStoredUser();
+  }, [loadStoredUser]);
+
   return useMemo(() => ({
     user,
     isLoading,
@@ -59,5 +89,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     logout,
     isAuthenticated: !!user,
     isGuest: user?.role === 'guest',
-  }), [user, isLoading, login, logout]);
+    isInitialized,
+  }), [user, isLoading, login, logout, isInitialized]);
 });

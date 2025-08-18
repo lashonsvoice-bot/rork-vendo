@@ -333,8 +333,8 @@ export default function CreateEventScreen() {
         location: formData.location,
         date: formData.date,
         time: `${formData.startTime} - ${formData.endTime}`,
-        contractorsNeeded: userRole === 'business_owner' ? parseInt(formData.contractorsNeeded) || 1 : 0,
-        contractorPay: userRole === 'business_owner' ? parseFloat(formData.contractorPay) || 0 : 0,
+        contractorsNeeded: parseInt(formData.contractorsNeeded || '0') || 0,
+        contractorPay: parseFloat(formData.contractorPay || '0') || 0,
         hostSupervisionFee: parseFloat(formData.hostSupervisionFee) || 0,
         flyerUrl: flyerImage,
         createdBy: (userRole ?? 'contractor') as 'business_owner' | 'event_host' | 'contractor',
@@ -1207,6 +1207,45 @@ export default function CreateEventScreen() {
             )}
           </View>
         ))}
+
+        {/* Contractor Staffing for Event Hosts - placed above stipend area */}
+        {userRole !== 'business_owner' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Contractor Staffing</Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Number of Contractors</Text>
+            <View style={styles.inputContainer}>
+              <Users size={18} color="#9CA3AF" style={styles.inputIcon} />
+              <TextInput
+                testID="eh-contractors-needed"
+                placeholder="How many contractors needed?"
+                value={formData.contractorsNeeded}
+                onChangeText={(t) => setFormData({ ...formData, contractorsNeeded: t })}
+                style={styles.input}
+                placeholderTextColor="#9CA3AF"
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Pay per Contractor ($)</Text>
+            <View style={styles.inputContainer}>
+              <DollarSign size={18} color="#9CA3AF" style={styles.inputIcon} />
+              <TextInput
+                testID="eh-contractor-pay"
+                placeholder="150"
+                value={formData.contractorPay}
+                onChangeText={(t) => setFormData({ ...formData, contractorPay: t })}
+                style={styles.input}
+                placeholderTextColor="#9CA3AF"
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+        </View>
+        )}
 
         {/* Stipend Mode Selection */}
         {userRole !== 'business_owner' && (

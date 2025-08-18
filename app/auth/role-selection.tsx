@@ -41,7 +41,7 @@ const roles: RoleOption[] = [
   {
     key: 'local_vendor',
     title: 'Local Vendors',
-    subtitle: 'Resource for Small local crafters and businesses • increase local clientele • build your network',
+    subtitle: 'Great for micro businesses, mln & crafters. Build your local clientele',
     colors: ['#3B82F6', '#60A5FA'],
     icon: Store,
   },

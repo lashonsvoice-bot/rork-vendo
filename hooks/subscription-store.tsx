@@ -45,7 +45,8 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "5 events OR 30 days (whichever comes first)",
       "Basic event management",
       "Email support",
-      "Full access to all features during trial"
+      "No credit card required",
+      "Proposals & hiring disabled (upgrade to unlock)"
     ]
   },
   {
@@ -57,6 +58,8 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: [
       "10 events per month",
       "Advanced event management",
+      "Send proposals to hosts",
+      "Hire contractors",
       "Priority email support",
       "Basic analytics",
       "Custom branding"
@@ -72,6 +75,8 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: [
       "20 events per month",
       "Full event management suite",
+      "Send proposals to hosts",
+      "Hire contractors",
       "Phone & email support",
       "Advanced analytics",
       "Custom branding",
@@ -88,6 +93,8 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: [
       "Unlimited events",
       "Enterprise event management",
+      "Send proposals to hosts",
+      "Hire contractors",
       "24/7 priority support",
       "Advanced analytics & reporting",
       "White-label solution",
@@ -237,6 +244,30 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     return true;
   }, [subscription]);
 
+  const canSendProposals = useMemo(() => {
+    if (!subscription) return false;
+    
+    // Proposals are disabled during free trial - only available for paid subscriptions
+    if (subscription.status === "trialing") {
+      return false;
+    }
+
+    // Check if subscription is active
+    return subscription.status === "active";
+  }, [subscription]);
+
+  const canHireContractors = useMemo(() => {
+    if (!subscription) return false;
+    
+    // Hiring is disabled during free trial - only available for paid subscriptions
+    if (subscription.status === "trialing") {
+      return false;
+    }
+
+    // Check if subscription is active
+    return subscription.status === "active";
+  }, [subscription]);
+
   const remainingEvents = useMemo(() => {
     if (!subscription) return 0;
     if (subscription.eventsLimit === -1) return -1; // unlimited
@@ -336,6 +367,8 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     currentPlan,
     isLoading: isLoading || subscriptionQuery.isLoading,
     canCreateEvent,
+    canSendProposals,
+    canHireContractors,
     remainingEvents,
     isTrialExpired,
     trialExpirationReason,
@@ -355,6 +388,8 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     isLoading,
     subscriptionQuery.isLoading,
     canCreateEvent,
+    canSendProposals,
+    canHireContractors,
     remainingEvents,
     isTrialExpired,
     trialExpirationReason,

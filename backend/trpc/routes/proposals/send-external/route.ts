@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { publicProcedure } from "../../../create-context";
+import { publicProcedure, protectedProcedure } from "../../../create-context";
 import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
+import { subscriptionRepo } from "@/backend/db/subscription-repo";
 import { sendGridService } from "@/backend/lib/sendgrid";
 import { twilioService } from "@/backend/lib/twilio";
 
@@ -196,9 +197,16 @@ export const findProposalByCodeProcedure = publicProcedure
     }
   });
 
-const sendExternalProposalProcedure = publicProcedure
+const sendExternalProposalProcedure = protectedProcedure
   .input(sendExternalProposalSchema)
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
+    // Check subscription status for business owners
+    if (ctx.user && ctx.user.role === "business_owner") {
+      const subscription = await subscriptionRepo.findByUserId(ctx.user.id);
+      if (!subscription || subscription.status === "trialing") {
+        throw new Error("Proposals are not available during the free trial. Please upgrade your subscription to send proposals.");
+      }
+    }
     const {
       businessOwnerId,
       businessOwnerName,

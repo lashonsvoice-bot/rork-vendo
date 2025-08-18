@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure } from "@/backend/trpc/create-context";
 import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
+import { subscriptionRepo } from "@/backend/db/subscription-repo";
 import { twilioService } from "@/backend/lib/twilio";
 import sgMail from "@sendgrid/mail";
 import { config } from "@/backend/config/env";
@@ -46,6 +47,14 @@ export const sendReverseProposalProcedure = protectedProcedure
       throw new Error("Only event hosts can send reverse proposals");
     }
     
+    // Check subscription status for business owners
+    if (ctx.user.role === "business_owner") {
+      const subscription = await subscriptionRepo.findByUserId(ctx.user.id);
+      if (!subscription || subscription.status === "trialing") {
+        throw new Error("Proposals are not available during the free trial. Please upgrade your subscription to send proposals.");
+      }
+    }
+    
     try {
       const proposal = await businessDirectoryRepo.sendReverseProposal({
         ...input,
@@ -68,6 +77,14 @@ export const sendReverseProposalWithNotificationsProcedure = protectedProcedure
     
     if (ctx.user.role !== "event_host") {
       throw new Error("Only event hosts can send reverse proposals");
+    }
+    
+    // Check subscription status for business owners
+    if (ctx.user.role === "business_owner") {
+      const subscription = await subscriptionRepo.findByUserId(ctx.user.id);
+      if (!subscription || subscription.status === "trialing") {
+        throw new Error("Proposals are not available during the free trial. Please upgrade your subscription to send proposals.");
+      }
     }
     
     const {

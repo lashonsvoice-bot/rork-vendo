@@ -2,6 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { trpc, trpcClient } from '@/lib/trpc';
+import { useSubscription } from '@/hooks/subscription-store';
 
 export interface BusinessDirectoryEntry {
   id: string;
@@ -49,6 +50,7 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
   const [businesses, setBusinesses] = useState<BusinessDirectoryEntry[]>([]);
   const [reverseProposals, setReverseProposals] = useState<ReverseProposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { canSendProposals } = useSubscription();
 
   const businessesQuery = trpc.businessDirectory.getAll.useQuery();
   const addBusinessMutation = trpc.businessDirectory.add.useMutation();
@@ -162,6 +164,10 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
     emailSent?: boolean;
     smsSent?: boolean;
   }) => {
+    if (!canSendProposals) {
+      throw new Error('Proposals are not available during the free trial. Please upgrade your subscription to send proposals.');
+    }
+    
     try {
       const newProposal = await sendProposalMutation.mutateAsync({
         invitationCost: 1,
@@ -180,7 +186,7 @@ export const [BusinessDirectoryProvider, useBusinessDirectory] = createContextHo
       console.error('Error sending invitation:', error);
       throw error;
     }
-  }, [reverseProposals, sendProposalMutation, hostProposalsQuery]);
+  }, [reverseProposals, sendProposalMutation, hostProposalsQuery, canSendProposals]);
 
   const updateProposalStatus = useCallback(async (proposalId: string, status: ReverseProposal['status'], isNewSignup?: boolean) => {
     try {

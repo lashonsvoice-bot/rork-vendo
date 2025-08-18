@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -30,7 +30,7 @@ type DirectoryType = 'events' | 'businesses' | 'hosts' | 'venues';
 
 export default function GuestDirectoriesScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedDirectory, setSelectedDirectory] = useState<DirectoryType>('events');
   const [locationFilter, setLocationFilter] = useState<string>('');
@@ -128,24 +128,6 @@ export default function GuestDirectoriesScreen() {
     }
   }, [selectedDirectory, searchQuery, locationFilter, publicEventsQuery.data, businessOwnersQuery.data, eventHostsQuery.data, eventVenues]);
 
-  // Redirect non-guests after hooks
-  if (user?.role !== 'guest') {
-    return (
-      <View style={styles.container}>
-        <Stack.Screen options={{ title: 'Access Denied' }} />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>This page is only available for guest users.</Text>
-          <TouchableOpacity 
-            style={styles.signUpButton}
-            onPress={() => router.push('/auth')}
-          >
-            <Text style={styles.signUpButtonText}>Sign Up for Full Access</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
   const handleRefresh = () => {
     publicEventsQuery.refetch();
     businessOwnersQuery.refetch();
@@ -159,6 +141,32 @@ export default function GuestDirectoriesScreen() {
     { id: 'venues' as DirectoryType, label: 'Event Venues', icon: Store, count: eventVenues.length },
   ];
 
+  const goToCreateAccount = useCallback(async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.error('[GuestDirectories] Logout error:', e);
+    }
+    router.replace('/auth/role-selection');
+  }, [logout, router]);
+
+  if (user?.role !== 'guest') {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ title: 'Access Denied' }} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>This page is only available for guest users.</Text>
+          <TouchableOpacity 
+            style={styles.signUpButton}
+            onPress={() => { void goToCreateAccount(); }}
+          >
+            <Text style={styles.signUpButtonText}>Sign Up for Full Access</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   const renderEventCard = (event: any) => (
     <TouchableOpacity
       key={event.id}
@@ -169,7 +177,7 @@ export default function GuestDirectoriesScreen() {
           'Create an account to view full event details and apply.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Sign Up', onPress: () => router.push('/auth') }
+            { text: 'Sign Up', onPress: () => { void goToCreateAccount(); } }
           ]
         );
       }}
@@ -206,7 +214,7 @@ export default function GuestDirectoriesScreen() {
           'Create an account to view full business profiles and contact information.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Sign Up', onPress: () => router.push('/auth') }
+            { text: 'Sign Up', onPress: () => { void goToCreateAccount(); } }
           ]
         );
       }}
@@ -250,7 +258,7 @@ export default function GuestDirectoriesScreen() {
           'Create an account to view full host profiles and contact information.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Sign Up', onPress: () => router.push('/auth') }
+            { text: 'Sign Up', onPress: () => { void goToCreateAccount(); } }
           ]
         );
       }}
@@ -300,7 +308,7 @@ export default function GuestDirectoriesScreen() {
           'Create an account to view venue details and contact hosts.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Sign Up', onPress: () => router.push('/auth') }
+            { text: 'Sign Up', onPress: () => { void goToCreateAccount(); } }
           ]
         );
       }}
@@ -380,7 +388,7 @@ export default function GuestDirectoriesScreen() {
         </Text>
         <TouchableOpacity 
           style={styles.headerSignUpButton}
-          onPress={() => router.push('/auth')}
+          onPress={() => { void goToCreateAccount(); }}
         >
           <Text style={styles.headerSignUpText}>Create Account for Full Access</Text>
         </TouchableOpacity>
@@ -465,7 +473,7 @@ export default function GuestDirectoriesScreen() {
             </Text>
             <TouchableOpacity 
               style={styles.emptyStateButton}
-              onPress={() => router.push('/auth')}
+              onPress={() => { void goToCreateAccount(); }}
             >
               <Text style={styles.emptyStateButtonText}>Sign Up to Access More</Text>
             </TouchableOpacity>

@@ -25,6 +25,13 @@ const roles: RoleOption[] = [
     icon: Building2,
   },
   {
+    key: 'event_host',
+    title: 'Event Host',
+    subtitle: 'List events and attract nationwide vendors',
+    colors: ['#F59E0B', '#FBBF24'],
+    icon: Store,
+  },
+  {
     key: 'contractor',
     title: 'Contractor',
     subtitle: 'Work events, represent brands, build your career',
@@ -36,13 +43,6 @@ const roles: RoleOption[] = [
     title: 'Local Vendors',
     subtitle: 'Resource for Small local crafters and businesses • increase local clientele • build your network',
     colors: ['#3B82F6', '#60A5FA'],
-    icon: Store,
-  },
-  {
-    key: 'event_host',
-    title: 'Event Host',
-    subtitle: 'List events and attract nationwide vendors',
-    colors: ['#F59E0B', '#FBBF24'],
     icon: Store,
   },
   {

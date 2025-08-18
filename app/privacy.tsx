@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Stack } from 'expo-router';
 import { theme } from '@/constants/theme';
+import { FooterLinks } from '@/components/FooterLinks';
 
 export default function PrivacyScreen() {
   const sections = useMemo(
@@ -77,6 +78,7 @@ export default function PrivacyScreen() {
           </View>
         ))}
         <Text style={styles.updated}>Last updated: {new Date().toISOString().slice(0, 10)}</Text>
+        <FooterLinks align="center" />
       </ScrollView>
     </View>
   );

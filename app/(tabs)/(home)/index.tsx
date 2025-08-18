@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { FooterLinks } from "@/components/FooterLinks";
 import {
   TrendingUp,
   Calendar,
@@ -613,6 +614,7 @@ export default function HomeScreen() {
           </View>
         </View>
         
+        <FooterLinks align="center" />
         <View style={styles.bottomSpacing} />
       </ScrollView>
     );
@@ -944,6 +946,7 @@ export default function HomeScreen() {
         })}
       </View>
 
+      <FooterLinks align="center" />
       <View style={styles.bottomSpacing} />
     </ScrollView>
   );

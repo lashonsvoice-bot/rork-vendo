@@ -57,6 +57,9 @@ function RootLayoutNav() {
       <Stack.Screen name="notification-settings" options={{ headerShown: true, title: "Notification Settings" }} />
       <Stack.Screen name="subscription" options={{ headerShown: true, title: "Subscription" }} />
       <Stack.Screen name="wallet" options={{ headerShown: true, title: "Wallet" }} />
+      <Stack.Screen name="terms" options={{ headerShown: true, title: "Terms & Conditions" }} />
+      <Stack.Screen name="privacy" options={{ headerShown: true, title: "Privacy Policy" }} />
+      <Stack.Screen name="contact" options={{ headerShown: true, title: "Contact" }} />
     </Stack>
   );
 }

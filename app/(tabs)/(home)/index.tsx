@@ -41,10 +41,10 @@ export default function HomeScreen() {
   const { getUnreadMessagesCount } = useCommunication();
   const { user, logout: authLogout, isGuest, isLoading: authLoading } = useAuth();
   const { theme } = useTheme();
-  const upcomingEvents = events.slice(0, 3);
   
+  // Always call all hooks before any conditional logic
   const profileQuery = trpc.profile.get.useQuery(
-    { userId: user?.id },
+    { userId: user?.id || '' },
     { 
       enabled: !!user?.id && !isGuest,
       retry: (failureCount, error) => {
@@ -94,6 +94,9 @@ export default function HomeScreen() {
       }
     }
   }, [profileQuery.error, isGuest, profileQuery.refetch]);
+  
+  // Compute derived values after all hooks
+  const upcomingEvents = events.slice(0, 3);
   
   console.log('[Home] Profile data:', profileQuery.data);
   console.log('[Home] Profile loading:', profileQuery.isLoading);

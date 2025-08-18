@@ -70,84 +70,89 @@ export default function DiscoverScreen() {
   // Determine if user is guest
   const isGuest = user?.role === 'guest';
   
-  // Search profiles for each target role - use public search for guests
-  const businessOwnersQuery = isGuest 
-    ? trpc.profile.searchPublic.useQuery(
-        {
-          role: 'business_owner',
-          q: searchQuery || filters.skills || filters.location || undefined,
-          limit: 20,
-        },
-        {
-          enabled: targetRoles.includes('business_owner') || isGuest,
-          retry: 1,
-          retryDelay: 1000,
-        }
-      )
-    : trpc.profile.search.useQuery(
-        {
-          role: 'business_owner',
-          q: searchQuery || filters.skills || filters.location || undefined,
-          limit: 20,
-        },
-        {
-          enabled: targetRoles.includes('business_owner'),
-          retry: 1,
-          retryDelay: 1000,
-        }
-      );
+  // Always call all hooks in the same order - use enabled flag to control execution
+  const businessOwnersPublicQuery = trpc.profile.searchPublic.useQuery(
+    {
+      role: 'business_owner',
+      q: searchQuery || filters.skills || filters.location || undefined,
+      limit: 20,
+    },
+    {
+      enabled: isGuest && (targetRoles.includes('business_owner') || isGuest),
+      retry: 1,
+      retryDelay: 1000,
+    }
+  );
 
-  const contractorsQuery = isGuest 
-    ? trpc.profile.searchPublic.useQuery(
-        {
-          role: 'contractor',
-          q: searchQuery || filters.skills || filters.location || undefined,
-          limit: 20,
-        },
-        {
-          enabled: false, // Don't show contractors to guests
-          retry: 1,
-          retryDelay: 1000,
-        }
-      )
-    : trpc.profile.search.useQuery(
-        {
-          role: 'contractor',
-          q: searchQuery || filters.skills || filters.location || undefined,
-          limit: 20,
-        },
-        {
-          enabled: targetRoles.includes('contractor'),
-          retry: 1,
-          retryDelay: 1000,
-        }
-      );
+  const businessOwnersPrivateQuery = trpc.profile.search.useQuery(
+    {
+      role: 'business_owner',
+      q: searchQuery || filters.skills || filters.location || undefined,
+      limit: 20,
+    },
+    {
+      enabled: !isGuest && targetRoles.includes('business_owner'),
+      retry: 1,
+      retryDelay: 1000,
+    }
+  );
 
-  const eventHostsQuery = isGuest 
-    ? trpc.profile.searchPublic.useQuery(
-        {
-          role: 'event_host',
-          q: searchQuery || filters.skills || filters.location || undefined,
-          limit: 20,
-        },
-        {
-          enabled: true, // Show event hosts to guests
-          retry: 1,
-          retryDelay: 1000,
-        }
-      )
-    : trpc.profile.search.useQuery(
-        {
-          role: 'event_host',
-          q: searchQuery || filters.skills || filters.location || undefined,
-          limit: 20,
-        },
-        {
-          enabled: targetRoles.includes('event_host'),
-          retry: 1,
-          retryDelay: 1000,
-        }
-      );
+  const contractorsPublicQuery = trpc.profile.searchPublic.useQuery(
+    {
+      role: 'contractor',
+      q: searchQuery || filters.skills || filters.location || undefined,
+      limit: 20,
+    },
+    {
+      enabled: false, // Don't show contractors to guests
+      retry: 1,
+      retryDelay: 1000,
+    }
+  );
+
+  const contractorsPrivateQuery = trpc.profile.search.useQuery(
+    {
+      role: 'contractor',
+      q: searchQuery || filters.skills || filters.location || undefined,
+      limit: 20,
+    },
+    {
+      enabled: !isGuest && targetRoles.includes('contractor'),
+      retry: 1,
+      retryDelay: 1000,
+    }
+  );
+
+  const eventHostsPublicQuery = trpc.profile.searchPublic.useQuery(
+    {
+      role: 'event_host',
+      q: searchQuery || filters.skills || filters.location || undefined,
+      limit: 20,
+    },
+    {
+      enabled: isGuest, // Show event hosts to guests
+      retry: 1,
+      retryDelay: 1000,
+    }
+  );
+
+  const eventHostsPrivateQuery = trpc.profile.search.useQuery(
+    {
+      role: 'event_host',
+      q: searchQuery || filters.skills || filters.location || undefined,
+      limit: 20,
+    },
+    {
+      enabled: !isGuest && targetRoles.includes('event_host'),
+      retry: 1,
+      retryDelay: 1000,
+    }
+  );
+
+  // Combine the results based on guest status
+  const businessOwnersQuery = isGuest ? businessOwnersPublicQuery : businessOwnersPrivateQuery;
+  const contractorsQuery = isGuest ? contractorsPublicQuery : contractorsPrivateQuery;
+  const eventHostsQuery = isGuest ? eventHostsPublicQuery : eventHostsPrivateQuery;
 
   const isLoading = businessOwnersQuery.isLoading || contractorsQuery.isLoading || eventHostsQuery.isLoading;
   const hasError = businessOwnersQuery.error || contractorsQuery.error || eventHostsQuery.error;

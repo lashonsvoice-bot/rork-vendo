@@ -28,7 +28,7 @@ import { useRouter } from "expo-router";
 import { useEvents } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
 import { useCommunication } from "@/hooks/communication-store";
-import { neonTheme } from "@/constants/theme";
+import { useTheme } from "@/hooks/theme-store";
 import { useAuth } from "@/hooks/auth-store";
 import { trpc, handleTRPCError } from "@/lib/trpc";
 import { Alert } from "react-native";
@@ -39,6 +39,7 @@ export default function HomeScreen() {
   const { userRole, currentUser, logout: clearUserStore } = useUser();
   const { getUnreadMessagesCount } = useCommunication();
   const { user, logout: authLogout, isGuest, isLoading: authLoading } = useAuth();
+  const { theme } = useTheme();
   const upcomingEvents = events.slice(0, 3);
   
   const profileQuery = trpc.profile.get.useQuery(
@@ -64,13 +65,466 @@ export default function HomeScreen() {
   console.log('[Home] Profile loading:', profileQuery.isLoading);
   console.log('[Home] Profile error:', profileQuery.error);
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    header: {
+      paddingTop: Platform.OS === "ios" ? 20 : 10,
+      paddingBottom: 30,
+      paddingHorizontal: 20,
+      borderBottomLeftRadius: 30,
+      borderBottomRightRadius: 30,
+    },
+    headerContent: {
+      marginTop: 10,
+    },
+    headerTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    headerTextContainer: {
+      flex: 1,
+    },
+    headerActions: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    messagesButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: "rgba(255, 255, 255, 0.12)",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+    },
+    messageBadge: {
+      position: "absolute",
+      top: -2,
+      right: -2,
+      backgroundColor: "#EF4444",
+      borderRadius: 10,
+      minWidth: 20,
+      height: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: theme.surface,
+    },
+    messageBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontWeight: "bold",
+    },
+    logoutButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: "rgba(255, 255, 255, 0.12)",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    appTitle: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: "#FFFFFF",
+      marginBottom: 4,
+    },
+    welcomeText: {
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+    headerTitle: {
+      fontSize: 28,
+      fontWeight: "bold",
+      color: "#FFFFFF",
+      marginBottom: 8,
+    },
+    headerSubtitle: {
+      fontSize: 16,
+      color: theme.textSecondary,
+    },
+    statsContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      paddingHorizontal: 15,
+      marginTop: -20,
+    },
+    statCard: {
+      width: "47%",
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 16,
+      margin: "1.5%",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    statIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 12,
+    },
+    statValue: {
+      fontSize: 24,
+      fontWeight: "bold",
+      color: theme.textPrimary,
+      marginBottom: 4,
+    },
+    statLabel: {
+      fontSize: 13,
+      color: theme.textSecondary,
+    },
+    section: {
+      marginTop: 24,
+      paddingHorizontal: 20,
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: theme.textPrimary,
+    },
+    seeAll: {
+      fontSize: 14,
+      color: theme.accentCyan,
+      fontWeight: "600",
+    },
+    quickActions: {
+      flexDirection: "row",
+      gap: 12,
+    },
+    actionButton: {
+      flex: 1,
+    },
+    actionGradient: {
+      padding: 20,
+      borderRadius: 16,
+      alignItems: "center",
+      gap: 8,
+    },
+    actionOutline: {
+      padding: 20,
+      borderRadius: 16,
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: theme.surface,
+      borderWidth: 2,
+      borderColor: theme.border,
+    },
+    actionText: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    actionTextOutline: {
+      color: theme.accentCyan,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    eventCard: {
+      flexDirection: "row",
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      marginBottom: 12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 2,
+      overflow: "hidden",
+    },
+    eventCardHighlighted: {
+      backgroundColor: "#2A174F",
+      borderWidth: 2,
+      borderColor: theme.accentAmber,
+      shadowColor: theme.accentAmber,
+      shadowOpacity: 0.35,
+    },
+    eventCardHost: {
+      borderWidth: 2,
+      borderColor: theme.accentAmber,
+      shadowColor: theme.accentAmber,
+      shadowOpacity: 0.1,
+    },
+    eventCardContractor: {
+      borderWidth: 2,
+      borderColor: "#8B5CF6",
+      shadowColor: "#8B5CF6",
+      shadowOpacity: 0.1,
+    },
+    eventCardBusinessOwner: {
+      borderWidth: 2,
+      borderColor: theme.accentCyan,
+      shadowColor: "#10B981",
+      shadowOpacity: 0.1,
+    },
+    eventImageContainer: {
+      width: 100,
+      height: 100,
+      position: "relative",
+    },
+    eventImage: {
+      width: "100%",
+      height: "100%",
+      backgroundColor: "#1E1638",
+    },
+    eventBadge: {
+      position: "absolute",
+      top: 8,
+      left: 8,
+      backgroundColor: "#10B981",
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+    },
+    eventBadgeText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "600",
+    },
+    eventContent: {
+      flex: 1,
+      padding: 12,
+      justifyContent: "space-between",
+    },
+    eventTitle: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: theme.textPrimary,
+      marginBottom: 6,
+    },
+    eventInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 4,
+    },
+    eventInfoText: {
+      fontSize: 13,
+      color: theme.textSecondary,
+      flex: 1,
+    },
+    eventFooter: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 4,
+    },
+    eventPayContainer: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    postedByTag: {
+      backgroundColor: theme.background,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+      marginLeft: 8,
+    },
+    postedByText: {
+      fontSize: 11,
+      fontWeight: "600",
+    },
+    eventPay: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: theme.accentCyan,
+    },
+    bottomSpacing: {
+      height: 28,
+    },
+    guestHeader: {
+      paddingTop: Platform.OS === 'ios' ? 60 : 40,
+      paddingBottom: 30,
+      paddingHorizontal: 20,
+    },
+    guestHeaderTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    guestTitle: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: '#FFFFFF',
+    },
+    signUpButton: {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+    },
+    signUpButtonText: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    guestSubtitle: {
+      fontSize: 16,
+      color: theme.textSecondary,
+    },
+    guestContent: {
+      paddingHorizontal: 20,
+      paddingTop: 30,
+    },
+    guestPrompt: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: theme.textPrimary,
+      textAlign: 'center',
+      marginBottom: 30,
+    },
+    directoryCard: {
+      backgroundColor: theme.surface,
+      borderRadius: 20,
+      padding: 24,
+      marginBottom: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 4,
+      borderWidth: 2,
+      borderColor: theme.border,
+    },
+    businessCard: {
+      borderColor: theme.accentCyan,
+    },
+    hostCard: {
+      borderColor: theme.accentAmber,
+    },
+    eventsCard: {
+      borderColor: theme.accentPink,
+    },
+    directoryIcon: {
+      width: 64,
+      height: 64,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+      alignSelf: 'center',
+    },
+    directoryTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: theme.textPrimary,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    directoryDescription: {
+      fontSize: 16,
+      color: theme.textSecondary,
+      textAlign: 'center',
+      marginBottom: 16,
+      lineHeight: 22,
+    },
+    directoryFeatures: {
+      gap: 6,
+      alignItems: 'center',
+    },
+    directoryFeature: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      lineHeight: 20,
+      textAlign: 'center',
+    },
+    guestCTA: {
+      backgroundColor: theme.surface,
+      borderRadius: 16,
+      padding: 24,
+      marginTop: 20,
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: theme.accentLime,
+    },
+    guestCTATitle: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.textPrimary,
+      marginBottom: 8,
+    },
+    guestCTAText: {
+      fontSize: 16,
+      color: theme.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+      marginBottom: 20,
+    },
+    fullAccessButton: {
+      backgroundColor: theme.accentLime,
+      paddingHorizontal: 32,
+      paddingVertical: 12,
+      borderRadius: 25,
+    },
+    fullAccessButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    w9AlertContainer: {
+      paddingHorizontal: 20,
+      marginTop: -10,
+      marginBottom: 10,
+    },
+    w9Alert: {
+      backgroundColor: '#f8d7da',
+      borderColor: '#f5c6cb',
+      borderWidth: 1,
+      borderRadius: 12,
+      padding: 16,
+    },
+    w9AlertContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    w9AlertText: {
+      flex: 1,
+      marginLeft: 12,
+    },
+    w9AlertTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#721c24',
+      marginBottom: 4,
+    },
+    w9AlertSubtitle: {
+      fontSize: 14,
+      color: '#721c24',
+      marginBottom: 4,
+    },
+    w9AlertEvents: {
+      fontSize: 12,
+      color: '#721c24',
+      fontWeight: '500',
+    },
+  });
+
   // Guest user screen - redirect to public directories
   if (isGuest) {
     return (
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={neonTheme.gradientHeader as unknown as any}
-          style={styles.guestHeader}
+          colors={theme.gradientHeader as unknown as any}
+          style={[styles.guestHeader, { backgroundColor: theme.background }]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
@@ -95,8 +549,8 @@ export default function HomeScreen() {
             style={[styles.directoryCard, styles.businessCard]}
             onPress={() => router.push('/(tabs)/discover')}
           >
-            <View style={[styles.directoryIcon, { backgroundColor: '#0EA5A515' }]}>
-              <Building2 size={32} color={neonTheme.accentCyan} />
+            <View style={[styles.directoryIcon, { backgroundColor: `${theme.accentCyan}15` }]}>
+              <Building2 size={32} color={theme.accentCyan} />
             </View>
             <Text style={styles.directoryTitle}>Business Directory</Text>
             <Text style={styles.directoryDescription}>
@@ -113,8 +567,8 @@ export default function HomeScreen() {
             style={[styles.directoryCard, styles.hostCard]}
             onPress={() => router.push({ pathname: '/(tabs)/discover', params: { filter: 'event_host' } })}
           >
-            <View style={[styles.directoryIcon, { backgroundColor: '#F59E0B15' }]}>
-              <Store size={32} color="#F59E0B" />
+            <View style={[styles.directoryIcon, { backgroundColor: `${theme.accentAmber}15` }]}>
+              <Store size={32} color={theme.accentAmber} />
             </View>
             <Text style={styles.directoryTitle}>Event Host Directory</Text>
             <Text style={styles.directoryDescription}>
@@ -131,8 +585,8 @@ export default function HomeScreen() {
             style={[styles.directoryCard, styles.eventsCard]}
             onPress={() => router.push('/(tabs)/events' as const)}
           >
-            <View style={[styles.directoryIcon, { backgroundColor: '#EC489915' }]}>
-              <Calendar size={32} color="#EC4899" />
+            <View style={[styles.directoryIcon, { backgroundColor: `${theme.accentPink}15` }]}>
+              <Calendar size={32} color={theme.accentPink} />
             </View>
             <Text style={styles.directoryTitle}>Public Events</Text>
             <Text style={styles.directoryDescription}>
@@ -167,8 +621,8 @@ export default function HomeScreen() {
   // Show loading if no user (AuthGuard will handle redirect)
   if (!user) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: neonTheme.background }}>
-        <Text style={{ color: neonTheme.textSecondary }}>Loading...</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background }}>
+        <Text style={{ color: theme.textSecondary }}>Loading...</Text>
       </View>
     );
   }
@@ -184,27 +638,27 @@ export default function HomeScreen() {
 
   // Different stats based on user role
   const stats = userRole === 'business_owner' ? [
-    { label: "Active Events", value: "12", icon: Calendar, color: neonTheme.accentCyan },
-    { label: "Contractors", value: "48", icon: Users, color: neonTheme.accentCyan },
-    { label: "This Month", value: "$8.5K", icon: DollarSign, color: "#F59E0B" },
-    { label: "Growth", value: "+23%", icon: TrendingUp, color: "#EC4899" },
+    { label: "Active Events", value: "12", icon: Calendar, color: theme.accentCyan },
+    { label: "Contractors", value: "48", icon: Users, color: theme.accentCyan },
+    { label: "This Month", value: "$8.5K", icon: DollarSign, color: theme.accentAmber },
+    { label: "Growth", value: "+23%", icon: TrendingUp, color: theme.accentPink },
   ] : userRole === 'contractor' ? [
     { label: "Available Jobs", value: "8", icon: Calendar, color: "#8B5CF6" },
     { label: "Completed", value: "23", icon: UserCheck, color: "#8B5CF6" },
-    { label: "This Month", value: "$2.1K", icon: DollarSign, color: "#F59E0B" },
-    { label: "Rating", value: "4.8★", icon: TrendingUp, color: "#EC4899" },
+    { label: "This Month", value: "$2.1K", icon: DollarSign, color: theme.accentAmber },
+    { label: "Rating", value: "4.8★", icon: TrendingUp, color: theme.accentPink },
   ] : [
-    { label: "Listed Events", value: "15", icon: Store, color: neonTheme.accentCyan },
-    { label: "Vendors", value: "127", icon: Users, color: neonTheme.accentCyan },
-    { label: "This Month", value: "$3.2K", icon: DollarSign, color: "#F59E0B" },
-    { label: "Rating", value: "4.9★", icon: TrendingUp, color: "#EC4899" },
+    { label: "Listed Events", value: "15", icon: Store, color: theme.accentCyan },
+    { label: "Vendors", value: "127", icon: Users, color: theme.accentCyan },
+    { label: "This Month", value: "$3.2K", icon: DollarSign, color: theme.accentAmber },
+    { label: "Rating", value: "4.9★", icon: TrendingUp, color: theme.accentPink },
   ];
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <LinearGradient
-        colors={neonTheme.gradientHeader as unknown as any}
-        style={styles.header}
+        colors={theme.gradientHeader as unknown as any}
+        style={[styles.header, { backgroundColor: theme.background }]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
@@ -219,7 +673,7 @@ export default function HomeScreen() {
                 style={styles.messagesButton}
                 onPress={() => router.push('/messages' as const)}
               >
-                <MessageCircle size={20} color={neonTheme.textPrimary} />
+                <MessageCircle size={20} color={theme.textPrimary} />
                 {currentUser && getUnreadMessagesCount(currentUser.id) > 0 && (
                   <View style={styles.messageBadge}>
                     <Text style={styles.messageBadgeText}>
@@ -232,7 +686,7 @@ export default function HomeScreen() {
                 style={styles.logoutButton}
                 onPress={async () => { try { await authLogout(); } catch {} finally { clearUserStore(); } }}
               >
-                <LogOut size={20} color={neonTheme.textPrimary} />
+                <LogOut size={20} color={theme.textPrimary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -308,10 +762,10 @@ export default function HomeScreen() {
                 testID="qa-find-events"
               >
                 <LinearGradient
-                  colors={neonTheme.gradientHeader as unknown as any}
+                  colors={theme.gradientHeader as unknown as any}
                   style={styles.actionGradient}
                 >
-                  <Calendar size={24} color={neonTheme.textPrimary} />
+                  <Calendar size={24} color={theme.textPrimary} />
                   <Text style={styles.actionText}>Find Events</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -324,7 +778,7 @@ export default function HomeScreen() {
                 testID="qa-hire-contractors"
               >
                 <View style={styles.actionOutline}>
-                  <Users size={24} color={neonTheme.accentCyan} />
+                  <Users size={24} color={theme.accentCyan} />
                   <Text style={styles.actionTextOutline}>Hire Contractors</Text>
                 </View>
               </TouchableOpacity>
@@ -334,7 +788,7 @@ export default function HomeScreen() {
                 testID="qa-owner-checkins"
               >
                 <View style={styles.actionOutline}>
-                  <Users size={24} color={neonTheme.accentCyan} />
+                  <Users size={24} color={theme.accentCyan} />
                   <Text style={styles.actionTextOutline}>Check-ins</Text>
                 </View>
               </TouchableOpacity>
@@ -346,10 +800,10 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/events' as const)}
               >
                 <LinearGradient
-                  colors={neonTheme.gradientHeader as unknown as any}
+                  colors={theme.gradientHeader as unknown as any}
                   style={styles.actionGradient}
                 >
-                  <Calendar size={24} color={neonTheme.textPrimary} />
+                  <Calendar size={24} color={theme.textPrimary} />
                   <Text style={styles.actionText}>Browse Jobs</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -370,10 +824,10 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/create' as const)}
               >
                 <LinearGradient
-                  colors={neonTheme.gradientHeader as unknown as any}
+                  colors={theme.gradientHeader as unknown as any}
                   style={styles.actionGradient}
                 >
-                  <Store size={24} color={neonTheme.textPrimary} />
+                  <Store size={24} color={theme.textPrimary} />
                   <Text style={styles.actionText}>List Event</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -382,7 +836,7 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/events' as const)}
               >
                 <View style={styles.actionOutline}>
-                  <DollarSign size={24} color={neonTheme.accentCyan} />
+                  <DollarSign size={24} color={theme.accentCyan} />
                   <Text style={styles.actionTextOutline}>Manage Vendors</Text>
                 </View>
               </TouchableOpacity>
@@ -474,15 +928,15 @@ export default function HomeScreen() {
                   </Text>
                   <View style={styles.postedByTag}>
                     <Text style={[styles.postedByText, {
-                      color: event.createdBy === 'event_host' ? '#F59E0B' : 
-                             event.createdBy === 'contractor' ? '#8B5CF6' : '#10B981'
+                      color: event.createdBy === 'event_host' ? theme.accentAmber : 
+                             event.createdBy === 'contractor' ? '#8B5CF6' : theme.accentLime
                     }]}>
                       {event.createdBy === 'event_host' ? 'Host' : 
                        event.createdBy === 'contractor' ? 'Contractor' : 'Business'}
                     </Text>
                   </View>
                 </View>
-                <ArrowRight size={16} color={neonTheme.accentCyan} />
+                <ArrowRight size={16} color={theme.accentCyan} />
               </View>
             </View>
             </TouchableOpacity>
@@ -494,545 +948,3 @@ export default function HomeScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: neonTheme.background,
-  },
-  header: {
-    paddingTop: Platform.OS === "ios" ? 20 : 10,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  headerContent: {
-    marginTop: 10,
-  },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  headerActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  messagesButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  messageBadge: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    backgroundColor: "#EF4444",
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: neonTheme.surface,
-  },
-  messageBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  logoutButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  appTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 4,
-  },
-  welcomeText: {
-    fontSize: 14,
-    color: neonTheme.textSecondary,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: neonTheme.textSecondary,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 15,
-    marginTop: -20,
-  },
-  statCard: {
-    width: "47%",
-    backgroundColor: neonTheme.surface,
-    borderRadius: 16,
-    padding: 16,
-    margin: "1.5%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: neonTheme.textPrimary,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 13,
-    color: neonTheme.textSecondary,
-  },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: neonTheme.textPrimary,
-  },
-  seeAll: {
-    fontSize: 14,
-    color: neonTheme.accentCyan,
-    fontWeight: "600",
-  },
-  quickActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  actionGradient: {
-    padding: 20,
-    borderRadius: 16,
-    alignItems: "center",
-    gap: 8,
-  },
-  actionOutline: {
-    padding: 20,
-    borderRadius: 16,
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: neonTheme.surface,
-    borderWidth: 2,
-    borderColor: neonTheme.border,
-  },
-  actionText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  actionTextOutline: {
-    color: neonTheme.accentCyan,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  eventCard: {
-    flexDirection: "row",
-    backgroundColor: neonTheme.surface,
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 2,
-    overflow: "hidden",
-  },
-  eventCardHighlighted: {
-    backgroundColor: "#2A174F",
-    borderWidth: 2,
-    borderColor: neonTheme.accentAmber,
-    shadowColor: neonTheme.accentAmber,
-    shadowOpacity: 0.35,
-  },
-  eventCardHost: {
-    borderWidth: 2,
-    borderColor: neonTheme.accentAmber,
-    shadowColor: neonTheme.accentAmber,
-    shadowOpacity: 0.1,
-  },
-  eventCardContractor: {
-    borderWidth: 2,
-    borderColor: "#8B5CF6",
-    shadowColor: "#8B5CF6",
-    shadowOpacity: 0.1,
-  },
-  eventCardBusinessOwner: {
-    borderWidth: 2,
-    borderColor: neonTheme.accentCyan,
-    shadowColor: "#10B981",
-    shadowOpacity: 0.1,
-  },
-  eventImageContainer: {
-    width: 100,
-    height: 100,
-    position: "relative",
-  },
-  eventImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#1E1638",
-  },
-  eventBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    backgroundColor: "#10B981",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-
-  eventBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "600",
-  },
-
-  eventContent: {
-    flex: 1,
-    padding: 12,
-    justifyContent: "space-between",
-  },
-  eventTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: neonTheme.textPrimary,
-    marginBottom: 6,
-  },
-  eventInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  eventInfoText: {
-    fontSize: 13,
-    color: neonTheme.textSecondary,
-    flex: 1,
-  },
-  eventFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  eventPayContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  postedByTag: {
-    backgroundColor: neonTheme.background,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    marginLeft: 8,
-  },
-  postedByText: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  eventPay: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: neonTheme.accentCyan,
-  },
-  bottomSpacing: {
-    height: 28,
-  },
-  guestHeader: {
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-  },
-  guestHeaderTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  guestTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  signUpButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  signUpButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  guestSubtitle: {
-    fontSize: 16,
-    color: neonTheme.textSecondary,
-  },
-  guestContent: {
-    paddingHorizontal: 20,
-    paddingTop: 30,
-  },
-  guestPrompt: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: neonTheme.textPrimary,
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  directoryCard: {
-    backgroundColor: neonTheme.surface,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 2,
-    borderColor: neonTheme.border,
-  },
-  businessCard: {
-    borderColor: neonTheme.accentCyan,
-  },
-  hostCard: {
-    borderColor: '#F59E0B',
-  },
-  eventsCard: {
-    borderColor: '#EC4899',
-  },
-  directoryIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    alignSelf: 'center',
-  },
-  directoryTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: neonTheme.textPrimary,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  directoryDescription: {
-    fontSize: 16,
-    color: neonTheme.textSecondary,
-    textAlign: 'center',
-    marginBottom: 16,
-    lineHeight: 22,
-  },
-  directoryFeatures: {
-    gap: 6,
-    alignItems: 'center',
-  },
-  directoryFeature: {
-    fontSize: 14,
-    color: neonTheme.textSecondary,
-    lineHeight: 20,
-    textAlign: 'center',
-  },
-  guestCTA: {
-    backgroundColor: neonTheme.surface,
-    borderRadius: 16,
-    padding: 24,
-    marginTop: 20,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#10B981',
-  },
-  guestCTATitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: neonTheme.textPrimary,
-    marginBottom: 8,
-  },
-  guestCTAText: {
-    fontSize: 16,
-    color: neonTheme.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 20,
-  },
-  fullAccessButton: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  fullAccessButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  roleSelectionHeader: {
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-    alignItems: "center",
-  },
-  roleSelectionTitle: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  roleSelectionSubtitle: {
-    fontSize: 16,
-    color: neonTheme.textSecondary,
-    textAlign: "center",
-  },
-  roleSelectionContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 12,
-  },
-  roleSelectionPrompt: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: neonTheme.textPrimary,
-    textAlign: "center",
-    marginBottom: 30,
-  },
-  roleCard: {
-    backgroundColor: neonTheme.surface,
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
-    borderWidth: 2,
-    borderColor: neonTheme.border,
-  },
-  roleCardBusiness: {
-    borderColor: neonTheme.accentCyan,
-  },
-  roleCardContractor: {
-    borderColor: "#8B5CF6",
-  },
-  roleCardHost: {
-    borderColor: "#F59E0B",
-  },
-  roleIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: "#1A0E3A",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-    alignSelf: "center",
-  },
-  roleTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: neonTheme.textPrimary,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  roleDescription: {
-    fontSize: 16,
-    color: neonTheme.textSecondary,
-    textAlign: "center",
-    marginBottom: 16,
-    lineHeight: 22,
-  },
-  roleFeatures: {
-    gap: 6,
-    alignItems: "center",
-  },
-  roleFeature: {
-    fontSize: 14,
-    color: neonTheme.textSecondary,
-    lineHeight: 20,
-    textAlign: "center",
-  },
-  w9AlertContainer: {
-    paddingHorizontal: 20,
-    marginTop: -10,
-    marginBottom: 10,
-  },
-  w9Alert: {
-    backgroundColor: '#f8d7da',
-    borderColor: '#f5c6cb',
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-  },
-  w9AlertContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  w9AlertText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  w9AlertTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#721c24',
-    marginBottom: 4,
-  },
-  w9AlertSubtitle: {
-    fontSize: 14,
-    color: '#721c24',
-    marginBottom: 4,
-  },
-  w9AlertEvents: {
-    fontSize: 12,
-    color: '#721c24',
-    fontWeight: '500',
-  },
-
-});

@@ -41,45 +41,83 @@ export const lightTheme: AppTheme = {
 };
 
 export const darkTheme: AppTheme = {
-  background: "#0B0520",
-  surface: "#130A2E",
-  surfaceStrong: "#1B0F3B",
-  textPrimary: "#F8FAFF",
-  textSecondary: "#B9B7D3",
-  accentCyan: "#21D4FD",
-  accentPink: "#FF3D9A",
-  accentLime: "#71FF6B",
-  accentAmber: "#FFC15A",
-  border: "#2B1E55",
-  gradientHeader: ["#1F0B49", "#0B0520"],
-  gradientCTA: ["#21D4FD", "#FF3D9A"],
-  card: "#1B0F3B",
-  cardBorder: "#2B1E55",
-  success: "#10B981",
-  warning: "#F59E0B",
-  error: "#EF4444",
-  info: "#3B82F6",
+  background: "#1A0B3D",
+  surface: "#2D1B5E",
+  surfaceStrong: "#3D2470",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#C4B5FD",
+  accentCyan: "#00E5FF",
+  accentPink: "#FF4081",
+  accentLime: "#00FF88",
+  accentAmber: "#FFD700",
+  border: "#4C1D95",
+  gradientHeader: ["#2D1B5E", "#1A0B3D"],
+  gradientCTA: ["#00E5FF", "#FF4081"],
+  card: "#2D1B5E",
+  cardBorder: "#4C1D95",
+  success: "#00FF88",
+  warning: "#FFD700",
+  error: "#FF4081",
+  info: "#00E5FF",
 };
 
-export const neonTheme = darkTheme;
+// RevoVend Neon Theme - matches the logo aesthetic
+export const revoVendTheme: AppTheme = {
+  background: "#1A0B3D", // Deep purple from logo background
+  surface: "#2D1B5E", // Slightly lighter purple
+  surfaceStrong: "#3D2470", // Medium purple for elevated surfaces
+  textPrimary: "#FFFFFF", // Pure white for primary text
+  textSecondary: "#C4B5FD", // Light purple for secondary text
+  accentCyan: "#00E5FF", // Bright neon cyan from logo
+  accentPink: "#FF4081", // Bright neon pink/coral from logo
+  accentLime: "#00FF88", // Bright neon green from logo
+  accentAmber: "#FFD700", // Bright gold accent
+  border: "#4C1D95", // Purple border
+  gradientHeader: ["#2D1B5E", "#1A0B3D"], // Purple gradient
+  gradientCTA: ["#00E5FF", "#FF4081"], // Cyan to pink gradient
+  card: "#2D1B5E", // Card background
+  cardBorder: "#4C1D95", // Card border
+  success: "#00FF88", // Neon green for success
+  warning: "#FFD700", // Gold for warnings
+  error: "#FF4081", // Neon pink for errors
+  info: "#00E5FF", // Neon cyan for info
+};
 
-// Comprehensive theme for the app
+export const neonTheme = revoVendTheme;
+
+// Comprehensive theme for the app - RevoVend Edition
 export const theme = {
   colors: {
-    primary: "#007AFF",
-    secondary: "#5856D6",
-    background: "#FFFFFF",
-    card: "#FFFFFF",
-    border: "#E5E5EA",
-    surface: "#F9FAFB",
+    primary: "#00E5FF", // Neon cyan
+    secondary: "#FF4081", // Neon pink
+    background: "#1A0B3D", // Deep purple
+    card: "#2D1B5E", // Purple card
+    border: "#4C1D95", // Purple border
+    surface: "#2D1B5E", // Purple surface
     white: "#FFFFFF",
-    success: "#10B981",
-    warning: "#F59E0B",
-    error: "#EF4444",
-    info: "#3B82F6",
+    success: "#00FF88", // Neon green
+    warning: "#FFD700", // Gold
+    error: "#FF4081", // Neon pink
+    info: "#00E5FF", // Neon cyan
     text: {
-      primary: "#000000",
-      secondary: "#6D6D70",
+      primary: "#FFFFFF", // White text
+      secondary: "#C4B5FD", // Light purple text
+    },
+    // Neon glow colors for special effects
+    neon: {
+      cyan: "#00E5FF",
+      pink: "#FF4081",
+      green: "#00FF88",
+      gold: "#FFD700",
+      purple: "#8B5CF6",
+    },
+    // Glow shadows for neon effects
+    glow: {
+      cyan: "0 0 20px #00E5FF40",
+      pink: "0 0 20px #FF408140",
+      green: "0 0 20px #00FF8840",
+      gold: "0 0 20px #FFD70040",
+      purple: "0 0 20px #8B5CF640",
     },
     gray: {
       50: "#F9FAFB",

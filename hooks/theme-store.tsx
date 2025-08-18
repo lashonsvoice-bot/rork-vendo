@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Appearance, ColorSchemeName, Platform } from 'react-native';
+import { Appearance, ColorSchemeName } from 'react-native';
 import createContextHook from '@nkzw/create-context-hook';
-import { AppTheme, lightTheme, darkTheme } from '@/constants/theme';
+import { AppTheme, lightTheme, darkTheme, revoVendTheme } from '@/constants/theme';
 
-type ThemeMode = 'light' | 'dark' | 'system';
+type ThemeMode = 'light' | 'dark' | 'neon' | 'system';
 
 interface ThemeContextType {
   theme: AppTheme;
@@ -26,11 +26,12 @@ export const [ThemeProvider, useTheme] = createContextHook<ThemeContextType>(() 
     const loadThemePreference = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-        if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+        if (savedTheme && ['light', 'dark', 'neon', 'system'].includes(savedTheme)) {
           setThemeModeState(savedTheme as ThemeMode);
         } else {
-          await AsyncStorage.setItem(THEME_STORAGE_KEY, 'system');
-          setThemeModeState('system');
+          // Default to neon theme for RevoVend
+          await AsyncStorage.setItem(THEME_STORAGE_KEY, 'neon');
+          setThemeModeState('neon');
         }
       } catch (error) {
         console.log('[Theme] Failed to load theme preference:', error);
@@ -50,12 +51,18 @@ export const [ThemeProvider, useTheme] = createContextHook<ThemeContextType>(() 
   }, []);
 
   const isDark = useMemo(() => {
-    if (themeMode === 'dark') return true;
+    if (themeMode === 'dark' || themeMode === 'neon') return true;
     if (themeMode === 'light') return false;
     return systemColorScheme === 'dark';
   }, [themeMode, systemColorScheme]);
 
-  const theme = useMemo<AppTheme>(() => (isDark ? darkTheme : lightTheme), [isDark]);
+  const theme = useMemo<AppTheme>(() => {
+    if (themeMode === 'neon') return revoVendTheme;
+    if (themeMode === 'dark') return darkTheme;
+    if (themeMode === 'light') return lightTheme;
+    // System mode
+    return systemColorScheme === 'dark' ? revoVendTheme : lightTheme;
+  }, [themeMode, systemColorScheme]);
 
   const setThemeMode = useCallback(async (mode: ThemeMode) => {
     try {
@@ -68,10 +75,13 @@ export const [ThemeProvider, useTheme] = createContextHook<ThemeContextType>(() 
   }, []);
 
   const toggleTheme = useCallback(() => {
-    const newMode = isDark ? 'light' : 'dark';
+    const modes: ThemeMode[] = ['neon', 'light', 'dark'];
+    const currentIndex = modes.indexOf(themeMode === 'system' ? (systemColorScheme === 'dark' ? 'neon' : 'light') : themeMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    const newMode = modes[nextIndex];
     console.log('[Theme] Toggling theme. New mode:', newMode);
     setThemeMode(newMode);
-  }, [isDark, setThemeMode]);
+  }, [themeMode, systemColorScheme, setThemeMode]);
 
   return useMemo(() => ({
     theme,

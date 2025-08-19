@@ -57,18 +57,22 @@ export const getBaseUrl = (): string => {
     return fromLegacyEnv;
   }
 
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const defaultCloud = 'https://dev-lm89fhyj7iesktu5ur785.rorktest.dev';
-    console.warn('[tRPC] No EXPO_PUBLIC_RORK_API_BASE_URL configured. Falling back to cloud API:', defaultCloud);
-    return defaultCloud;
-  }
-
   const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
   if (hostUri) {
     const host = hostUri.split(':')[0];
     const url = `http://${host}:3000`;
     console.log('[tRPC] Using Expo hostUri-derived URL:', url);
     return url;
+  }
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const webFallback = isLocal ? 'http://localhost:3000' : '';
+    if (webFallback) {
+      console.warn('[tRPC] No base URL configured. Using local web fallback:', webFallback);
+      return webFallback;
+    }
+    throw new Error('[tRPC] Missing EXPO_PUBLIC_RORK_API_BASE_URL for web. Set it to your backend URL (e.g., http://<LAN-IP>:3000).');
   }
 
   const fallback = 'http://localhost:3000';
@@ -156,9 +160,9 @@ export const createTRPCClient = () => {
               const isDev = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') || baseUrl === '';
               if (isDev) {
                 const hint = baseUrl === '' ? `${webOrigin ?? 'this host'}/api` : baseUrl;
-                throw new Error(`Development server not running: Cannot reach backend at ${hint}. Please start the backend server with 'bun run dev' or check it's on the correct port.`);
+                throw new Error(`Development server not running: Cannot reach backend at ${hint}. Please start the backend server with 'bun run dev' (backend/server.ts) and ensure EXPO_PUBLIC_RORK_API_BASE_URL is set for non-local web.`);
               } else {
-                throw new Error(`Network connectivity error: Cannot reach server at ${baseUrl}. This could be due to:\n1. Backend server not running\n2. CORS configuration issues\n3. Network connectivity problems\n4. Incorrect base URL configuration`);
+                throw new Error(`Network connectivity error: Cannot reach server at ${baseUrl}. This could be due to:\n1. Backend server not running\n2. CORS configuration issues\n3. Network connectivity problems\n4. Incorrect base URL configuration (set EXPO_PUBLIC_RORK_API_BASE_URL)`);
               }
             }
 

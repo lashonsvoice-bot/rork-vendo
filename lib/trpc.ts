@@ -31,10 +31,12 @@ export const getBaseUrl = (): string => {
   const extra = (Constants?.expoConfig?.extra ?? {}) as Record<string, unknown>;
   const fromExtra = typeof extra.EXPO_PUBLIC_RORK_API_BASE_URL === "string" ? (extra.EXPO_PUBLIC_RORK_API_BASE_URL as string) : undefined;
   const fromEnv = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+  const fromLegacyEnv = process.env.API_BASE_URL;
 
   console.log('[tRPC] Environment detection:', {
     fromExtra,
     fromEnv,
+    fromLegacyEnv,
     platform: Platform.OS,
     hostUri: (Constants as any)?.expoConfig?.hostUri,
     windowOrigin: Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : 'N/A',
@@ -42,7 +44,6 @@ export const getBaseUrl = (): string => {
     __DEV__: __DEV__
   });
 
-  // 1) Explicit config wins in ALL environments
   if (fromExtra && fromExtra.length > 0) {
     console.log('[tRPC] Using base URL from extra:', fromExtra);
     return fromExtra;
@@ -51,14 +52,17 @@ export const getBaseUrl = (): string => {
     console.log('[tRPC] Using base URL from env:', fromEnv);
     return fromEnv;
   }
-
-  // 2) Web: use relative URL to avoid CORS and preview host issues
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    console.log('[tRPC] Using relative base URL for web');
-    return '';
+  if (fromLegacyEnv && fromLegacyEnv.length > 0) {
+    console.log('[tRPC] Using base URL from legacy env API_BASE_URL:', fromLegacyEnv);
+    return fromLegacyEnv;
   }
 
-  // 3) Native dev: try to construct LAN URL from Expo hostUri
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const defaultCloud = 'https://dev-lm89fhyj7iesktu5ur785.rorktest.dev';
+    console.warn('[tRPC] No EXPO_PUBLIC_RORK_API_BASE_URL configured. Falling back to cloud API:', defaultCloud);
+    return defaultCloud;
+  }
+
   const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
   if (hostUri) {
     const host = hostUri.split(':')[0];
@@ -67,7 +71,6 @@ export const getBaseUrl = (): string => {
     return url;
   }
 
-  // 4) Fallback to localhost
   const fallback = 'http://localhost:3000';
   console.log('[tRPC] Using final fallback URL:', fallback);
   return fallback;

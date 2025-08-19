@@ -7,7 +7,8 @@ import {
   createStripeSubscription, 
   getStripePriceId,
   createSetupIntent,
-  getStripeSubscription
+  getStripeSubscription,
+  stripe
 } from "@/backend/lib/stripe";
 
 export const createStripeCheckoutProcedure = protectedProcedure
@@ -268,4 +269,93 @@ export const createStripeProductsProcedure = protectedProcedure
       console.error("Error creating Stripe products:", error);
       throw new Error(`Failed to create Stripe products: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  });
+
+export const linkStripeByEmailProcedure = protectedProcedure
+  .input(z.object({ email: z.string().email() }))
+  .mutation(async ({ ctx, input }) => {
+    if (!ctx.user) {
+      throw new Error("User not authenticated");
+    }
+    if (ctx.user.role !== "business_owner") {
+      throw new Error("Only business owners can link subscriptions");
+    }
+
+    console.log("Linking Stripe subscription by email for user:", ctx.user.id, input.email);
+
+    const customers = await stripe.customers.list({ email: input.email, limit: 10 });
+    if (!customers.data.length) {
+      throw new Error("No Stripe customer found for this email");
+    }
+
+    let linked: { subscriptionId: string; customerId: string } | null = null;
+
+    for (const cust of customers.data) {
+      const subs = await stripe.subscriptions.list({ customer: cust.id, status: "all", limit: 10 });
+      const activeOrTrial = subs.data.find(s => s.status === "active" || s.status === "trialing");
+      if (activeOrTrial) {
+        linked = { subscriptionId: activeOrTrial.id, customerId: cust.id };
+        break;
+      }
+    }
+
+    if (!linked) {
+      throw new Error("No active or trialing subscription found for this email");
+    }
+
+    const stripeSubscription = await getStripeSubscription(linked.subscriptionId);
+    const item = stripeSubscription.items.data[0];
+    const price = item?.price;
+    if (!price) {
+      throw new Error("Stripe subscription has no price item");
+    }
+
+    const tierMeta = (price.metadata?.tier ?? "").toString();
+    const cycleMeta = (price.metadata?.cycle ?? (price.recurring?.interval ?? "")).toString();
+
+    const tier = tierMeta === "starter" || tierMeta === "professional" || tierMeta === "enterprise" ? tierMeta : "starter";
+    const billingCycle = cycleMeta === "yearly" || cycleMeta === "year" ? "yearly" as const : "monthly" as const;
+
+    const limits = subscriptionRepo.getSubscriptionLimits(tier as any);
+    const now = new Date();
+
+    const existing = await subscriptionRepo.findByUserId(ctx.user.id);
+    const updated = existing
+      ? await subscriptionRepo.updateSubscription(ctx.user.id, {
+          tier: tier as any,
+          status: stripeSubscription.status === "active" ? "active" : 
+                  stripeSubscription.status === "trialing" ? "trialing" :
+                  stripeSubscription.status === "past_due" ? "past_due" : "canceled",
+          billingCycle,
+          currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000).toISOString(),
+          currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000).toISOString(),
+          trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000).toISOString() : undefined,
+          eventsLimit: limits.eventsLimit,
+          pricePerMonth: billingCycle === "yearly" ? Math.floor(limits.pricePerMonth * 0.8) : limits.pricePerMonth,
+          stripeCustomerId: (stripeSubscription.customer as any)?.id ?? undefined,
+          stripeSubscriptionId: stripeSubscription.id,
+          stripePriceId: price.id,
+        })
+      : await subscriptionRepo.createSubscription({
+          id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          userId: ctx.user.id,
+          tier: tier as any,
+          status: stripeSubscription.status === "active" ? "active" : 
+                  stripeSubscription.status === "trialing" ? "trialing" :
+                  stripeSubscription.status === "past_due" ? "past_due" : "canceled",
+          billingCycle,
+          currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000).toISOString(),
+          currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000).toISOString(),
+          trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000).toISOString() : undefined,
+          eventsUsed: 0,
+          eventsLimit: limits.eventsLimit,
+          pricePerMonth: billingCycle === "yearly" ? Math.floor(limits.pricePerMonth * 0.8) : limits.pricePerMonth,
+          stripeCustomerId: (stripeSubscription.customer as any)?.id ?? undefined,
+          stripeSubscriptionId: stripeSubscription.id,
+          stripePriceId: price.id,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+    return { subscription: updated, stripeStatus: stripeSubscription.status };
   });

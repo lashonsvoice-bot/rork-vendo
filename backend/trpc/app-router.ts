@@ -30,6 +30,7 @@ import {
   getStripeSubscriptionStatusProcedure,
   createStripeProductsProcedure,
   linkExistingStripeSubscriptionProcedure,
+  linkStripeByEmailProcedure,
 } from "./routes/subscription/stripe/route";
 import walletRoutes from "./routes/wallet/router";
 import { 
@@ -194,6 +195,7 @@ export const appRouter = createTRPCRouter({
       getStatus: getStripeSubscriptionStatusProcedure,
       createProducts: createStripeProductsProcedure,
       linkExisting: linkExistingStripeSubscriptionProcedure,
+      linkByEmail: linkStripeByEmailProcedure,
     }),
   }),
   maps: createTRPCRouter({

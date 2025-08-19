@@ -6,7 +6,6 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Log initialization
 console.log('[tRPC] Initializing tRPC client...');
 console.log('[tRPC] Constants available:', !!Constants);
 console.log('[tRPC] Platform:', Platform.OS);
@@ -27,13 +26,27 @@ export const handleTRPCError = (error: unknown): string => {
   return 'An unexpected error occurred';
 };
 
+const readWebLocalOverride = (): string | undefined => {
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const v = window.localStorage.getItem('rork.apiBaseUrl') ?? undefined;
+      if (v && v.length > 0) return v;
+    }
+  } catch {}
+  return undefined;
+};
+
 export const getBaseUrl = (): string => {
   const extra = (Constants?.expoConfig?.extra ?? {}) as Record<string, unknown>;
+  const fromLocalOverride = readWebLocalOverride();
+  const fromGlobal = (globalThis as unknown as { RORK_API_BASE_URL?: string })?.RORK_API_BASE_URL;
   const fromExtra = typeof extra.EXPO_PUBLIC_RORK_API_BASE_URL === "string" ? (extra.EXPO_PUBLIC_RORK_API_BASE_URL as string) : undefined;
   const fromEnv = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
   const fromLegacyEnv = process.env.API_BASE_URL;
 
   console.log('[tRPC] Environment detection:', {
+    fromLocalOverride,
+    fromGlobal,
     fromExtra,
     fromEnv,
     fromLegacyEnv,
@@ -44,6 +57,14 @@ export const getBaseUrl = (): string => {
     __DEV__: __DEV__
   });
 
+  if (fromLocalOverride && fromLocalOverride.length > 0) {
+    console.log('[tRPC] Using base URL from web localStorage override:', fromLocalOverride);
+    return fromLocalOverride;
+  }
+  if (fromGlobal && fromGlobal.length > 0) {
+    console.log('[tRPC] Using base URL from global override:', fromGlobal);
+    return fromGlobal;
+  }
   if (fromExtra && fromExtra.length > 0) {
     console.log('[tRPC] Using base URL from extra:', fromExtra);
     return fromExtra;
@@ -72,7 +93,7 @@ export const getBaseUrl = (): string => {
       console.warn('[tRPC] No base URL configured. Using local web fallback:', webFallback);
       return webFallback;
     }
-    throw new Error('[tRPC] Missing EXPO_PUBLIC_RORK_API_BASE_URL for web. Set it to your backend URL (e.g., http://<LAN-IP>:3000).');
+    throw new Error('[tRPC] Missing EXPO_PUBLIC_RORK_API_BASE_URL for web. Set it to your backend URL (e.g., http://<LAN-IP>:3000) or set localStorage key rork.apiBaseUrl.');
   }
 
   const fallback = 'http://localhost:3000';
@@ -147,16 +168,13 @@ export const createTRPCClient = () => {
 
             const isTypeError = error instanceof TypeError && (error.message.includes('Failed to fetch') || error.name === 'TypeError');
 
-            const urlStr = String(url);
-            
-
             if (isTypeError) {
               const isDev = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') || baseUrl === '';
               if (isDev) {
                 const hint = baseUrl === '' ? `${webOrigin ?? 'this host'}/api` : baseUrl;
                 throw new Error(`Development server not running: Cannot reach backend at ${hint}. Please start the backend server with 'bun run dev' (backend/server.ts) and ensure EXPO_PUBLIC_RORK_API_BASE_URL is set for non-local web.`);
               } else {
-                throw new Error(`Network connectivity error: Cannot reach server at ${baseUrl}. This could be due to:\n1. Backend server not running\n2. CORS configuration issues\n3. Network connectivity problems\n4. Incorrect base URL configuration (set EXPO_PUBLIC_RORK_API_BASE_URL)`);
+                throw new Error(`Network connectivity error: Cannot reach server at ${baseUrl}. This could be due to:\n1. Backend server not running\n2. CORS configuration issues\n3. Network connectivity problems\n4. Incorrect base URL configuration (set EXPO_PUBLIC_RORK_API_BASE_URL or web localStorage key rork.apiBaseUrl)`);
               }
             }
 
@@ -168,26 +186,18 @@ export const createTRPCClient = () => {
   });
 };
 
-// Create a function to test the connection
 export const testTRPCConnection = async (): Promise<boolean> => {
   try {
     const baseUrl = getBaseUrl();
     const testUrl = `${baseUrl}/api`;
     console.log('[tRPC] Testing connection to:', testUrl);
 
-    const tryUrl = async (u: string) => {
-      const res = await fetch(u, { method: 'GET', credentials: Platform.OS === 'web' ? 'same-origin' : 'omit' });
-      if (!res.ok) return false;
-      const contentType = res.headers.get('content-type') ?? '';
-      if (!contentType.includes('application/json')) return false;
-      await res.json();
-      return true;
-    };
-
-    const primaryOk = await tryUrl(testUrl);
-    if (primaryOk) return true;
-
-    return false;
+    const res = await fetch(testUrl, { method: 'GET', credentials: Platform.OS === 'web' ? 'same-origin' : 'omit' });
+    if (!res.ok) return false;
+    const contentType = res.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) return false;
+    await res.json();
+    return true;
   } catch (error) {
     console.error('[tRPC] Connection test failed:', error);
     return false;

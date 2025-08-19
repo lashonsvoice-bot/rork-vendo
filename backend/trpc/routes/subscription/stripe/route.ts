@@ -145,10 +145,7 @@ export const getStripeSubscriptionStatusProcedure = protectedProcedure
     }
 
     try {
-      // Get latest status from Stripe
       const stripeSubscription = await getStripeSubscription(subscription.stripeSubscriptionId);
-      
-      // Update local subscription with latest Stripe data
       const updatedSubscription = await subscriptionRepo.updateSubscription(ctx.user.id, {
         status: stripeSubscription.status === "active" ? "active" : 
                stripeSubscription.status === "trialing" ? "trialing" :
@@ -175,6 +172,78 @@ export const getStripeSubscriptionStatusProcedure = protectedProcedure
       console.error("Error fetching Stripe subscription:", error);
       return { hasStripeSubscription: false, subscription, error: "Failed to fetch Stripe subscription" };
     }
+  });
+
+export const linkExistingStripeSubscriptionProcedure = protectedProcedure
+  .input(z.object({
+    stripeSubscriptionId: z.string().min(1),
+  }))
+  .mutation(async ({ ctx, input }) => {
+    if (!ctx.user) {
+      throw new Error("User not authenticated");
+    }
+    if (ctx.user.role !== "business_owner") {
+      throw new Error("Only business owners can link subscriptions");
+    }
+
+    console.log("Linking existing Stripe subscription for user:", ctx.user.id, input.stripeSubscriptionId);
+
+    const stripeSubscription = await getStripeSubscription(input.stripeSubscriptionId);
+
+    const item = stripeSubscription.items.data[0];
+    const price = item?.price;
+    if (!price) {
+      throw new Error("Stripe subscription has no price item");
+    }
+
+    const tierMeta = (price.metadata?.tier ?? "").toString();
+    const cycleMeta = (price.metadata?.cycle ?? (price.recurring?.interval ?? "")).toString();
+
+    const tier = tierMeta === "starter" || tierMeta === "professional" || tierMeta === "enterprise" ? tierMeta : "starter";
+    const billingCycle = cycleMeta === "yearly" || cycleMeta === "year" ? "yearly" as const : "monthly" as const;
+
+    const limits = subscriptionRepo.getSubscriptionLimits(tier as any);
+    const now = new Date();
+
+    const existing = await subscriptionRepo.findByUserId(ctx.user.id);
+    const updated = existing
+      ? await subscriptionRepo.updateSubscription(ctx.user.id, {
+          tier: tier as any,
+          status: stripeSubscription.status === "active" ? "active" : 
+                  stripeSubscription.status === "trialing" ? "trialing" :
+                  stripeSubscription.status === "past_due" ? "past_due" : "canceled",
+          billingCycle,
+          currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000).toISOString(),
+          currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000).toISOString(),
+          trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000).toISOString() : undefined,
+          eventsLimit: limits.eventsLimit,
+          pricePerMonth: billingCycle === "yearly" ? Math.floor(limits.pricePerMonth * 0.8) : limits.pricePerMonth,
+          stripeCustomerId: (stripeSubscription.customer as any)?.id ?? undefined,
+          stripeSubscriptionId: stripeSubscription.id,
+          stripePriceId: price.id,
+        })
+      : await subscriptionRepo.createSubscription({
+          id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          userId: ctx.user.id,
+          tier: tier as any,
+          status: stripeSubscription.status === "active" ? "active" : 
+                  stripeSubscription.status === "trialing" ? "trialing" :
+                  stripeSubscription.status === "past_due" ? "past_due" : "canceled",
+          billingCycle,
+          currentPeriodStart: new Date((stripeSubscription as any).current_period_start * 1000).toISOString(),
+          currentPeriodEnd: new Date((stripeSubscription as any).current_period_end * 1000).toISOString(),
+          trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000).toISOString() : undefined,
+          eventsUsed: 0,
+          eventsLimit: limits.eventsLimit,
+          pricePerMonth: billingCycle === "yearly" ? Math.floor(limits.pricePerMonth * 0.8) : limits.pricePerMonth,
+          stripeCustomerId: (stripeSubscription.customer as any)?.id ?? undefined,
+          stripeSubscriptionId: stripeSubscription.id,
+          stripePriceId: price.id,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+
+    return { subscription: updated, stripeStatus: stripeSubscription.status };
   });
 
 // Admin procedure to create Stripe products (run once during setup)

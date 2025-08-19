@@ -28,7 +28,8 @@ import {
   createStripeCheckoutProcedure, 
   createSetupIntentProcedure, 
   getStripeSubscriptionStatusProcedure,
-  createStripeProductsProcedure
+  createStripeProductsProcedure,
+  linkExistingStripeSubscriptionProcedure,
 } from "./routes/subscription/stripe/route";
 import walletRoutes from "./routes/wallet/router";
 import { 
@@ -192,6 +193,7 @@ export const appRouter = createTRPCRouter({
       createSetupIntent: createSetupIntentProcedure,
       getStatus: getStripeSubscriptionStatusProcedure,
       createProducts: createStripeProductsProcedure,
+      linkExisting: linkExistingStripeSubscriptionProcedure,
     }),
   }),
   maps: createTRPCRouter({

@@ -77,11 +77,12 @@ export const getBaseUrl = (): string => {
 export const createTRPCClient = () => {
   const baseUrl = getBaseUrl();
   const sameOrigin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin === baseUrl : false;
+  const webOrigin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined;
 
   return trpc.createClient({
     links: [
       httpLink({
-        url: `${baseUrl}/api/trpc`,
+        url: Platform.OS === 'web' ? '/api/trpc' : `${baseUrl}/api/trpc`,
         transformer: superjson,
         fetch: async (url, options) => {
           const headers: HeadersInit = {
@@ -102,16 +103,14 @@ export const createTRPCClient = () => {
 
           console.log('[tRPC] Making request to:', url);
 
-          try {
-            const response = await fetch(url, {
+          const doFetch = async (targetUrl: string) => {
+            const resp = await fetch(targetUrl as unknown as string, {
               ...options,
               headers,
               credentials: Platform.OS === 'web' ? (sameOrigin ? 'same-origin' : 'omit') : 'omit',
             });
-
-            console.log('[tRPC] Response status:', response.status, response.statusText);
-
-            if (!response.ok && response.status === 401) {
+            console.log('[tRPC] Response status:', resp.status, resp.statusText, 'for', targetUrl);
+            if (!resp.ok && resp.status === 401) {
               console.log('[tRPC] Unauthorized request, clearing session');
               try {
                 await AsyncStorage.removeItem('auth.sessionUser');
@@ -119,8 +118,11 @@ export const createTRPCClient = () => {
                 console.warn('[tRPC] Failed to clear session:', e);
               }
             }
+            return resp;
+          };
 
-            return response;
+          try {
+            return await doFetch(url as unknown as string);
           } catch (error) {
             console.error('[tRPC] Network error:', error);
             console.error('[tRPC] Attempted URL:', url);
@@ -130,7 +132,20 @@ export const createTRPCClient = () => {
             console.error('[tRPC] Request headers:', headers);
             console.error('[tRPC] Request options:', options);
 
-            if (error instanceof TypeError && (error.message.includes('Failed to fetch') || error.name === 'TypeError')) {
+            const isTypeError = error instanceof TypeError && (error.message.includes('Failed to fetch') || error.name === 'TypeError');
+
+            const urlStr = String(url);
+            if (Platform.OS === 'web' && webOrigin && !urlStr.startsWith(webOrigin)) {
+              const fallbackUrl = urlStr.replace(baseUrl, webOrigin);
+              console.warn('[tRPC] Retrying with same-origin base URL:', fallbackUrl);
+              try {
+                return await doFetch(fallbackUrl);
+              } catch (retryError) {
+                console.error('[tRPC] Retry with same-origin failed:', retryError);
+              }
+            }
+
+            if (isTypeError) {
               const isDev = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
               if (isDev) {
                 throw new Error(`Development server not running: Cannot reach backend at ${baseUrl}. Please start the backend server with 'bun run dev' or check it's on the correct port.`);
@@ -151,26 +166,28 @@ export const createTRPCClient = () => {
 export const testTRPCConnection = async (): Promise<boolean> => {
   try {
     const baseUrl = getBaseUrl();
-    console.log('[tRPC] Testing connection to:', `${baseUrl}/api`);
+    const testUrl = Platform.OS === 'web' ? '/api' : `${baseUrl}/api`;
+    console.log('[tRPC] Testing connection to:', testUrl);
 
-    const response = await fetch(`${baseUrl}/api`, {
-      method: 'GET',
-      credentials: Platform.OS === 'web' ? 'same-origin' : 'omit',
-    });
+    const tryUrl = async (u: string) => {
+      const res = await fetch(u, { method: 'GET', credentials: Platform.OS === 'web' ? 'same-origin' : 'omit' });
+      if (!res.ok) return false;
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) return false;
+      await res.json();
+      return true;
+    };
 
-    console.log('[tRPC] Test response status:', response.status);
+    const primaryOk = await tryUrl(testUrl);
+    if (primaryOk) return true;
 
-    if (!response.ok) return false;
-
-    const contentType = response.headers.get('content-type') ?? '';
-    if (!contentType.includes('application/json')) {
-      console.warn('[tRPC] Test endpoint did not return JSON. content-type:', contentType);
-      return false;
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.origin !== baseUrl) {
+      const alt = `${window.location.origin}/api`;
+      console.warn('[tRPC] Primary test failed, trying same-origin:', alt);
+      return await tryUrl(alt);
     }
 
-    const data = await response.json();
-    console.log('[tRPC] Test response data:', data);
-    return true;
+    return false;
   } catch (error) {
     console.error('[tRPC] Connection test failed:', error);
     return false;

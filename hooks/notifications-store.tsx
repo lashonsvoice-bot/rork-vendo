@@ -133,7 +133,7 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
         return;
       }
 
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+      const projectId = (Constants as unknown as { expoConfig?: any; easConfig?: any }).expoConfig?.extra?.eas?.projectId ?? (Constants as unknown as { expoConfig?: any; easConfig?: any }).easConfig?.projectId;
       if (!projectId) {
         console.log('Project ID not found');
         return;
@@ -171,14 +171,14 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
       eventUpdates: false,
       proposalAlerts: false,
       enabled: false,
-    };
+    } as const;
     await saveSettings(newSettings);
     setPushToken(null);
     await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
   }, []);
 
   const updateSetting = useCallback(async (key: keyof Omit<NotificationSettings, 'enabled'>, value: boolean) => {
-    const newSettings = { ...settings, [key]: value };
+    const newSettings = { ...settings, [key]: value } as NotificationSettings;
     await saveSettings(newSettings);
   }, [settings]);
 
@@ -204,9 +204,27 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
     }
   }, [settings.enabled]);
 
-  const addNotification = useCallback(async (notification: Omit<PushNotification, 'id' | 'createdAt' | 'read'>) => {
-    if (!authUser) return;
+  const scheduleLocalNotificationAt = useCallback(async (date: Date, title: string, body: string, data?: any) => {
+    if (!settings.enabled) return;
 
+    if (Platform.OS === 'web') {
+      console.log('Scheduled local notification (web):', { date: date.toISOString(), title, body, data });
+      return;
+    }
+
+    try {
+      const delayMs = Math.max(0, date.getTime() - Date.now());
+      const seconds = Math.ceil(delayMs / 1000);
+      await Notifications.scheduleNotificationAsync({
+        content: { title, body, data },
+        trigger: { seconds, channelId: 'default' },
+      });
+    } catch (error) {
+      console.error('Error scheduling local notification:', error);
+    }
+  }, [settings.enabled]);
+
+  const addNotification = useCallback(async (notification: Omit<PushNotification, 'id' | 'createdAt' | 'read'>) => {
     const newNotification: PushNotification = {
       ...notification,
       id: Date.now().toString(),
@@ -227,7 +245,29 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
     if (shouldNotify) {
       await sendLocalNotification(notification.title, notification.body, notification.data);
     }
-  }, [authUser, notifications, settings, sendLocalNotification]);
+  }, [notifications, settings.jobAlerts, settings.messageAlerts, settings.eventUpdates, settings.proposalAlerts, sendLocalNotification]);
+
+  const scheduleEventReminder = useCallback(async (eventTitle: string, eventDateISO: string, minutesBefore: number, userId: string, extra?: any) => {
+    const eventTime = new Date(eventDateISO).getTime();
+    const triggerTime = new Date(eventTime - minutesBefore * 60 * 1000);
+    const now = Date.now();
+    if (triggerTime.getTime() <= now) {
+      return;
+    }
+    await scheduleLocalNotificationAt(
+      triggerTime,
+      'Event Reminder',
+      `${eventTitle} starts in ${minutesBefore} min`,
+      { kind: 'event_reminder', eventTitle, eventDateISO, userId, ...extra }
+    );
+    await addNotification({
+      title: 'Event Reminder Scheduled',
+      body: `${eventTitle} reminder set for ${minutesBefore} minutes before start`,
+      userId,
+      type: 'event_update',
+      data: { eventTitle, eventDateISO, minutesBefore, ...extra },
+    });
+  }, [scheduleLocalNotificationAt, addNotification]);
 
   const markAsRead = useCallback(async (notificationId: string) => {
     const updatedNotifications = notifications.map(n => 
@@ -309,6 +349,7 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
     disableNotifications,
     updateSetting,
     addNotification,
+    scheduleEventReminder,
     markAsRead,
     markAllAsRead,
     clearNotifications,
@@ -327,6 +368,7 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
     disableNotifications,
     updateSetting,
     addNotification,
+    scheduleEventReminder,
     markAsRead,
     markAllAsRead,
     clearNotifications,

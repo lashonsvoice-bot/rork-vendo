@@ -1,6 +1,7 @@
 import createContextHook from "@nkzw/create-context-hook";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNotifications } from "@/hooks/notifications-store";
 
 export interface Message {
   id: string;
@@ -78,6 +79,7 @@ export const [CommunicationProvider, useCommunication] = createContextHook(() =>
   const [proposals, setProposals] = useState<BusinessProposal[]>([]);
   const [pendingEmailNotifications, setPendingEmailNotifications] = useState<PendingEmailNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { addNotification } = useNotifications();
 
   useEffect(() => {
     loadData();
@@ -183,7 +185,7 @@ export const [CommunicationProvider, useCommunication] = createContextHook(() =>
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
       status: 'pending',
-      isRecipientRegistered: !messageData.toUserEmail, // If email is provided, recipient is not registered
+      isRecipientRegistered: !messageData.toUserEmail,
       emailNotificationSent: false,
     };
 
@@ -191,7 +193,20 @@ export const [CommunicationProvider, useCommunication] = createContextHook(() =>
     setMessages(updatedMessages);
     saveMessages(updatedMessages);
 
-    // Send email notification if recipient is not registered
+    try {
+      const title = newMessage.type === 'proposal' ? 'New Proposal' : 'New Message';
+      const body = `${newMessage.fromUserName}: ${newMessage.subject}`;
+      addNotification({
+        title,
+        body,
+        userId: newMessage.toUserId,
+        type: 'message',
+        data: { messageId: newMessage.id, eventId: newMessage.eventId, eventTitle: newMessage.eventTitle },
+      });
+    } catch (e) {
+      // no-op
+    }
+
     if (messageData.toUserEmail && !newMessage.isRecipientRegistered) {
       const emailContent = `
 Hello ${messageData.toUserName},
@@ -217,7 +232,6 @@ The Event Management Team
         'message',
         newMessage.id
       ).then(() => {
-        // Update message to mark email as sent
         const updatedMessagesWithEmail = updatedMessages.map(msg =>
           msg.id === newMessage.id ? { ...msg, emailNotificationSent: true } : msg
         );
@@ -227,7 +241,7 @@ The Event Management Team
     }
 
     return newMessage;
-  }, [messages, sendEmailNotification]);
+  }, [messages, sendEmailNotification, addNotification]);
 
   const respondToMessage = useCallback((messageId: string, status: 'accepted' | 'declined' | 'read') => {
     const updatedMessages = messages.map(message =>
@@ -314,8 +328,21 @@ The Event Management Team
     };
 
     sendMessage(message);
+
+    try {
+      addNotification({
+        title: 'New Proposal',
+        body: `${proposalData.businessName} proposed for ${proposalData.eventTitle}`,
+        userId: proposalData.eventHostId,
+        type: 'message',
+        data: { proposalId: newProposal.id, eventId: proposalData.eventId },
+      });
+    } catch (e) {
+      // no-op
+    }
+
     return newProposal;
-  }, [proposals, sendMessage, sendEmailNotification]);
+  }, [proposals, sendMessage, sendEmailNotification, addNotification]);
 
   const respondToProposal = useCallback((proposalId: string, status: 'accepted' | 'declined') => {
     const proposal = proposals.find(p => p.id === proposalId);
@@ -347,7 +374,19 @@ The Event Management Team
     };
 
     sendMessage(responseMessage);
-  }, [proposals, sendMessage]);
+
+    try {
+      addNotification({
+        title: 'Proposal Response',
+        body: `${proposal.eventTitle}: ${status === 'accepted' ? 'Accepted' : 'Declined'}`,
+        userId: proposal.businessOwnerId,
+        type: 'message',
+        data: { proposalId: proposalId, status },
+      });
+    } catch (e) {
+      // no-op
+    }
+  }, [proposals, sendMessage, addNotification]);
 
   const sendCoordinationMessage = useCallback((
     fromUserId: string,

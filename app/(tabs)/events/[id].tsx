@@ -26,12 +26,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEvents } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
 import { useCommunication } from "@/hooks/communication-store";
+import { useNotifications } from "@/hooks/notifications-store";
 
 export default function EventDetailsScreen() {
   const { id } = useLocalSearchParams();
   const { events, updateEvent, addEvent } = useEvents();
   const { userRole, currentUser, businessOwners } = useUser();
   const { sendCoordinationMessage } = useCommunication();
+  const { settings, enableNotifications, scheduleEventReminder } = useNotifications();
   const event = events.find((e) => e.id === id);
   const isBusinessOwnerOwn = userRole === 'business_owner' && event?.createdBy === 'business_owner';
   const isEventHostOwn = userRole === 'event_host' && event?.createdBy === 'event_host';
@@ -69,6 +71,34 @@ export default function EventDetailsScreen() {
 
   const canOfferToHost = userRole === 'event_host' && event.createdBy === 'business_owner' && (event.contractorsNeeded ?? 0) > 0;
   const existingHostInterest = event.hostInterest;
+
+  const buildEventISO = () => {
+    try {
+      const dateStr = String(event.date);
+      const timeStr = String(event.time ?? '09:00');
+      const iso = new Date(`${dateStr}T${timeStr}`);
+      return iso.toISOString();
+    } catch (e) {
+      return new Date(event.date).toISOString();
+    }
+  };
+
+  const onEnableNotifications = async () => {
+    try {
+      await enableNotifications();
+    } catch (e) {
+    }
+  };
+
+  const onScheduleReminder = async (mins: number) => {
+    try {
+      const iso = buildEventISO();
+      const title = event.title;
+      const uid = currentUser?.id || 'unknown';
+      await scheduleEventReminder(title, iso, mins, uid, { eventId: event.id });
+    } catch (e) {
+    }
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -145,6 +175,28 @@ export default function EventDetailsScreen() {
             </View>
           </View>
         )}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Event Reminders</Text>
+          <View style={styles.reminderCard}>
+            {!settings.enabled ? (
+              <TouchableOpacity style={styles.enableNotifButton} onPress={onEnableNotifications} testID="enable-notifications-btn">
+                <LinearGradient colors={["#10B981", "#059669"]} style={styles.buttonGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                  <Text style={styles.buttonText}>Enable Notifications</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.reminderActions}>
+                <TouchableOpacity style={styles.reminderBtn} onPress={() => onScheduleReminder(60 * 24)} testID="remind-24h">
+                  <Text style={styles.reminderBtnText}>24h Before</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.reminderBtn} onPress={() => onScheduleReminder(60)} testID="remind-1h">
+                  <Text style={styles.reminderBtnText}>1h Before</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Event Details</Text>
@@ -697,6 +749,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#1E40AF",
     lineHeight: 18,
+  },
+  reminderCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  reminderActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  reminderBtn: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  reminderBtnText: {
+    color: "#111827",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  enableNotifButton: {
+    flex: 1,
   },
   tableOptionsHeader: {
     flexDirection: "row",

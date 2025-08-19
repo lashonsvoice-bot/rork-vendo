@@ -981,7 +981,7 @@ export default function CreateEventScreen() {
               >
                 <LinearGradient colors={["#F59E0B", "#FCD34D"]} style={styles.submitGradient}>
                   <FileText size={20} color="#111827" />
-                  <Text style={[styles.submitText, { color: '#111827' }]}>Save as Draft</Text>
+                  <Text style={[styles.submitText, { color: '#111827' }]}>Save Proposal as Draft</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>

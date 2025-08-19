@@ -52,11 +52,17 @@ export const getBaseUrl = (): string => {
     return fromEnv;
   }
 
-  // 2) Web: use the current origin (works on rorktest.dev previews and localhost)
+  // 2) Web: only use same-origin for known deployed hosts; otherwise default to localhost backend
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     const origin = window.location.origin;
-    console.log('[tRPC] Using web origin:', origin);
-    return origin;
+    const isDeployed = /rorktest\.dev|vercel\.app|rork\.com/.test(origin);
+    if (isDeployed) {
+      console.log('[tRPC] Using deployed web origin:', origin);
+      return origin;
+    }
+    const localhost = 'http://localhost:3000';
+    console.log('[tRPC] Using localhost backend for web dev:', localhost);
+    return localhost;
   }
 
   // 3) Native dev: try to construct LAN URL from Expo hostUri
@@ -82,7 +88,7 @@ export const createTRPCClient = () => {
   return trpc.createClient({
     links: [
       httpLink({
-        url: Platform.OS === 'web' ? '/api/trpc' : `${baseUrl}/api/trpc`,
+        url: `${baseUrl}/api/trpc`,
         transformer: superjson,
         fetch: async (url, options) => {
           const headers: HeadersInit = {
@@ -166,7 +172,7 @@ export const createTRPCClient = () => {
 export const testTRPCConnection = async (): Promise<boolean> => {
   try {
     const baseUrl = getBaseUrl();
-    const testUrl = Platform.OS === 'web' ? '/api' : `${baseUrl}/api`;
+    const testUrl = `${baseUrl}/api`;
     console.log('[tRPC] Testing connection to:', testUrl);
 
     const tryUrl = async (u: string) => {
@@ -180,12 +186,6 @@ export const testTRPCConnection = async (): Promise<boolean> => {
 
     const primaryOk = await tryUrl(testUrl);
     if (primaryOk) return true;
-
-    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location.origin !== baseUrl) {
-      const alt = `${window.location.origin}/api`;
-      console.warn('[tRPC] Primary test failed, trying same-origin:', alt);
-      return await tryUrl(alt);
-    }
 
     return false;
   } catch (error) {

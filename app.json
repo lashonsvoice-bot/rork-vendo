@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Vendor Event Coordinator",
-    "slug": "vendor-event-coordinator",
+    "name": "RevoVend App",
+    "slug": "revovendapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.rork.vendor-event-coordinator",
+      "bundleIdentifier": "app.rork.revovendapp",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
@@ -39,7 +39,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.vendor-event-coordinator",
+      "package": "app.rork.revovendapp",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",

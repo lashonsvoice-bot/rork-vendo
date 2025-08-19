@@ -8,8 +8,10 @@ import {
   getStripePriceId,
   createSetupIntent,
   getStripeSubscription,
-  stripe
+  stripe,
+  createBillingPortalSession,
 } from "@/backend/lib/stripe";
+import { config } from "@/backend/config/env";
 
 export const createStripeCheckoutProcedure = protectedProcedure
   .input(z.object({
@@ -173,6 +175,23 @@ export const getStripeSubscriptionStatusProcedure = protectedProcedure
       console.error("Error fetching Stripe subscription:", error);
       return { hasStripeSubscription: false, subscription, error: "Failed to fetch Stripe subscription" };
     }
+  });
+
+export const createBillingPortalSessionProcedure = protectedProcedure
+  .mutation(async ({ ctx }) => {
+    if (!ctx.user) {
+      throw new Error("User not authenticated");
+    }
+
+    const sub = await subscriptionRepo.findByUserId(ctx.user.id);
+    const customerId = sub?.stripeCustomerId;
+    if (!customerId) {
+      throw new Error("No Stripe customer found for this account");
+    }
+
+    const returnUrl = `${config.apiBaseUrl}`;
+    const session = await createBillingPortalSession(customerId, returnUrl);
+    return { url: session.url };
   });
 
 export const linkExistingStripeSubscriptionProcedure = protectedProcedure

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
@@ -10,13 +10,16 @@ export default function LinkStripeScreen() {
   const { user } = useAuth();
   const [email, setEmail] = useState<string>('');
   const [busy, setBusy] = useState<boolean>(false);
+  const [subId, setSubId] = useState<string>('');
   const linkByEmail = trpc.subscription.stripe.linkByEmail.useMutation();
+  const linkById = trpc.subscription.stripe.linkExisting.useMutation();
+  const portalSession = trpc.subscription.stripe.createBillingPortalSession.useMutation();
 
   const canSubmit = useMemo(() => {
     return email.trim().length > 3 && email.includes('@');
   }, [email]);
 
-  const onLink = async () => {
+  const onLink = useCallback(async () => {
     if (!canSubmit) return;
     try {
       setBusy(true);
@@ -32,7 +35,55 @@ export default function LinkStripeScreen() {
     } finally {
       setBusy(false);
     }
-  };
+  }, [canSubmit, email, linkByEmail]);
+
+  const onLinkById = useCallback(async () => {
+    const id = subId.trim();
+    if (!id.startsWith('sub_')) {
+      Alert.alert('Invalid ID', 'Please paste a valid Stripe subscription ID that starts with "sub_".');
+      return;
+    }
+    try {
+      setBusy(true);
+      const res = await linkById.mutateAsync({ stripeSubscriptionId: id });
+      if (res?.subscription) {
+        Alert.alert('Linked', 'Your Stripe subscription was linked successfully.', [{ text: 'OK', onPress: () => router.back() }]);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      Alert.alert('Link by ID failed', msg);
+    } finally {
+      setBusy(false);
+    }
+  }, [subId, linkById]);
+
+  const onOpenPortal = useCallback(async () => {
+    try {
+      setBusy(true);
+      const res = await portalSession.mutateAsync();
+      const url = (res as any)?.url as string | undefined;
+      if (url) {
+        if (Platform.OS === 'web') {
+          window.open(url, '_blank');
+        } else {
+          Alert.alert('Customer Portal', 'Opening in your browser...', [
+            { text: 'Open', onPress: () => {
+              // Deep linking to external browser: just use Linking
+              const Linking = require('react-native').Linking as typeof import('react-native').Linking;
+              Linking.openURL(url);
+            }}
+          ]);
+        }
+      } else {
+        Alert.alert('Error', 'Could not create portal session.');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      Alert.alert('Portal failed', msg);
+    } finally {
+      setBusy(false);
+    }
+  }, [portalSession]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,14 +117,59 @@ export default function LinkStripeScreen() {
           {busy ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Link Subscription</Text>
+            <Text style={styles.buttonText}>Link by Email</Text>
           )}
         </TouchableOpacity>
       </View>
 
-      {linkByEmail.isError && (
+      <View style={styles.divider} accessibilityRole="text">
+        <Text style={styles.dividerText}>Or</Text>
+      </View>
+
+      <View style={styles.form}>
+        <Text style={styles.label}>Paste Stripe subscription ID (sub_...)</Text>
+        <TextInput
+          testID="subscriptionIdInput"
+          style={styles.input}
+          value={subId}
+          onChangeText={setSubId}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="sub_XXXXXXXXXXXX"
+        />
+
+        <TouchableOpacity
+          testID="linkByIdButton"
+          style={[styles.buttonSecondary, (subId.trim().length < 4 || busy) && styles.buttonDisabled]}
+          onPress={onLinkById}
+          disabled={subId.trim().length < 4 || busy}
+        >
+          {busy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Link by ID</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity
+        testID="openPortalButton"
+        style={[styles.portalButton, busy && styles.buttonDisabled]}
+        onPress={onOpenPortal}
+        disabled={busy}
+      >
+        {busy ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Open Customer Portal</Text>
+        )}
+      </TouchableOpacity>
+
+      {(linkByEmail.isError || linkById.isError || portalSession.isError) && (
         <View style={styles.errorBox} testID="linkStripeError">
-          <Text style={styles.errorText}>{linkByEmail.error?.message ?? 'Something went wrong'}</Text>
+          <Text style={styles.errorText}>
+            {linkByEmail.error?.message ?? linkById.error?.message ?? portalSession.error?.message ?? 'Something went wrong'}
+          </Text>
         </View>
       )}
     </SafeAreaView>
@@ -127,6 +223,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
   },
+  buttonSecondary: {
+    marginTop: 12,
+    backgroundColor: theme.colors.gray[700],
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  portalButton: {
+    marginTop: 20,
+    backgroundColor: theme.colors.green[600],
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
   buttonDisabled: {
     backgroundColor: theme.colors.gray[300],
   },
@@ -146,5 +256,12 @@ const styles = StyleSheet.create({
   errorText: {
     color: theme.colors.red[700],
     fontSize: 13,
+  },
+  divider: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  dividerText: {
+    color: theme.colors.text.secondary,
   },
 });

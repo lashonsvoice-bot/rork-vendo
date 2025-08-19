@@ -213,6 +213,14 @@ export async function createSetupIntent(customerId: string): Promise<Stripe.Setu
   });
 }
 
+// Create a Billing Portal session for a customer
+export async function createBillingPortalSession(customerId: string, returnUrl: string): Promise<Stripe.BillingPortal.Session> {
+  return await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url: returnUrl,
+  });
+}
+
 // Helper function to create Revovend subscription products in Stripe
 // Run this once to set up your products in Stripe Dashboard
 export async function createRevovendProducts(): Promise<{

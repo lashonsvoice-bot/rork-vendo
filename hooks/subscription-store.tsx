@@ -135,6 +135,28 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     },
   });
 
+  const linkByEmailMutation = trpc.subscription.stripe.linkByEmail.useMutation({
+    onSuccess: (res) => {
+      if (res?.subscription) {
+        setSubscription(res.subscription as unknown as Subscription);
+        saveSubscriptionData(res.subscription as unknown as Subscription);
+      }
+      subscriptionQuery.refetch();
+    },
+  });
+
+  const linkExistingMutation = trpc.subscription.stripe.linkExisting.useMutation({
+    onSuccess: (res) => {
+      if (res?.subscription) {
+        setSubscription(res.subscription as unknown as Subscription);
+        saveSubscriptionData(res.subscription as unknown as Subscription);
+      }
+      subscriptionQuery.refetch();
+    },
+  });
+
+  const createBillingPortalMutation = trpc.subscription.stripe.createBillingPortalSession.useMutation();
+
   const recordEventUsageMutation = trpc.subscription.recordUsage.useMutation({
     onSuccess: (data) => {
       if (data?.subscription) {
@@ -194,6 +216,33 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
     return upgradeSubscriptionMutation.mutateAsync({ tier, billingCycle });
   }, [authUser, upgradeSubscriptionMutation]);
+
+  const linkStripeByEmail = useCallback(async (email: string) => {
+    if (!authUser || authUser.role !== "business_owner") {
+      throw new Error("Only business owners can link subscriptions");
+    }
+    console.log('[Subscription] Linking Stripe by email:', email);
+    const res = await linkByEmailMutation.mutateAsync({ email });
+    return res;
+  }, [authUser, linkByEmailMutation]);
+
+  const linkStripeBySubscriptionId = useCallback(async (stripeSubscriptionId: string) => {
+    if (!authUser || authUser.role !== "business_owner") {
+      throw new Error("Only business owners can link subscriptions");
+    }
+    console.log('[Subscription] Linking Stripe by subscription ID:', stripeSubscriptionId);
+    const res = await linkExistingMutation.mutateAsync({ stripeSubscriptionId });
+    return res;
+  }, [authUser, linkExistingMutation]);
+
+  const createBillingPortal = useCallback(async () => {
+    if (!authUser || authUser.role !== "business_owner") {
+      throw new Error("Only business owners can open billing portal");
+    }
+    console.log('[Subscription] Creating billing portal session');
+    const res = await createBillingPortalMutation.mutateAsync();
+    return res;
+  }, [authUser, createBillingPortalMutation]);
 
   const recordEventUsage = useCallback(async (eventId: string, eventDate: string) => {
     if (!authUser || authUser.role !== "business_owner") {
@@ -377,9 +426,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     upgradeSubscription,
     recordEventUsage,
     cancelSubscription,
+    linkStripeByEmail,
+    linkStripeBySubscriptionId,
+    createBillingPortal,
     isUpgrading: upgradeSubscriptionMutation.isPending,
     isRecordingUsage: recordEventUsageMutation.isPending,
     isCanceling: cancelSubscriptionMutation.isPending,
+    isLinking: linkByEmailMutation.isPending || linkExistingMutation.isPending,
+    isCreatingPortal: createBillingPortalMutation.isPending,
     refetch: subscriptionQuery.refetch,
   }), [
     subscription,
@@ -398,9 +452,15 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     upgradeSubscription,
     recordEventUsage,
     cancelSubscription,
+    linkStripeByEmail,
+    linkStripeBySubscriptionId,
+    createBillingPortal,
     upgradeSubscriptionMutation.isPending,
     recordEventUsageMutation.isPending,
     cancelSubscriptionMutation.isPending,
+    linkByEmailMutation.isPending,
+    linkExistingMutation.isPending,
+    createBillingPortalMutation.isPending,
     subscriptionQuery.refetch,
   ]);
 });

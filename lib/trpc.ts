@@ -52,17 +52,10 @@ export const getBaseUrl = (): string => {
     return fromEnv;
   }
 
-  // 2) Web: only use same-origin for known deployed hosts; otherwise default to localhost backend
+  // 2) Web: use relative URL to avoid CORS and preview host issues
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    const origin = window.location.origin;
-    const isDeployed = /rorktest\.dev|vercel\.app|rork\.com/.test(origin);
-    if (isDeployed) {
-      console.log('[tRPC] Using deployed web origin:', origin);
-      return origin;
-    }
-    const localhost = 'http://localhost:3000';
-    console.log('[tRPC] Using localhost backend for web dev:', localhost);
-    return localhost;
+    console.log('[tRPC] Using relative base URL for web');
+    return '';
   }
 
   // 3) Native dev: try to construct LAN URL from Expo hostUri
@@ -82,7 +75,7 @@ export const getBaseUrl = (): string => {
 
 export const createTRPCClient = () => {
   const baseUrl = getBaseUrl();
-  const sameOrigin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin === baseUrl : false;
+  const sameOrigin = Platform.OS === 'web' && typeof window !== 'undefined' ? (baseUrl === '' || window.location.origin === baseUrl) : false;
   const webOrigin = Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : undefined;
 
   return trpc.createClient({
@@ -115,7 +108,8 @@ export const createTRPCClient = () => {
               headers,
               credentials: Platform.OS === 'web' ? (sameOrigin ? 'same-origin' : 'omit') : 'omit',
             });
-            console.log('[tRPC] Response status:', resp.status, resp.statusText, 'for', targetUrl);
+            const contentType = resp.headers.get('content-type') ?? '';
+            console.log('[tRPC] Response status:', resp.status, resp.statusText, 'for', targetUrl, 'content-type:', contentType);
             if (!resp.ok && resp.status === 401) {
               console.log('[tRPC] Unauthorized request, clearing session');
               try {
@@ -123,6 +117,10 @@ export const createTRPCClient = () => {
               } catch (e) {
                 console.warn('[tRPC] Failed to clear session:', e);
               }
+            }
+            if (resp.ok && contentType && contentType.includes('text/html')) {
+              console.error('[tRPC] Received HTML instead of JSON from', targetUrl);
+              throw new Error('Unexpected HTML response from API. The base URL likely points to a static host without the backend. Configure EXPO_PUBLIC_RORK_API_BASE_URL or run the backend at /api.');
             }
             return resp;
           };
@@ -141,7 +139,7 @@ export const createTRPCClient = () => {
             const isTypeError = error instanceof TypeError && (error.message.includes('Failed to fetch') || error.name === 'TypeError');
 
             const urlStr = String(url);
-            if (Platform.OS === 'web' && webOrigin && !urlStr.startsWith(webOrigin)) {
+            if (Platform.OS === 'web' && webOrigin && baseUrl && baseUrl.length > 0 && !urlStr.startsWith(webOrigin)) {
               const fallbackUrl = urlStr.replace(baseUrl, webOrigin);
               console.warn('[tRPC] Retrying with same-origin base URL:', fallbackUrl);
               try {
@@ -152,15 +150,16 @@ export const createTRPCClient = () => {
             }
 
             if (isTypeError) {
-              const isDev = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+              const isDev = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') || baseUrl === '';
               if (isDev) {
-                throw new Error(`Development server not running: Cannot reach backend at ${baseUrl}. Please start the backend server with 'bun run dev' or check it's on the correct port.`);
+                const hint = baseUrl === '' ? `${webOrigin ?? 'this host'}/api` : baseUrl;
+                throw new Error(`Development server not running: Cannot reach backend at ${hint}. Please start the backend server with 'bun run dev' or check it's on the correct port.`);
               } else {
                 throw new Error(`Network connectivity error: Cannot reach server at ${baseUrl}. This could be due to:\n1. Backend server not running\n2. CORS configuration issues\n3. Network connectivity problems\n4. Incorrect base URL configuration`);
               }
             }
 
-            throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'} when connecting to ${baseUrl}`);
+            throw new Error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'} when connecting to ${baseUrl || '(relative /api)'}`);
           }
         },
       }),

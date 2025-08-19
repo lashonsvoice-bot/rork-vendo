@@ -135,6 +135,8 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     },
   });
 
+  const createCheckoutMutation = trpc.subscription.stripe.createCheckout.useMutation();
+
   const linkByEmailMutation = trpc.subscription.stripe.linkByEmail.useMutation({
     onSuccess: (res) => {
       if (res?.subscription) {
@@ -216,6 +218,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
     return upgradeSubscriptionMutation.mutateAsync({ tier, billingCycle });
   }, [authUser, upgradeSubscriptionMutation]);
+
+  const startStripeCheckout = useCallback(async (tier: Exclude<SubscriptionTier, "free">, billingCycle: BillingCycle) => {
+    if (!authUser || authUser.role !== "business_owner") {
+      throw new Error("Only business owners can start checkout");
+    }
+    const res = await createCheckoutMutation.mutateAsync({ tier, billingCycle });
+    return res?.url as string;
+  }, [authUser, createCheckoutMutation]);
 
   const linkStripeByEmail = useCallback(async (email: string) => {
     if (!authUser || authUser.role !== "business_owner") {
@@ -424,12 +434,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     daysUntilTrialExpires,
     isVerified,
     upgradeSubscription,
+    startStripeCheckout,
     recordEventUsage,
     cancelSubscription,
     linkStripeByEmail,
     linkStripeBySubscriptionId,
     createBillingPortal,
     isUpgrading: upgradeSubscriptionMutation.isPending,
+    isStartingCheckout: createCheckoutMutation.isPending,
     isRecordingUsage: recordEventUsageMutation.isPending,
     isCanceling: cancelSubscriptionMutation.isPending,
     isLinking: linkByEmailMutation.isPending || linkExistingMutation.isPending,
@@ -450,12 +462,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     daysUntilTrialExpires,
     isVerified,
     upgradeSubscription,
+    startStripeCheckout,
     recordEventUsage,
     cancelSubscription,
     linkStripeByEmail,
     linkStripeBySubscriptionId,
     createBillingPortal,
     upgradeSubscriptionMutation.isPending,
+    createCheckoutMutation.isPending,
     recordEventUsageMutation.isPending,
     cancelSubscriptionMutation.isPending,
     linkByEmailMutation.isPending,

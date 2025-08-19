@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack, router } from "expo-router";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 import { Check, Crown, Star, Zap } from "lucide-react-native";
 import { useSubscription, type SubscriptionTier, type BillingCycle } from "@/hooks/subscription-store";
 import { theme } from "@/constants/theme";
@@ -38,7 +38,9 @@ export default function SubscriptionScreen() {
     isLoading,
     isVerified,
     upgradeSubscription,
+    startStripeCheckout,
     isUpgrading,
+    isStartingCheckout,
     daysUntilTrialExpires,
     isTrialExpired,
     trialExpirationReason,
@@ -46,6 +48,7 @@ export default function SubscriptionScreen() {
   } = useSubscription();
 
   const [selectedBillingCycle, setSelectedBillingCycle] = useState<BillingCycle>("monthly");
+  const params = useLocalSearchParams<{ status?: string }>();
 
   // Calculate savings from verification discount
   const getDiscountSavings = (originalPrice: number, discountedPrice: number) => {
@@ -54,15 +57,28 @@ export default function SubscriptionScreen() {
 
   const handleUpgrade = async (tier: Exclude<SubscriptionTier, "free">) => {
     try {
-      await upgradeSubscription(tier, selectedBillingCycle);
-      Alert.alert(
-        "Success!",
-        `Your subscription has been upgraded to ${tier}. You can now create more events!`,
-        [{ text: "OK", onPress: () => router.back() }]
-      );
+      const url = await startStripeCheckout(tier, selectedBillingCycle);
+      if (url) {
+        Alert.alert(
+          "Continue in Browser",
+          "We'll open a secure Stripe Checkout page to complete your upgrade.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open", onPress: () => {
+                try {
+                  // Use Linking to open hosted checkout (works in Expo Go and web)
+                  const Linking = require('react-native').Linking as typeof import('react-native').Linking;
+                  Linking.openURL(url);
+                } catch (e) {
+                  console.log('Open URL error', e);
+                }
+              } }
+          ]
+        );
+      }
     } catch (error) {
-      console.error("Upgrade error:", error);
-      Alert.alert("Error", "Failed to upgrade subscription. Please try again.");
+      console.error("Checkout error:", error);
+      Alert.alert("Error", "Failed to start checkout. Please try again.");
     }
   };
 
@@ -250,7 +266,7 @@ export default function SubscriptionScreen() {
                   }}
                   disabled={isCurrentPlan || isUpgrading}
                 >
-                  {isUpgrading ? (
+                  {isUpgrading || isStartingCheckout ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
                     <Text

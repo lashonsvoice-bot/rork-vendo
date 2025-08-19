@@ -92,7 +92,9 @@ export const createTRPCClient = () => {
         transformer: superjson,
         fetch: async (url, options) => {
           const headers: HeadersInit = {
-            ...options?.headers,
+            Accept: 'application/json',
+            ...(options?.headers ?? {}),
+            'x-client-platform': Platform.OS,
           };
 
           try {
@@ -146,15 +148,7 @@ export const createTRPCClient = () => {
             const isTypeError = error instanceof TypeError && (error.message.includes('Failed to fetch') || error.name === 'TypeError');
 
             const urlStr = String(url);
-            if (Platform.OS === 'web' && webOrigin && baseUrl && baseUrl.length > 0 && !urlStr.startsWith(webOrigin)) {
-              const fallbackUrl = urlStr.replace(baseUrl, webOrigin);
-              console.warn('[tRPC] Retrying with same-origin base URL:', fallbackUrl);
-              try {
-                return await doFetch(fallbackUrl);
-              } catch (retryError) {
-                console.error('[tRPC] Retry with same-origin failed:', retryError);
-              }
-            }
+            
 
             if (isTypeError) {
               const isDev = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1') || baseUrl === '';

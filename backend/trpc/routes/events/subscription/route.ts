@@ -41,7 +41,7 @@ export const getEventUsageStatsProcedure = protectedProcedure
     
     // Only count events that have contractors hired AND at least one contractor checked in
     const countableEvents = events.filter(event => {
-      const hasHiredContractors = event.status === 'contractors_hired' || event.selectedContractors?.length > 0;
+      const hasHiredContractors = event.status === 'contractors_hired' || (event.selectedContractors?.length ?? 0) > 0;
       const hasCheckedInContractors = event.vendors?.some(vendor => 
         vendor.contractorId && vendor.arrivalConfirmed
       );
@@ -64,7 +64,7 @@ export const getEventUsageStatsProcedure = protectedProcedure
         date: event.date,
         status: event.status,
         createdAt: event.createdAt,
-        hasHiredContractors: event.selectedContractors?.length > 0,
+        hasHiredContractors: (event.selectedContractors?.length ?? 0) > 0,
         hasCheckedInContractors: event.vendors?.some(vendor => 
           vendor.contractorId && vendor.arrivalConfirmed
         ),
@@ -84,7 +84,7 @@ export const checkSubscriptionLimitsProcedure = protectedProcedure
     
     // Only count events that have contractors hired AND at least one contractor checked in
     const countableEvents = events.filter(event => {
-      const hasHiredContractors = event.status === 'contractors_hired' || event.selectedContractors?.length > 0;
+      const hasHiredContractors = event.status === 'contractors_hired' || (event.selectedContractors?.length ?? 0) > 0;
       const hasCheckedInContractors = event.vendors?.some(vendor => 
         vendor.contractorId && vendor.arrivalConfirmed
       );

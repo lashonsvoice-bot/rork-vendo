@@ -21,7 +21,7 @@ import { generate1099Procedure, update1099StatusProcedure, getBusinessOwner1099s
 import { registerPushTokenProcedure, updateNotificationSettingsProcedure, getNotificationSettingsProcedure, sendPushNotificationProcedure } from "./routes/notifications/push/route";
 import { getSubscriptionProcedure } from "./routes/subscription/get/route";
 import { upgradeSubscriptionProcedure } from "./routes/subscription/upgrade/route";
-import { recordEventUsageProcedure } from "./routes/subscription/record-usage/route";
+import { recordEventUsageProcedure, checkAndRecordEventUsageProcedure } from "./routes/subscription/record-usage/route";
 import { cancelSubscriptionProcedure } from "./routes/subscription/cancel/route";
 import { getVerificationDiscountProcedure } from "./routes/subscription/verification-discount/route";
 import { 
@@ -188,6 +188,7 @@ export const appRouter = createTRPCRouter({
     get: getSubscriptionProcedure,
     upgrade: upgradeSubscriptionProcedure,
     recordUsage: recordEventUsageProcedure,
+    checkAndRecordUsage: checkAndRecordEventUsageProcedure,
     cancel: cancelSubscriptionProcedure,
     getVerificationDiscount: getVerificationDiscountProcedure,
     stripe: createTRPCRouter({

@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUser } from "@/hooks/user-store";
 import { useCommunication } from "@/hooks/communication-store";
 
+
 export interface VendorReview {
   rating: number;
   comment: string;
@@ -328,8 +329,27 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     return undefined;
   }, [processQueue]);
 
-  const updateVendorCheckIn = useCallback((eventId: string, vendorId: string, updates: Partial<VendorCheckIn>) => {
+  const updateVendorCheckIn = useCallback(async (eventId: string, vendorId: string, updates: Partial<VendorCheckIn>) => {
     applyVendorUpdateLocal(eventId, vendorId, updates);
+    
+    // Check if this is a contractor being checked in for the first time
+    const isFirstCheckIn = updates.arrivalConfirmed === true;
+    const event = events.find(e => e.id === eventId);
+    const vendor = event?.vendors?.find(v => v.id === vendorId);
+    const isContractor = vendor?.contractorId;
+    
+    if (isFirstCheckIn && isContractor && event) {
+      console.log('[Events] Contractor checked in, checking if event should be counted:', eventId);
+      try {
+        // Use trpcClient for non-React context
+        const { trpcClient } = await import('@/lib/trpc');
+        const result = await trpcClient.subscription.checkAndRecordUsage.mutate({ eventId });
+        console.log('[Events] Usage check result:', result);
+      } catch (error) {
+        console.error('[Events] Failed to check/record event usage:', error);
+      }
+    }
+    
     if (!isOnline) {
       const action: PendingAction = { id: Date.now().toString(), type: 'updateVendor', payload: { eventId, vendorId, updates } };
       const next = [...queue, action];
@@ -337,7 +357,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       saveQueue(next);
       console.log('[Events] Queued action (offline)', action);
     }
-  }, [applyVendorUpdateLocal, isOnline, queue, saveQueue]);
+  }, [applyVendorUpdateLocal, isOnline, queue, saveQueue, events]);
 
   const addVendorReview = useCallback((eventId: string, vendorId: string, review: Omit<VendorReview, 'reviewDate' | 'isRehirable'>) => {
     const reviewWithDefaults: VendorReview = {

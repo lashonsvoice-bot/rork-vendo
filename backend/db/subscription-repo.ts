@@ -152,6 +152,11 @@ async function getUsageForPeriod(userId: string, startDate: string, endDate: str
   );
 }
 
+async function getUsageForEvent(userId: string, eventId: string): Promise<SubscriptionUsage | null> {
+  const allUsage = await readAllUsage();
+  return allUsage.find(u => u.userId === userId && u.eventId === eventId) || null;
+}
+
 function getSubscriptionLimits(tier: SubscriptionTier): { eventsLimit: number; pricePerMonth: number } {
   switch (tier) {
     case "free":
@@ -229,6 +234,7 @@ export const subscriptionRepo = {
   updateByStripeSubscriptionId,
   recordEventUsage,
   getUsageForPeriod,
+  getUsageForEvent,
   getSubscriptionLimits,
   createFreeTrialSubscription,
 };

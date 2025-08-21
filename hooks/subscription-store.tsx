@@ -43,6 +43,7 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     yearlyPrice: 0,
     features: [
       "5 events OR 30 days (whichever comes first)",
+      "Events only count when contractors are hired & checked in",
       "Basic event management",
       "Email support",
       "No credit card required",
@@ -56,7 +57,7 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     monthlyPrice: 29,
     yearlyPrice: 23, // 20% discount
     features: [
-      "10 events per month",
+      "10 events per month (only count when contractors hired & checked in)",
       "Advanced event management",
       "Send proposals to hosts",
       "Hire contractors",
@@ -73,7 +74,7 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     yearlyPrice: 47, // 20% discount
     popular: true,
     features: [
-      "20 events per month",
+      "20 events per month (only count when contractors hired & checked in)",
       "Full event management suite",
       "Send proposals to hosts",
       "Hire contractors",
@@ -91,7 +92,7 @@ const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     monthlyPrice: 99,
     yearlyPrice: 79, // 20% discount
     features: [
-      "Unlimited events",
+      "Unlimited events (only count when contractors hired & checked in)",
       "Enterprise event management",
       "Send proposals to hosts",
       "Hire contractors",
@@ -271,7 +272,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   }, [authUser, cancelSubscriptionMutation]);
 
   const canCreateEvent = useMemo(() => {
-    if (!subscription) return false;
+    if (!subscription) return true; // Allow creation, counting happens later
     
     // Check if trial has expired (30 days OR 5 events, whichever comes first)
     if (subscription.status === "trialing") {
@@ -283,7 +284,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
         if (now > trialEndDate) return false;
       }
       
-      // Check if 5 events have been used
+      // Check if 5 events have been used (events only count when contractors are hired and checked in)
       if (subscription.eventsUsed >= subscription.eventsLimit) {
         return false;
       }

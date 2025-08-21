@@ -39,21 +39,35 @@ export const getEventUsageStatsProcedure = protectedProcedure
     
     const events = await eventRepo.findByUserId(userId, 'business_owner');
     
+    // Only count events that have contractors hired AND at least one contractor checked in
+    const countableEvents = events.filter(event => {
+      const hasHiredContractors = event.status === 'contractors_hired' || event.selectedContractors?.length > 0;
+      const hasCheckedInContractors = event.vendors?.some(vendor => 
+        vendor.contractorId && vendor.arrivalConfirmed
+      );
+      return hasHiredContractors && hasCheckedInContractors;
+    });
+    
     const currentMonth = input.month || new Date().toISOString().slice(0, 7);
-    const monthEvents = events.filter(event => 
+    const monthCountableEvents = countableEvents.filter(event => 
       event.createdAt?.startsWith(currentMonth)
     );
     
     return {
       totalEvents: events.length,
-      monthlyEvents: monthEvents.length,
+      totalCountableEvents: countableEvents.length,
+      monthlyEvents: monthCountableEvents.length,
       currentMonth,
-      events: monthEvents.map(event => ({
+      events: monthCountableEvents.map(event => ({
         id: event.id,
         title: event.title,
         date: event.date,
         status: event.status,
         createdAt: event.createdAt,
+        hasHiredContractors: event.selectedContractors?.length > 0,
+        hasCheckedInContractors: event.vendors?.some(vendor => 
+          vendor.contractorId && vendor.arrivalConfirmed
+        ),
       })),
     };
   });
@@ -67,8 +81,18 @@ export const checkSubscriptionLimitsProcedure = protectedProcedure
     console.log('[Events] Checking subscription limits for:', ctx.user.id);
     
     const events = await eventRepo.findByUserId(ctx.user.id, 'business_owner');
+    
+    // Only count events that have contractors hired AND at least one contractor checked in
+    const countableEvents = events.filter(event => {
+      const hasHiredContractors = event.status === 'contractors_hired' || event.selectedContractors?.length > 0;
+      const hasCheckedInContractors = event.vendors?.some(vendor => 
+        vendor.contractorId && vendor.arrivalConfirmed
+      );
+      return hasHiredContractors && hasCheckedInContractors;
+    });
+    
     const currentMonth = new Date().toISOString().slice(0, 7);
-    const monthEvents = events.filter(event => 
+    const monthCountableEvents = countableEvents.filter(event => 
       event.createdAt?.startsWith(currentMonth)
     );
     
@@ -83,14 +107,16 @@ export const checkSubscriptionLimitsProcedure = protectedProcedure
     // For now, assume free tier
     const currentTier = 'free';
     const maxEvents = subscriptionTiers[currentTier].maxEvents;
-    const canCreateMore = monthEvents.length < maxEvents;
+    const canCreateMore = monthCountableEvents.length < maxEvents;
     
     return {
       currentTier,
-      monthlyEventsUsed: monthEvents.length,
+      totalEvents: events.length,
+      monthlyEventsUsed: monthCountableEvents.length,
       maxEvents,
       canCreateMore,
-      remainingEvents: Math.max(0, maxEvents - monthEvents.length),
+      remainingEvents: Math.max(0, maxEvents - monthCountableEvents.length),
       subscriptionTiers,
+      countingLogic: 'Events only count when contractors are hired AND host checks them in',
     };
   });

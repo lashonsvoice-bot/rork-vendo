@@ -134,6 +134,9 @@ export default function SubscriptionScreen() {
                 <Text style={styles.currentPlanDetails}>
                   {subscription.eventsUsed} / {subscription.eventsLimit === -1 ? "∞" : subscription.eventsLimit} events used
                 </Text>
+                <Text style={styles.usageNote}>
+                  Events only count when contractors are hired and host checks them in
+                </Text>
                 {subscription.status === "trialing" && (
                   <View style={styles.trialInfoContainer}>
                     {isTrialExpired ? (
@@ -374,6 +377,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text.secondary,
     marginBottom: 4,
+  },
+  usageNote: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+    marginTop: 2,
+    fontStyle: "italic" as const,
   },
   trialInfo: {
     fontSize: 12,

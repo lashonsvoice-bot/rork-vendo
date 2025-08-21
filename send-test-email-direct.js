@@ -8,12 +8,12 @@ require('dotenv').config();
 console.log('🚀 Direct Test Email Sender');
 console.log('📧 Configuring SendGrid...');
 
-// Configure SendGrid
-const apiKey = process.env.SENDGRID_API_KEY;
-const fromEmail = process.env.SENDGRID_FROM || 'Revovend1@gmail.com';
+// Configure SendGrid with your API key
+const apiKey = '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';
+const fromEmail = 'Revovend1@gmail.com';
 
 if (!apiKey || !apiKey.startsWith('SG.')) {
-  console.error('❌ Invalid or missing SENDGRID_API_KEY in .env file');
+  console.error('❌ Invalid or missing SENDGRID_API_KEY');
   process.exit(1);
 }
 

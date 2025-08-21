@@ -635,8 +635,8 @@ export default function CreateEventScreen() {
 
         {userRole === 'business_owner' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Proposal Template</Text>
-            <Text style={styles.sectionSubtitle}>Fill details once. Then List & Propose externally or Save as draft.</Text>
+            <Text style={styles.sectionTitle}>Event Listing</Text>
+            <Text style={styles.sectionSubtitle}>List events where you're interested in remote vending opportunities. Fill details once, then propose to event hosts or save as draft.</Text>
 
             <Text style={styles.label}>Event Flyer *</Text>
             {flyerImage ? (

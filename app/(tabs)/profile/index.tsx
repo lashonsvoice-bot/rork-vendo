@@ -528,6 +528,13 @@ export default function ProfileScreen() {
             <User size={20} color="#6B7280" />
             <Text style={styles.settingText}>Contractor Management</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => router.push('/send-test-email')}
+          >
+            <Mail size={20} color="#6B7280" />
+            <Text style={styles.settingText}>Send Test Email</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>

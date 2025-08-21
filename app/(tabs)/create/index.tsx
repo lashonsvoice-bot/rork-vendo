@@ -44,6 +44,7 @@ import {
 } from "lucide-react-native";
 import { useEvents, TableOption } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
+import { useSubscription } from "@/hooks/subscription-store";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import DatePickerField from "@/components/DatePickerField";
@@ -69,6 +70,7 @@ interface FormDataType {
 export default function CreateEventScreen() {
   const { addEvent, addVendorToEvent } = useEvents();
   const { userRole, currentUser, contractors } = useUser();
+  const { subscription, canCreateEvent, remainingEvents, isTrialExpired } = useSubscription();
   const router = useRouter();
 
   const [formData, setFormData] = useState<FormDataType>({
@@ -279,6 +281,30 @@ export default function CreateEventScreen() {
   };
 
   const handleSubmit = async () => {
+    // Check subscription limits for business owners
+    if (userRole === 'business_owner' && !canCreateEvent) {
+      if (isTrialExpired) {
+        Alert.alert(
+          "Trial Expired", 
+          "Your free trial has expired. Please upgrade to continue creating events.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Upgrade", onPress: () => router.push("/subscription") }
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Event Limit Reached", 
+          "You've reached your event limit for this billing period. Please upgrade to create more events.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Upgrade", onPress: () => router.push("/subscription") }
+          ]
+        );
+      }
+      return;
+    }
+
     if (!formData.title || !formData.location || !formData.date) {
       Alert.alert("Error", "Please fill in all required fields (title, location, and date)");
       return;
@@ -558,6 +584,31 @@ export default function CreateEventScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Subscription Status for Business Owners */}
+        {userRole === 'business_owner' && subscription && (
+          <View style={styles.section}>
+            <View style={styles.subscriptionStatus}>
+              <Text style={styles.subscriptionTitle}>Event Limit</Text>
+              <Text style={styles.subscriptionText}>
+                {subscription.eventsUsed} / {subscription.eventsLimit === -1 ? "∞" : subscription.eventsLimit} events used
+              </Text>
+              {subscription.status === "trialing" && (
+                <Text style={styles.trialText}>
+                  {remainingEvents} events remaining in trial
+                </Text>
+              )}
+              {!canCreateEvent && (
+                <TouchableOpacity 
+                  style={styles.upgradeButton}
+                  onPress={() => router.push("/subscription")}
+                >
+                  <Text style={styles.upgradeButtonText}>Upgrade Plan</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+
         {userRole !== 'business_owner' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Event Flyer *</Text>
@@ -2192,6 +2243,42 @@ const styles = StyleSheet.create({
   },
   toggleLabelOn: {
     color: "#10B981",
+    fontWeight: "600",
+  },
+  subscriptionStatus: {
+    backgroundColor: "#F0F9FF",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E0F2FE",
+  },
+  subscriptionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0369A1",
+    marginBottom: 4,
+  },
+  subscriptionText: {
+    fontSize: 14,
+    color: "#0F172A",
+    marginBottom: 4,
+  },
+  trialText: {
+    fontSize: 12,
+    color: "#0369A1",
+    fontStyle: "italic",
+    marginBottom: 8,
+  },
+  upgradeButton: {
+    backgroundColor: "#0369A1",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  upgradeButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "600",
   },
 });

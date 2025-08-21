@@ -27,6 +27,7 @@ export const sendTestEmailProcedure = protectedProcedure
   )
   .mutation(async ({ input }) => {
     console.log('[EmailTest] Sending test email to', input.to);
+    console.log('[EmailTest] SendGrid service status:', sendGridService.getStatus());
 
     let sgAttachments: { content: string; filename: string; type: string; disposition: string }[] | undefined;
 
@@ -63,6 +64,7 @@ export const sendTestEmailProcedure = protectedProcedure
     });
 
     if (!resp.success) {
+      console.error('[EmailTest] SendGrid error:', resp.error);
       console.warn('[EmailTest] SendGrid not ready or error occurred, using stub fallback:', resp.error);
       console.log('--- EMAIL STUB START ---');
       console.log('To:', input.to);
@@ -73,7 +75,7 @@ export const sendTestEmailProcedure = protectedProcedure
       }
       console.log('--- EMAIL STUB END ---');
       await new Promise((r) => setTimeout(r, 500));
-      return { success: true, messageId: 'stub-' + Date.now().toString(), fallback: true };
+      return { success: true, messageId: 'stub-' + Date.now().toString(), fallback: true, error: resp.error };
     }
 
     console.log('[EmailTest] Success, messageId:', resp.messageId);

@@ -535,6 +535,13 @@ export default function ProfileScreen() {
             <Mail size={20} color="#6B7280" />
             <Text style={styles.settingText}>Send Test Email</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => router.push('/debug-connection')}
+          >
+            <Settings size={20} color="#6B7280" />
+            <Text style={styles.settingText}>Debug Connection</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>

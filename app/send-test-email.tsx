@@ -31,6 +31,12 @@ export default function SendTestEmailScreen() {
 
   const handleSend = useCallback(() => {
     console.log('[SendTestEmail] Sending with payload:', payload);
+    console.log('[SendTestEmail] Current API base URL:', process.env.EXPO_PUBLIC_RORK_API_BASE_URL);
+    
+    // Check if backend is accessible
+    const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL || 'http://localhost:3000';
+    console.log('[SendTestEmail] Using base URL:', baseUrl);
+    
     mutation.mutate(payload as any, {
       onSuccess: (res) => {
         console.log('[SendTestEmail] Success:', res);
@@ -38,6 +44,13 @@ export default function SendTestEmailScreen() {
       },
       onError: (err) => {
         console.error('[SendTestEmail] Error:', err);
+        console.error('[SendTestEmail] Error details:', JSON.stringify(err, null, 2));
+        
+        // Provide helpful error message
+        if (err.message?.includes('Cannot reach server')) {
+          console.error('[SendTestEmail] Backend server is not running!');
+          console.error('[SendTestEmail] Please start the backend with: bun backend/server.ts');
+        }
       },
     });
   }, [mutation, payload]);

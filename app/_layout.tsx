@@ -67,6 +67,7 @@ function RootLayoutNav() {
       <Stack.Screen name="privacy" options={{ headerShown: true, title: "Privacy Policy" }} />
       <Stack.Screen name="contact" options={{ headerShown: true, title: "Contact" }} />
       <Stack.Screen name="debug-connection" options={{ headerShown: true, title: "Connection Debug" }} />
+      <Stack.Screen name="send-test-email" options={{ headerShown: true, title: "Send Test Email" }} />
     </Stack>
   );
 }

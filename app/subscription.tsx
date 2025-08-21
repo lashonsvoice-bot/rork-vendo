@@ -78,7 +78,20 @@ export default function SubscriptionScreen() {
       }
     } catch (error) {
       console.error("Checkout error:", error);
-      Alert.alert("Error", "Failed to start checkout. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
+      if (errorMessage.includes("No such price") || errorMessage.includes("placeholder")) {
+        Alert.alert(
+          "Setup Required",
+          "Stripe products need to be created first. Please contact support or check the Stripe setup.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Setup Guide", onPress: () => router.push("/stripe-setup") }
+          ]
+        );
+      } else {
+        Alert.alert("Error", `Failed to start checkout: ${errorMessage}`);
+      }
     }
   };
 
@@ -283,6 +296,22 @@ export default function SubscriptionScreen() {
             );
           })}
         </View>
+
+        {/* Debug Section - Only show in development */}
+        {__DEV__ && (
+          <View style={styles.debugSection}>
+            <Text style={styles.debugTitle}>Debug Information</Text>
+            <TouchableOpacity
+              style={styles.debugButton}
+              onPress={() => router.push("/stripe-setup")}
+            >
+              <Text style={styles.debugButtonText}>Setup Stripe Products</Text>
+            </TouchableOpacity>
+            <Text style={styles.debugText}>
+              If upgrade buttons don&apos;t work, you may need to create Stripe products first.
+            </Text>
+          </View>
+        )}
 
         {/* Footer */}
         <View style={styles.footer}>
@@ -541,5 +570,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: theme.colors.green[600],
     fontWeight: "600",
+  },
+  debugSection: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: theme.colors.gray[50],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.gray[200],
+  },
+  debugTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: theme.colors.text.primary,
+    marginBottom: 12,
+  },
+  debugButton: {
+    backgroundColor: theme.colors.blue[500],
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+    marginBottom: 8,
+  },
+  debugButtonText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#fff",
+  },
+  debugText: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+    lineHeight: 16,
   },
 });

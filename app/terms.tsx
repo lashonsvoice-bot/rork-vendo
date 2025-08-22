@@ -23,6 +23,36 @@ export default function TermsScreen() {
           '1) Host Booking Fee: A 15% commission is charged to Event Hosts on booking transactions involving Local Vendors. 2) Table Sale Fee: RevoVend charges Event Hosts a 5% fee on all event table sales, regardless of whether the buyer is a Business or a Local Vendor. 3) Processing Fees: Third‑party payment processing and banking fees may apply in addition to RevoVend fees. 4) Taxes: You are responsible for any applicable taxes. Fees may be updated and will apply to transactions after the update effective date.'
       },
       {
+        title: 'Contractor Agreements',
+        content:
+          'Contractors agree to: 1) Arrive on time and fulfill all scheduled commitments. 2) Maintain professional conduct and appearance as specified by event requirements. 3) Follow all venue rules, safety protocols, and local regulations. 4) Complete assigned tasks to the satisfaction of the Business Owner and Event Host. 5) Report any issues or incidents immediately. Contractors may be subject to background checks and must provide valid identification. Payment is contingent upon satisfactory completion of services.'
+      },
+      {
+        title: 'Business Owner Responsibilities',
+        content:
+          'Business Owners agree to: 1) Provide accurate event details, requirements, and expectations. 2) Pay agreed-upon contractor fees and supervision fees promptly. 3) Provide necessary materials, training, or instructions for successful event execution. 4) Maintain appropriate insurance coverage for their business activities. 5) Comply with all applicable business licenses and permits. 6) Treat contractors professionally and provide a safe working environment.'
+      },
+      {
+        title: 'Event Host Obligations',
+        content:
+          'Event Hosts agree to: 1) Provide accurate venue information, setup requirements, and event details. 2) Ensure venue compliance with safety regulations and accessibility requirements. 3) Coordinate with Business Owners and Contractors for smooth event execution. 4) Handle table sales, vendor management, and on-site logistics. 5) Maintain appropriate event insurance and venue permits. 6) Provide clear parking, loading, and setup instructions to all parties.'
+      },
+      {
+        title: 'Payment and Escrow Terms',
+        content:
+          'Payment processing: 1) All payments are processed through secure third-party providers. 2) Escrow services may be used to hold funds until service completion. 3) Refunds are subject to cancellation policies and may incur processing fees. 4) Disputed payments will be reviewed on a case-by-case basis. 5) Tax reporting (1099 forms) will be provided as required by law. 6) Payment methods include credit cards, ACH transfers, and digital wallets as available.'
+      },
+      {
+        title: 'Insurance and Liability',
+        content:
+          'Insurance requirements: 1) Business Owners must maintain general liability insurance for their operations. 2) Event Hosts should carry event insurance covering venue activities. 3) Contractors may be required to have personal liability coverage. 4) RevoVend provides platform insurance but users are responsible for their own activities. 5) All parties must report incidents immediately. 6) Insurance verification may be required for high-value or high-risk events.'
+      },
+      {
+        title: 'Intellectual Property and Confidentiality',
+        content:
+          'Intellectual property: 1) Users retain ownership of their content, business information, and trade secrets. 2) RevoVend has limited rights to use content for platform operations and marketing. 3) Users must respect others\' intellectual property rights. 4) Confidential business information shared through the platform must be protected. 5) Non-disclosure agreements may be required for sensitive events or proprietary information.'
+      },
+      {
         title: 'Messaging Rules',
         content:
           'Local Vendors may message Event Hosts. Local Vendors cannot message Contractors or Business Owners. RevoVend may limit or suspend messaging to protect users from spam, abuse, or policy violations.'

@@ -1,9 +1,21 @@
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { randomUUID, createHash } from "node:crypto";
+import { getSQLiteClient, createEntity, updateEntity, BaseEntity } from './sqlite-client';
 
 export type SessionRole = "business_owner" | "contractor" | "event_host" | "admin" | "guest" | "local_vendor";
-export type UserRecord = {
+
+export interface UserRecord extends BaseEntity {
+  email: string;
+  password_hash: string;
+  role: SessionRole;
+  is_verified: boolean;
+  is_suspended: boolean;
+  suspended_at?: string;
+  suspended_reason?: string;
+  last_login_at?: string;
+}
+
+// Legacy interface for backward compatibility
+export interface LegacyUserRecord {
   id: string;
   email: string;
   name: string;
@@ -14,45 +26,33 @@ export type UserRecord = {
   suspendedAt?: string;
   suspendedReason?: string;
   lastLoginAt?: string;
-};
+}
 
-const DATA_DIR = path.join(process.cwd(), "backend", "data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
+const db = getSQLiteClient();
 
 function hashPassword(password: string): string {
   return createHash("sha256").update(password).digest("hex");
 }
 
 async function ensureStorage(): Promise<void> {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-  } catch {}
-  try {
-    await fs.access(USERS_FILE);
-  } catch {
-    await fs.writeFile(USERS_FILE, JSON.stringify([]), "utf8");
-  }
-  
-  // Ensure default admin and test users exist
+  await db.initialize();
   await ensureDefaultAdmin();
 }
 
 async function ensureDefaultAdmin(): Promise<void> {
-  const users = await readAllRaw();
-  const adminExists = users.some(u => u.role === "admin");
+  const adminExists = await db.query<UserRecord>('SELECT * FROM users WHERE role = ? LIMIT 1', ['admin']);
   
-  if (!adminExists) {
-    const defaultAdmin: UserRecord = {
+  if (adminExists.rows.length === 0) {
+    const defaultAdmin = createEntity<UserRecord>({
       id: randomUUID(),
       email: "admin@app.com",
-      name: "System Administrator",
       role: "admin",
-      passwordHash: hashPassword("admin123"),
-      createdAt: new Date().toISOString(),
-    };
+      password_hash: hashPassword("admin123"),
+      is_verified: true,
+      is_suspended: false,
+    });
     
-    const updated = [...users, defaultAdmin];
-    await writeAllRaw(updated);
+    await db.insert('users', defaultAdmin);
     console.log("✅ Default admin created:");
     console.log("   Email: admin@app.com");
     console.log("   Password: admin123");
@@ -64,49 +64,43 @@ async function ensureDefaultAdmin(): Promise<void> {
 }
 
 async function ensureTestUsers(): Promise<void> {
-  const users = await readAllRaw();
   const testUsers = [
     {
       email: "business@test.com",
-      name: "Test Business Owner",
       role: "business_owner" as SessionRole,
       password: "test123"
     },
     {
       email: "contractor@test.com",
-      name: "Test Contractor",
       role: "contractor" as SessionRole,
       password: "test123"
     },
     {
       email: "host@test.com",
-      name: "Test Event Host",
       role: "event_host" as SessionRole,
       password: "test123"
     }
   ];
   
   let hasNewUsers = false;
-  const updatedUsers = [...users];
   
   for (const testUser of testUsers) {
-    const exists = users.some(u => u.email.toLowerCase() === testUser.email.toLowerCase());
-    if (!exists) {
-      const newUser: UserRecord = {
+    const exists = await db.query<UserRecord>('SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1', [testUser.email.toLowerCase()]);
+    if (exists.rows.length === 0) {
+      const newUser = createEntity<UserRecord>({
         id: randomUUID(),
         email: testUser.email,
-        name: testUser.name,
         role: testUser.role,
-        passwordHash: hashPassword(testUser.password),
-        createdAt: new Date().toISOString(),
-      };
-      updatedUsers.push(newUser);
+        password_hash: hashPassword(testUser.password),
+        is_verified: true,
+        is_suspended: false,
+      });
+      await db.insert('users', newUser);
       hasNewUsers = true;
     }
   }
   
   if (hasNewUsers) {
-    await writeAllRaw(updatedUsers);
     console.log("✅ Test users created:");
     console.log("   Business Owner: business@test.com / test123");
     console.log("   Contractor: contractor@test.com / test123");
@@ -114,72 +108,97 @@ async function ensureTestUsers(): Promise<void> {
   }
 }
 
-async function readAllRaw(): Promise<UserRecord[]> {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-  } catch {}
-  try {
-    const raw = await fs.readFile(USERS_FILE, "utf8");
-    const data = JSON.parse(raw) as unknown;
-    if (Array.isArray(data)) {
-      return data as UserRecord[];
-    }
-    return [];
-  } catch {
-    return [];
+// Convert new UserRecord to legacy format for backward compatibility
+function toLegacyFormat(user: UserRecord): LegacyUserRecord {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.email.split('@')[0], // Use email prefix as name fallback
+    role: user.role,
+    passwordHash: user.password_hash,
+    createdAt: user.created_at,
+    suspended: user.is_suspended,
+    suspendedAt: user.suspended_at,
+    suspendedReason: user.suspended_reason,
+    lastLoginAt: user.last_login_at,
+  };
+}
+
+// Convert legacy format to new UserRecord
+function fromLegacyFormat(legacy: LegacyUserRecord): UserRecord {
+  return {
+    id: legacy.id,
+    email: legacy.email,
+    password_hash: legacy.passwordHash,
+    role: legacy.role,
+    is_verified: true, // Default to verified for legacy users
+    is_suspended: legacy.suspended || false,
+    suspended_at: legacy.suspendedAt,
+    suspended_reason: legacy.suspendedReason,
+    last_login_at: legacy.lastLoginAt,
+    created_at: legacy.createdAt,
+    updated_at: legacy.createdAt,
+  };
+}
+
+async function readAll(): Promise<LegacyUserRecord[]> {
+  await ensureStorage();
+  const result = await db.query<UserRecord>('SELECT * FROM users ORDER BY created_at DESC');
+  return result.rows.map(toLegacyFormat);
+}
+
+async function writeAll(users: LegacyUserRecord[]): Promise<void> {
+  await ensureStorage();
+  // This is a destructive operation - clear and repopulate
+  await db.execute('DELETE FROM users');
+  for (const user of users) {
+    const userRecord = fromLegacyFormat(user);
+    await db.insert('users', userRecord);
   }
 }
 
-async function writeAllRaw(users: UserRecord[]): Promise<void> {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-  } catch {}
-  const tmp = USERS_FILE + ".tmp";
-  await fs.writeFile(tmp, JSON.stringify(users, null, 2), "utf8");
-  await fs.rename(tmp, USERS_FILE);
-}
-
-async function readAll(): Promise<UserRecord[]> {
+async function findByEmail(email: string): Promise<LegacyUserRecord | null> {
   await ensureStorage();
-  return await readAllRaw();
+  const result = await db.query<UserRecord>('SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1', [email.toLowerCase()]);
+  return result.rows.length > 0 ? toLegacyFormat(result.rows[0]) : null;
 }
 
-async function writeAll(users: UserRecord[]): Promise<void> {
+async function findById(id: string): Promise<LegacyUserRecord | null> {
   await ensureStorage();
-  await writeAllRaw(users);
+  const result = await db.query<UserRecord>('SELECT * FROM users WHERE id = ? LIMIT 1', [id]);
+  return result.rows.length > 0 ? toLegacyFormat(result.rows[0]) : null;
 }
 
-async function findByEmail(email: string): Promise<UserRecord | null> {
-  const all = await readAll();
-  const target = email.toLowerCase();
-  return all.find((u) => (u?.email ?? "").toLowerCase() === target) ?? null;
-}
-
-async function findById(id: string): Promise<UserRecord | null> {
-  const all = await readAll();
-  return all.find((u) => u?.id === id) ?? null;
-}
-
-async function insert(user: UserRecord): Promise<UserRecord> {
-  const all = await readAll();
-  const exists = all.some((u) => (u?.email ?? "").toLowerCase() === user.email.toLowerCase());
-  if (exists) {
+async function insert(user: LegacyUserRecord): Promise<LegacyUserRecord> {
+  await ensureStorage();
+  const exists = await db.query<UserRecord>('SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1', [user.email.toLowerCase()]);
+  if (exists.rows.length > 0) {
     throw new Error("Email already in use");
   }
-  const next = [...all, user];
-  await writeAll(next);
+  
+  const userRecord = fromLegacyFormat(user);
+  const result = await db.insert('users', userRecord);
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to insert user');
+  }
+  
   return user;
 }
 
-async function update(user: UserRecord): Promise<UserRecord> {
-  const all = await readAll();
-  const index = all.findIndex((u) => u?.id === user.id);
-  if (index === -1) {
+async function update(user: LegacyUserRecord): Promise<LegacyUserRecord> {
+  await ensureStorage();
+  const userRecord = fromLegacyFormat(user);
+  const updatedUser = updateEntity(userRecord, userRecord);
+  
+  const result = await db.update('users', updatedUser, 'id = ?', [user.id]);
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to update user');
+  }
+  
+  if (result.rowsAffected === 0) {
     throw new Error("User not found");
   }
-  const next = [...all];
-  next[index] = user;
-  await writeAll(next);
+  
   return user;
 }
 

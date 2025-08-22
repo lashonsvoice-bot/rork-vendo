@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { trpc } from '@/lib/trpc';
@@ -8,14 +8,16 @@ export default function DatabaseTestScreen() {
   const [testResult, setTestResult] = useState<any>(null);
   const [sampleData, setSampleData] = useState<any>(null);
   const [queryResult, setQueryResult] = useState<any>(null);
+  const [useSQLite, setUseSQLite] = useState<boolean>(true);
 
-  const testConnectionMutation = trpc.database.testConnection.useQuery(undefined, {
-    enabled: false,
-  });
+  const testConnectionMutation = trpc.database.testConnection.useQuery(
+    { database: useSQLite ? 'sqlite' : 'couchbase' },
+    { enabled: false }
+  );
 
   const createSampleDataMutation = trpc.database.createSampleData.useMutation();
   const querySampleDataQuery = trpc.database.querySampleData.useQuery(
-    { limit: 5 },
+    { limit: 5, database: useSQLite ? 'sqlite' : 'couchbase' },
     { enabled: false }
   );
 
@@ -39,7 +41,10 @@ export default function DatabaseTestScreen() {
   const handleCreateSampleData = async () => {
     try {
       console.log('🌱 Creating sample data...');
-      const result = await createSampleDataMutation.mutateAsync({ count: 5 });
+      const result = await createSampleDataMutation.mutateAsync({ 
+        count: 5, 
+        database: useSQLite ? 'sqlite' : 'couchbase' 
+      });
       setSampleData(result);
       
       if (result.success) {
@@ -82,9 +87,25 @@ export default function DatabaseTestScreen() {
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🗄️ Couchbase Connection Test</Text>
+          <View style={styles.databaseToggle}>
+            <Text style={styles.toggleLabel}>Database:</Text>
+            <View style={styles.toggleContainer}>
+              <Text style={[styles.toggleText, !useSQLite && styles.activeToggleText]}>Couchbase</Text>
+              <Switch
+                value={useSQLite}
+                onValueChange={setUseSQLite}
+                trackColor={{ false: '#ffc107', true: '#28a745' }}
+                thumbColor={useSQLite ? '#ffffff' : '#ffffff'}
+              />
+              <Text style={[styles.toggleText, useSQLite && styles.activeToggleText]}>SQLite</Text>
+            </View>
+          </View>
+          
+          <Text style={styles.sectionTitle}>
+            {useSQLite ? '🗄️ SQLite' : '🗄️ Couchbase'} Connection Test
+          </Text>
           <Text style={styles.description}>
-            Test the connection to your Couchbase cluster and perform basic operations.
+            Test the connection to your {useSQLite ? 'SQLite database' : 'Couchbase cluster'} and perform basic operations.
           </Text>
           
           <TouchableOpacity 
@@ -115,9 +136,16 @@ export default function DatabaseTestScreen() {
               {testResult.details && (
                 <View style={styles.detailsContainer}>
                   <Text style={styles.detailsTitle}>Details:</Text>
-                  <Text style={styles.detailsText}>
-                    Collection: {testResult.details.collectionPath}
-                  </Text>
+                  {testResult.details.tables && (
+                    <Text style={styles.detailsText}>
+                      Tables: {testResult.details.tables.join(', ')}
+                    </Text>
+                  )}
+                  {testResult.details.collectionPath && (
+                    <Text style={styles.detailsText}>
+                      Collection: {testResult.details.collectionPath}
+                    </Text>
+                  )}
                   <Text style={styles.detailsText}>
                     Ping: {testResult.details.ping ? '✅' : '❌'}
                   </Text>
@@ -125,7 +153,7 @@ export default function DatabaseTestScreen() {
                     Insert: {testResult.details.insert ? '✅' : '❌'}
                   </Text>
                   <Text style={styles.detailsText}>
-                    Retrieve: {testResult.details.retrieve ? '✅' : '❌'}
+                    {useSQLite ? 'Query' : 'Retrieve'}: {testResult.details.query || testResult.details.retrieve ? '✅' : '❌'}
                   </Text>
                   <Text style={styles.detailsText}>
                     Cleanup: {testResult.details.cleanup ? '✅' : '❌'}
@@ -139,7 +167,7 @@ export default function DatabaseTestScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🌱 Sample Data Operations</Text>
           <Text style={styles.description}>
-            Create sample documents and test query operations.
+            Create sample {useSQLite ? 'users' : 'documents'} and test query operations.
           </Text>
           
           <TouchableOpacity 
@@ -198,14 +226,26 @@ export default function DatabaseTestScreen() {
                   </Text>
                   {queryResult.data && queryResult.data.length > 0 && (
                     <View style={styles.documentsContainer}>
-                      <Text style={styles.documentsTitle}>Sample Documents:</Text>
-                      {queryResult.data.slice(0, 3).map((doc: any, index: number) => (
+                      <Text style={styles.documentsTitle}>Sample {useSQLite ? 'Users' : 'Documents'}:</Text>
+                      {queryResult.data.slice(0, 3).map((item: any, index: number) => (
                         <View key={index} style={styles.documentItem}>
-                          <Text style={styles.documentName}>{doc.name}</Text>
-                          <Text style={styles.documentDescription}>{doc.description}</Text>
-                          <Text style={styles.documentMeta}>
-                            Category: {doc.category} | Value: {doc.value}
-                          </Text>
+                          {useSQLite ? (
+                            <>
+                              <Text style={styles.documentName}>{item.email}</Text>
+                              <Text style={styles.documentDescription}>Role: {item.role}</Text>
+                              <Text style={styles.documentMeta}>
+                                Verified: {item.is_verified ? 'Yes' : 'No'} | Created: {new Date(item.created_at).toLocaleDateString()}
+                              </Text>
+                            </>
+                          ) : (
+                            <>
+                              <Text style={styles.documentName}>{item.name}</Text>
+                              <Text style={styles.documentDescription}>{item.description}</Text>
+                              <Text style={styles.documentMeta}>
+                                Category: {item.category} | Value: {item.value}
+                              </Text>
+                            </>
+                          )}
                         </View>
                       ))}
                     </View>
@@ -221,18 +261,37 @@ export default function DatabaseTestScreen() {
 
         <View style={styles.infoSection}>
           <Text style={styles.infoTitle}>ℹ️ Database Information</Text>
-          <Text style={styles.infoText}>
-            • Cluster: cb.3ffpkfl5uy0wwzky.cloud.couchbase.com
-          </Text>
-          <Text style={styles.infoText}>
-            • Bucket: travel-sample
-          </Text>
-          <Text style={styles.infoText}>
-            • Username: Revovend1
-          </Text>
-          <Text style={styles.infoText}>
-            • Connection: HTTP REST API (Expo Go compatible)
-          </Text>
+          {useSQLite ? (
+            <>
+              <Text style={styles.infoText}>
+                • Database: SQLite (Local)
+              </Text>
+              <Text style={styles.infoText}>
+                • File: revovend.db
+              </Text>
+              <Text style={styles.infoText}>
+                • Tables: users, profiles, events, messages, etc.
+              </Text>
+              <Text style={styles.infoText}>
+                • Connection: Direct SQLite API (Expo Go compatible)
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.infoText}>
+                • Cluster: cb.3ffpkfl5uy0wwzky.cloud.couchbase.com
+              </Text>
+              <Text style={styles.infoText}>
+                • Bucket: travel-sample
+              </Text>
+              <Text style={styles.infoText}>
+                • Username: Revovend1
+              </Text>
+              <Text style={styles.infoText}>
+                • Connection: HTTP REST API (Expo Go compatible)
+              </Text>
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -379,5 +438,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6c757d',
     marginBottom: 4,
+  },
+  databaseToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#dee2e6',
+  },
+  toggleLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#495057',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleText: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginHorizontal: 8,
+  },
+  activeToggleText: {
+    color: '#007bff',
+    fontWeight: '600',
   },
 });

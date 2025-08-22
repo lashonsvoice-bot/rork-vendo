@@ -31,11 +31,20 @@ export const testConnectionProcedure = publicProcedure
         console.log('📋 Available tables:', tables);
         
         // Test insert operation
-        const testUser = createEntity({
+        interface TestUser {
+          id: string;
+          email: string;
+          password_hash: string;
+          role: 'guest' | 'contractor' | 'business_owner';
+          is_verified: boolean;
+          is_suspended: boolean;
+        }
+        
+        const testUser = createEntity<TestUser>({
           id: `test-${Date.now()}`,
           email: `test-${Date.now()}@example.com`,
           password_hash: 'test_hash',
-          role: 'guest' as const,
+          role: 'guest',
           is_verified: false,
           is_suspended: false,
         });
@@ -175,11 +184,23 @@ export const createSampleDataProcedure = publicProcedure
         const results = [];
         
         for (let i = 1; i <= input.count; i++) {
-          const sampleUser = createEntity({
+          interface SampleUser {
+            id: string;
+            email: string;
+            password_hash: string;
+            role: 'guest' | 'contractor' | 'business_owner';
+            is_verified: boolean;
+            is_suspended: boolean;
+          }
+          
+          const role: 'guest' | 'contractor' | 'business_owner' = 
+            i % 3 === 0 ? 'business_owner' : i % 2 === 0 ? 'contractor' : 'guest';
+          
+          const sampleUser = createEntity<SampleUser>({
             id: `sample-user-${i}`,
             email: `sample${i}@example.com`,
             password_hash: `hash_${i}`,
-            role: (i % 3 === 0 ? 'business_owner' : i % 2 === 0 ? 'contractor' : 'guest') as const,
+            role,
             is_verified: Math.random() > 0.3,
             is_suspended: false,
           });
@@ -273,7 +294,7 @@ export const querySampleDataProcedure = publicProcedure
         const client = getSQLiteClient();
         
         let query = 'SELECT * FROM users WHERE id LIKE "sample-%"';
-        const params: any[] = [];
+        const params: string[] = [];
         
         if (input.role) {
           query += ' AND role = ?';
@@ -310,14 +331,14 @@ export const querySampleDataProcedure = publicProcedure
         const client = getCouchbaseClient();
         
         let query = `SELECT META().id, * FROM \`${client.getCollectionPath()}\` WHERE type = 'sample'`;
-        const params = [];
+        const params: any[] = [];
         
         // Note: Couchbase uses category instead of role
         query += ` ORDER BY createdAt DESC LIMIT ${input.limit}`;
         
         console.log('📝 Executing Couchbase query:', query, 'with params:', params);
         
-        const result = await client.query(query, params.length > 0 ? params : undefined);
+        const result = await client.query(query, params);
         
         return {
           success: true,

@@ -805,6 +805,16 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
         </View>
         <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push('/send-test-email' as const)}
+            testID="qa-send-test-email"
+          >
+            <View style={styles.actionOutline}>
+              <FileText size={24} color={theme.accentCyan} />
+              <Text style={styles.actionTextOutline}>Test Email</Text>
+            </View>
+          </TouchableOpacity>
           {userRole === 'business_owner' ? (
             <>
               <TouchableOpacity

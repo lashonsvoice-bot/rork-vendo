@@ -368,17 +368,22 @@ export interface BaseEntity {
   updated_at: string;
 }
 
-export function createEntity<T extends Partial<BaseEntity>>(
+// Allow any entity shape while guaranteeing base fields are added
+export type WithOptionalBase = { id?: string; created_at?: string; updated_at?: string };
+
+export function createEntity<T extends WithOptionalBase>(
   data: Omit<T, 'created_at' | 'updated_at'>
-): T & BaseEntity {
+): Omit<T, 'id' | 'created_at' | 'updated_at'> & BaseEntity {
   const now = new Date().toISOString();
   
+  const providedId = (data as WithOptionalBase).id;
+
   return {
-    ...data,
-    id: data.id || crypto.randomUUID(),
+    ...(data as Omit<T, 'id' | 'created_at' | 'updated_at'>),
+    id: providedId ?? (globalThis.crypto?.randomUUID ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`),
     created_at: now,
-    updated_at: now
-  } as T & BaseEntity;
+    updated_at: now,
+  };
 }
 
 export function updateEntity<T extends BaseEntity>(

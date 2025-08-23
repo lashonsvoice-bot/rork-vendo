@@ -139,10 +139,12 @@ app.use("*", cors({
     "Content-Type",
     "x-session",
     "x-requested-with",
+    "x-client-platform",
     "Accept",
     "Accept-Language",
     "Cache-Control",
     "Pragma",
+    "Authorization",
   ],
   maxAge: 86400,
 }));

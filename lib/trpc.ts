@@ -57,25 +57,44 @@ export const getBaseUrl = (): string => {
     __DEV__: __DEV__
   });
 
-  if (fromLocalOverride && fromLocalOverride.length > 0) {
-    console.log('[tRPC] Using base URL from web localStorage override:', fromLocalOverride);
-    return fromLocalOverride;
+  const resolveSameOrigin = (value?: string): string | undefined => {
+    if (!value) return undefined;
+    if (value === 'same-origin' && Platform.OS === 'web' && typeof window !== 'undefined') {
+      const origin = window.location.origin;
+      console.log('[tRPC] Resolving "same-origin" to:', origin);
+      return origin;
+    }
+    return value;
+  };
+
+  const localResolved = resolveSameOrigin(fromLocalOverride);
+  if (localResolved && localResolved.length > 0) {
+    console.log('[tRPC] Using base URL from web localStorage override:', localResolved);
+    return localResolved;
   }
-  if (fromGlobal && fromGlobal.length > 0) {
-    console.log('[tRPC] Using base URL from global override:', fromGlobal);
-    return fromGlobal;
+
+  const globalResolved = resolveSameOrigin(fromGlobal);
+  if (globalResolved && globalResolved.length > 0) {
+    console.log('[tRPC] Using base URL from global override:', globalResolved);
+    return globalResolved;
   }
-  if (fromExtra && fromExtra.length > 0) {
-    console.log('[tRPC] Using base URL from extra:', fromExtra);
-    return fromExtra;
+
+  const extraResolved = resolveSameOrigin(fromExtra);
+  if (extraResolved && extraResolved.length > 0) {
+    console.log('[tRPC] Using base URL from extra:', extraResolved);
+    return extraResolved;
   }
-  if (fromEnv && fromEnv.length > 0) {
-    console.log('[tRPC] Using base URL from env:', fromEnv);
-    return fromEnv;
+
+  const envResolved = resolveSameOrigin(fromEnv);
+  if (envResolved && envResolved.length > 0) {
+    console.log('[tRPC] Using base URL from env:', envResolved);
+    return envResolved;
   }
-  if (fromLegacyEnv && fromLegacyEnv.length > 0) {
-    console.log('[tRPC] Using base URL from legacy env API_BASE_URL:', fromLegacyEnv);
-    return fromLegacyEnv;
+
+  const legacyResolved = resolveSameOrigin(fromLegacyEnv);
+  if (legacyResolved && legacyResolved.length > 0) {
+    console.log('[tRPC] Using base URL from legacy env API_BASE_URL:', legacyResolved);
+    return legacyResolved;
   }
 
   const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;

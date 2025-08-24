@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { ArrowUp, X, Crown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -18,9 +18,13 @@ export default function UpgradeSticker({ visible = true, onDismiss }: UpgradeSti
   const [dismissed, setDismissed] = useState<boolean>(false);
   const [bounceAnim] = useState(new Animated.Value(1));
 
-  // Only show for business owners who have reached their limit or trial expired
-  const shouldShow = visible && !dismissed && user?.role === 'business_owner' && 
-    ((!canCreateEvent && remainingEvents === 0) || isTrialExpired);
+  const shouldShow = useMemo(() => {
+    const isBiz = user?.role === 'business_owner';
+    const isTrialing = subscription?.status === 'trialing';
+    const reachedLimit = !canCreateEvent && (remainingEvents === 0);
+    const expired = isTrialExpired;
+    return visible && !dismissed && isBiz && (isTrialing || reachedLimit || expired);
+  }, [visible, dismissed, user?.role, subscription?.status, canCreateEvent, remainingEvents, isTrialExpired]);
 
   React.useEffect(() => {
     if (shouldShow) {
@@ -60,6 +64,9 @@ export default function UpgradeSticker({ visible = true, onDismiss }: UpgradeSti
   }
 
   const getMessage = () => {
+    if (subscription?.status === 'trialing') {
+      return 'Free Trial';
+    }
     if (isTrialExpired) {
       return 'Trial Expired';
     }
@@ -70,6 +77,11 @@ export default function UpgradeSticker({ visible = true, onDismiss }: UpgradeSti
   };
 
   const getSubMessage = () => {
+    if (subscription?.status === 'trialing') {
+      const used = subscription?.eventsUsed ?? 0;
+      const limit = subscription?.eventsLimit ?? 5;
+      return `${used}/${limit} events used`;
+    }
     if (isTrialExpired) {
       return 'Upgrade to continue';
     }
@@ -81,15 +93,17 @@ export default function UpgradeSticker({ visible = true, onDismiss }: UpgradeSti
 
   return (
     <Animated.View 
+      testID="upgrade-sticker"
       style={[
         styles.container,
         {
           transform: [{ scale: bounceAnim }],
-          bottom: Platform.OS === 'web' ? 20 : 100, // Account for tab bar on mobile
+          bottom: Platform.OS === 'web' ? 20 : 100,
         }
       ]}
     >
       <TouchableOpacity 
+        testID="upgrade-sticker-button"
         style={styles.sticker} 
         onPress={handleUpgrade}
         activeOpacity={0.8}
@@ -109,6 +123,7 @@ export default function UpgradeSticker({ visible = true, onDismiss }: UpgradeSti
       </TouchableOpacity>
       
       <TouchableOpacity 
+        testID="upgrade-sticker-dismiss"
         style={styles.dismissButton}
         onPress={handleDismiss}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}

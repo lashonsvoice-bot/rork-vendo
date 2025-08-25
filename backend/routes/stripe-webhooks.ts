@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { config } from '@/backend/config/env';
-import { constructWebhookEvent } from '@/backend/lib/stripe';
+import { constructWebhookEvent, getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '@/backend/lib/stripe';
 import { subscriptionRepo } from '@/backend/db/subscription-repo';
+import { profileRepo, type ContractorProfile } from '@/backend/db/profile-repo';
 
 const webhooks = new Hono();
 
@@ -92,6 +93,27 @@ webhooks.post('/stripe', async (c) => {
         break;
       }
 
+      case 'identity.verification_session.verified': {
+        const session = event.data.object as any;
+        console.log('Identity verification completed:', session.id);
+        await handleVerificationCompleted(session);
+        break;
+      }
+
+      case 'identity.verification_session.requires_input': {
+        const session = event.data.object as any;
+        console.log('Identity verification requires input:', session.id);
+        // TODO: Notify user that additional input is required
+        break;
+      }
+
+      case 'identity.verification_session.canceled': {
+        const session = event.data.object as any;
+        console.log('Identity verification canceled:', session.id);
+        // TODO: Handle verification cancellation
+        break;
+      }
+
       default:
         console.log('Unhandled Stripe webhook event type:', event.type);
     }
@@ -102,5 +124,54 @@ webhooks.post('/stripe', async (c) => {
     return c.json({ error: 'Webhook processing failed' }, 400);
   }
 });
+
+async function handleVerificationCompleted(session: any) {
+  try {
+    console.log('[stripe-webhook] Processing verification completion for session:', session.id);
+    
+    const userId = session.metadata?.userId;
+    if (!userId) {
+      console.error('[stripe-webhook] No userId in session metadata');
+      return;
+    }
+    
+    // Get the full session with verified outputs
+    const fullSession = await getVerificationSession(session.id);
+    
+    if (isVerificationSuccessful(fullSession)) {
+      const profile = await profileRepo.findByUserId(userId);
+      if (profile && profile.role === 'contractor') {
+        const verificationDetails = getVerificationDetails(fullSession);
+        
+        if (verificationDetails) {
+          const updatedProfile: ContractorProfile = {
+            ...profile,
+            isVerified: true,
+            verificationDate: verificationDetails.verifiedAt,
+            verificationSessionId: fullSession.id,
+            verifiedName: `${verificationDetails.firstName} ${verificationDetails.lastName}`,
+            verifiedAddress: verificationDetails.address,
+            verifiedDateOfBirth: verificationDetails.dateOfBirth,
+          } as ContractorProfile & {
+            isVerified: boolean;
+            verificationDate: string;
+            verificationSessionId: string;
+            verifiedName: string;
+            verifiedAddress: any;
+            verifiedDateOfBirth: any;
+          };
+          
+          await profileRepo.upsert(updatedProfile);
+          console.log('[stripe-webhook] Updated contractor profile with verification data');
+          
+          // TODO: Send notification to user about successful verification
+          // TODO: Apply verification discount if applicable
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[stripe-webhook] Error handling verification completion:', error);
+  }
+}
 
 export default webhooks;

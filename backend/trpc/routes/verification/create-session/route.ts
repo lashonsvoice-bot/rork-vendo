@@ -1,0 +1,47 @@
+import { z } from 'zod';
+import { protectedProcedure } from '@/backend/trpc/create-context';
+import { createVerificationSession } from '@/backend/lib/stripe';
+import { profileRepo } from '@/backend/db/profile-repo';
+
+export const createVerificationSessionProcedure = protectedProcedure
+  .input(
+    z.object({
+      returnUrl: z.string().url(),
+    })
+  )
+  .mutation(async ({ input, ctx }) => {
+    console.log('[verification] Creating verification session for user:', ctx.user.id);
+    
+    try {
+      // Get user profile to ensure they're a contractor
+      const profile = await profileRepo.findByUserId(ctx.user.id);
+      if (!profile) {
+        throw new Error('Profile not found');
+      }
+      
+      if (profile.role !== 'contractor') {
+        throw new Error('ID verification is only available for contractors');
+      }
+      
+      // Create Stripe verification session
+      const session = await createVerificationSession({
+        returnUrl: input.returnUrl,
+        metadata: {
+          userId: ctx.user.id,
+          profileId: profile.id,
+          email: ctx.user.email,
+        },
+      });
+      
+      console.log('[verification] Created session:', session.id);
+      
+      return {
+        sessionId: session.id,
+        url: session.url,
+        status: session.status,
+      };
+    } catch (error) {
+      console.error('[verification] Failed to create session:', error);
+      throw new Error('Failed to create verification session');
+    }
+  });

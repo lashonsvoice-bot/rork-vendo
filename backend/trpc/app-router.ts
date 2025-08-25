@@ -134,6 +134,8 @@ import {
   getSMSStatusProcedure
 } from "./routes/sms/route";
 import initiateVoiceCallProcedure from "./routes/voice/call/route";
+import { createVerificationSessionProcedure } from "./routes/verification/create-session/route";
+import { checkVerificationStatusProcedure } from "./routes/verification/check-status/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -313,6 +315,10 @@ export const appRouter = createTRPCRouter({
   }),
   voice: createTRPCRouter({
     initiateCall: initiateVoiceCallProcedure,
+  }),
+  verification: createTRPCRouter({
+    createSession: createVerificationSessionProcedure,
+    checkStatus: checkVerificationStatusProcedure,
   }),
 });
 

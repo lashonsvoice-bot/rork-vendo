@@ -40,6 +40,12 @@ export type ContractorProfile = ProfileBase & {
   availability?: "full_time" | "part_time" | "contract" | null;
   resumeUrl?: string | null;
   trainingMaterialsUrls?: string[] | null;
+  isVerified?: boolean;
+  verificationDate?: string | null;
+  verificationSessionId?: string | null;
+  verifiedName?: string | null;
+  verifiedAddress?: any | null;
+  verifiedDateOfBirth?: any | null;
 };
 
 export type EventHostProfile = ProfileBase & {

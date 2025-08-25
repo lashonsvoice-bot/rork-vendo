@@ -221,6 +221,64 @@ export async function createBillingPortalSession(customerId: string, returnUrl: 
   });
 }
 
+// Stripe Identity Verification Functions
+
+// Create a verification session for ID verification
+export async function createVerificationSession({
+  returnUrl,
+  metadata,
+}: {
+  returnUrl: string;
+  metadata?: Record<string, string>;
+}): Promise<Stripe.Identity.VerificationSession> {
+  return await stripe.identity.verificationSessions.create({
+    type: 'document',
+    metadata: metadata || {},
+    options: {
+      document: {
+        allowed_types: ['driving_license', 'passport', 'id_card'],
+        require_id_number: true,
+        require_live_capture: true,
+        require_matching_selfie: true,
+      },
+    },
+    return_url: returnUrl,
+  });
+}
+
+// Retrieve a verification session
+export async function getVerificationSession(sessionId: string): Promise<Stripe.Identity.VerificationSession> {
+  return await stripe.identity.verificationSessions.retrieve(sessionId, {
+    expand: ['verified_outputs'],
+  });
+}
+
+// Cancel a verification session
+export async function cancelVerificationSession(sessionId: string): Promise<Stripe.Identity.VerificationSession> {
+  return await stripe.identity.verificationSessions.cancel(sessionId);
+}
+
+// Helper function to check if verification is complete and successful
+export function isVerificationSuccessful(session: Stripe.Identity.VerificationSession): boolean {
+  return session.status === 'verified';
+}
+
+// Helper function to get verification details
+export function getVerificationDetails(session: Stripe.Identity.VerificationSession) {
+  if (!session.verified_outputs) {
+    return null;
+  }
+
+  return {
+    firstName: session.verified_outputs.first_name,
+    lastName: session.verified_outputs.last_name,
+    dateOfBirth: session.verified_outputs.dob,
+    address: session.verified_outputs.address,
+    idNumber: session.verified_outputs.id_number,
+    verifiedAt: new Date().toISOString(),
+  };
+}
+
 // Helper function to create Revovend subscription products in Stripe
 // Run this once to set up your products in Stripe Dashboard
 export async function createRevovendProducts(): Promise<{

@@ -4,6 +4,7 @@ import { businessDirectoryRepo } from "@/backend/db/business-directory-repo";
 import { subscriptionRepo } from "@/backend/db/subscription-repo";
 import { sendGridService } from "@/backend/lib/sendgrid";
 import { twilioService } from "@/backend/lib/twilio";
+import { config } from "@/backend/config/env";
 
 async function generateSimplePdf(params: {
   title: string;
@@ -237,7 +238,7 @@ const sendExternalProposalProcedure = protectedProcedure
     const invitationCode = `HOST_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     
     // SMS content (shorter version) with invitation code
-    const smsContent = `A RevoVend Business owner wants to secure a table at your event ${eventTitle} on ${eventDate}. Please download the app [App Link] and use this invite code when registering as a host: ${invitationCode}. Check your email for more information.`;
+    const smsContent = `A RevoVend Business owner wants to secure a table at your event ${eventTitle} on ${eventDate}. Please check your email for more information. If you receive a call from RevoVend, you can press 1 to hear more and receive details by email.`;
 
     // Build PDF attachment summary
     const pdf = await generateSimplePdf({
@@ -328,6 +329,28 @@ const sendExternalProposalProcedure = protectedProcedure
         console.log('Attachment: RevoVend-Proposal.pdf', `(${pdf.bytes} bytes)`);
         await new Promise(resolve => setTimeout(resolve, 1000));
         results.emailSent = true;
+      }
+    }
+
+    // Send voice call if phone provided
+    if (hostPhone && config.twilio) {
+      try {
+        const baseUrl = config.apiBaseUrl.replace(/\/$/, '');
+        const res = await fetch(`${baseUrl}/voice/initiate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toPhone: hostPhone, toEmail: hostEmail, eventTitle, eventDate }),
+        });
+        const json = await res.json();
+        if ((json as any).success) {
+          console.log('☎️ Voice call initiated', json);
+        } else {
+          console.warn('⚠️ Voice call initiation failed', json);
+          results.errors.push('Voice call initiation failed');
+        }
+      } catch (e) {
+        console.warn('⚠️ Voice call initiation error', e);
+        results.errors.push('Voice call initiation error');
       }
     }
 

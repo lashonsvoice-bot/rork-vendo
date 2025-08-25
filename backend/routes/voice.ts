@@ -43,7 +43,7 @@ voice.get('/ivr', async (c) => {
     const toEmail = c.req.query('toEmail') ?? '';
 
     const response = new twilio.twiml.VoiceResponse();
-    const gather = response.gather({ input: ['dtmf'], numDigits: 1, timeout: 6, action: `/voice/handle-input?eventTitle=${encodeURIComponent(eventTitle)}&eventDate=${encodeURIComponent(eventDate)}&toEmail=${encodeURIComponent(toEmail)}`, method: 'POST' });
+    const gather = response.gather({ numDigits: 1, timeout: 6, action: `/voice/handle-input?eventTitle=${encodeURIComponent(eventTitle)}&eventDate=${encodeURIComponent(eventDate)}&toEmail=${encodeURIComponent(toEmail)}`, method: 'POST' });
     gather.say({ voice: 'Polly.Joanna' as any }, approvedScript);
     response.say({ voice: 'Polly.Joanna' as any }, 'We did not receive any input. Goodbye.');
 
@@ -83,7 +83,7 @@ voice.post('/handle-input', async (c) => {
       response.say({ voice: 'Polly.Joanna' as any }, 'You have been removed. Thank you for your time. Goodbye.');
       response.hangup();
     } else {
-      const gather = response.gather({ input: ['dtmf'], numDigits: 1, timeout: 6, action: `/voice/handle-input?eventTitle=${encodeURIComponent(eventTitle)}&eventDate=${encodeURIComponent(eventDate)}&toEmail=${encodeURIComponent(toEmail)}`, method: 'POST' });
+      const gather = response.gather({ numDigits: 1, timeout: 6, action: `/voice/handle-input?eventTitle=${encodeURIComponent(eventTitle)}&eventDate=${encodeURIComponent(eventDate)}&toEmail=${encodeURIComponent(toEmail)}`, method: 'POST' });
       gather.say({ voice: 'Polly.Joanna' as any }, 'Sorry, I did not get that. Press 1 to hear more and receive email, press 2 to receive email only, press 3 to decline.');
       response.say({ voice: 'Polly.Joanna' as any }, 'No input received. Goodbye.');
     }

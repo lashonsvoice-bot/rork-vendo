@@ -65,6 +65,8 @@ interface FormDataType {
   contractorsNeeded: string;
   contractorPay: string;
   hostSupervisionFee: string;
+  contactEmail: string;
+  contactPhone: string;
 }
 
 export default function CreateEventScreen() {
@@ -86,6 +88,8 @@ export default function CreateEventScreen() {
     contractorsNeeded: "",
     contractorPay: "",
     hostSupervisionFee: "",
+    contactEmail: (currentUser as any)?.email || "",
+    contactPhone: (currentUser as any)?.phone || "",
   });
 
   const [tableOptions, setTableOptions] = useState<TableOption[]>([]);
@@ -343,6 +347,13 @@ export default function CreateEventScreen() {
       return;
     }
 
+    if (userRole === 'local_vendor') {
+      if (!formData.contactEmail || !formData.contactPhone) {
+        Alert.alert("Error", "Please provide both an event contact email and phone number");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -363,16 +374,18 @@ export default function CreateEventScreen() {
         contractorPay: parseFloat(formData.contractorPay || '0') || 0,
         hostSupervisionFee: parseFloat(formData.hostSupervisionFee) || 0,
         flyerUrl: flyerImage,
-        createdBy: (userRole ?? 'contractor') as 'business_owner' | 'event_host' | 'contractor',
+        createdBy: userRole === 'business_owner' ? 'business_owner' : userRole === 'event_host' ? 'event_host' : 'contractor',
         tableOptions: userRole === 'event_host' ? tableOptions : undefined,
         totalVendorSpaces,
-        hasInsurance,
-        wantsInsuranceContact: hasInsurance === false ? wantsInsuranceContact : false,
+        hasInsurance: userRole === 'local_vendor' ? undefined : hasInsurance,
+        wantsInsuranceContact: userRole === 'local_vendor' ? undefined : (hasInsurance === false ? wantsInsuranceContact : false),
         expectedAttendees: userRole === 'event_host' ? parseInt(expectedAttendees) || 0 : undefined,
         marketingMethods: userRole === 'event_host' ? [...marketingMethods, ...(otherMarketing ? [otherMarketing] : [])] : undefined,
         eventFrequency: userRole === 'event_host' ? (eventFrequency ?? undefined) : undefined,
-        stipendMode,
-        optInListings,
+        stipendMode: userRole === 'event_host' ? stipendMode : undefined,
+        optInListings: userRole === 'event_host' ? optInListings : undefined,
+        contactEmail: formData.contactEmail || undefined,
+        contactPhone: formData.contactPhone || undefined,
         ...(userRole === 'event_host' ? {
           isPrivateEvent,
           privateNotes: isPrivateEvent ? privateNotes : undefined,
@@ -434,23 +447,23 @@ export default function CreateEventScreen() {
           icon: FileText,
           multiline: true,
         },
-        ...(userRole === 'business_owner' ? [
-          {
+        ...(userRole === 'business_owner'
+          ? [{
             label: "Business Name",
             placeholder: "Your business name",
             value: formData.businessName,
             key: "businessName",
             icon: Building2,
-          },
-        ] : [
-          {
+          }]
+          : userRole === 'event_host'
+          ? [{
             label: "Organization Name",
             placeholder: "Your organization/event company name",
             value: formData.organizationName,
             key: "organizationName",
             icon: Store,
-          },
-        ]),
+          }]
+          : []),
         {
           label: "Website (Optional)",
           placeholder: "https://example.com",
@@ -458,6 +471,22 @@ export default function CreateEventScreen() {
           key: "website",
           icon: Globe,
         },
+        ...(userRole === 'local_vendor' ? [
+          {
+            label: "Event Contact Email",
+            placeholder: "contact@example.com",
+            value: formData.contactEmail,
+            key: "contactEmail",
+            icon: Mail,
+          },
+          {
+            label: "Event Contact Phone",
+            placeholder: "+1 (555) 123-4567",
+            value: formData.contactPhone,
+            key: "contactPhone",
+            icon: Phone,
+          },
+        ] : []),
       ],
     },
     {
@@ -514,10 +543,10 @@ export default function CreateEventScreen() {
         },
       ] : [],
     },
-    {
+    ...(userRole === 'local_vendor' ? [] : [{
       title: "Event Insurance",
       fields: [],
-    },
+    }]),
     ...(userRole === 'business_owner' ? [{
       title: "Staffing & Compensation",
       fields: [
@@ -548,7 +577,7 @@ export default function CreateEventScreen() {
           keyboardType: "numeric",
         },
       ],
-    }] : [{
+    }] : (userRole === 'event_host' ? [{
       title: "Event Host Information",
       fields: [
         {
@@ -560,7 +589,7 @@ export default function CreateEventScreen() {
           keyboardType: "numeric",
         },
       ],
-    }]),
+    }] : [])),
   ];
 
   
@@ -1260,7 +1289,7 @@ export default function CreateEventScreen() {
         ))}
 
         {/* Contractor Staffing for Event Hosts - placed above stipend area */}
-        {userRole !== 'business_owner' && (
+        {userRole === 'event_host' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Contractor Staffing</Text>
 
@@ -1299,7 +1328,7 @@ export default function CreateEventScreen() {
         )}
 
         {/* Stipend Mode Selection */}
-        {userRole !== 'business_owner' && (
+        {userRole === 'event_host' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Stipend Mode</Text>
           <View style={styles.stipendOptions}>
@@ -1329,7 +1358,7 @@ export default function CreateEventScreen() {
         </View>
         )}
 
-        {userRole !== 'business_owner' && (
+        {userRole === 'event_host' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Visibility & Policies</Text>
           <View style={styles.toggleRow}>

@@ -139,6 +139,9 @@ export interface Event {
   privatePremium?: boolean;
   requirements?: EventRequirements;
   listVenueInDirectory?: boolean;
+  // New event contact fields
+  contactEmail?: string;
+  contactPhone?: string;
 }
 
 const STORAGE_KEY = "vendor_events";

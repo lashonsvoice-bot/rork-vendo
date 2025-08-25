@@ -10,6 +10,10 @@ export const createVerificationSessionProcedure = protectedProcedure
     })
   )
   .mutation(async ({ input, ctx }) => {
+    if (!ctx.user) {
+      throw new Error('User not authenticated');
+    }
+    
     console.log('[verification] Creating verification session for user:', ctx.user.id);
     
     try {

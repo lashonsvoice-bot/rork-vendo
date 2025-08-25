@@ -7,11 +7,62 @@ import { useAuth } from '@/hooks/auth-store';
 
 type VerificationStatus = 'not_started' | 'in_progress' | 'verified' | 'failed' | 'requires_input';
 
-interface VerificationComponentProps {
-  onVerificationComplete?: () => void;
+function getVerificationMessage(userType?: string, action?: string): string {
+  if (userType === 'contractor' && action === 'apply_to_job') {
+    return 'ID verification is required to apply for contractor positions. This helps build trust with business owners and increases your chances of being selected.';
+  }
+  if (userType === 'business_owner' && (action === 'hire_contractor' || action === 'send_proposal')) {
+    return 'ID verification is required to hire contractors and send proposals. This ensures secure transactions and builds trust in the platform.';
+  }
+  if (userType === 'event_host' && action === 'accept_payment') {
+    return 'ID verification is required to accept payments from business owners. This protects both parties and ensures secure financial transactions.';
+  }
+  return 'Verify your identity with a government-issued ID to increase trust and unlock premium features.';
 }
 
-export default function VerificationComponent({ onVerificationComplete }: VerificationComponentProps) {
+function getBenefitsList(userType?: string): string[] {
+  if (userType === 'contractor') {
+    return [
+      'Enhanced profile visibility',
+      'Higher priority in contractor selection',
+      'Access to premium events',
+      'Increased earning potential',
+      'Trusted contractor badge'
+    ];
+  }
+  if (userType === 'business_owner') {
+    return [
+      'Ability to hire verified contractors',
+      'Send proposals to event hosts',
+      'Enhanced business credibility',
+      'Access to premium features',
+      'Verified business badge'
+    ];
+  }
+  if (userType === 'event_host') {
+    return [
+      'Accept payments from business owners',
+      'Enhanced host credibility',
+      'Access to verified contractors',
+      'Premium event features',
+      'Verified host badge'
+    ];
+  }
+  return [
+    'Enhanced profile visibility',
+    'Access to premium features',
+    'Increased platform trust',
+    'Verified user badge'
+  ];
+}
+
+interface VerificationComponentProps {
+  onVerificationComplete?: () => void;
+  userType?: 'contractor' | 'business_owner' | 'event_host';
+  action?: 'apply_to_job' | 'hire_contractor' | 'accept_payment' | 'send_proposal';
+}
+
+export default function VerificationComponent({ onVerificationComplete, userType, action }: VerificationComponentProps) {
   const { user } = useAuth();
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>('not_started');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -100,13 +151,12 @@ export default function VerificationComponent({ onVerificationComplete }: Verifi
             <Shield size={48} color={theme.colors.gray[400]} />
             <Text style={styles.statusTitle}>ID Verification Required</Text>
             <Text style={styles.statusDescription}>
-              Verify your identity with a government-issued ID to increase trust and unlock premium features.
+              {getVerificationMessage(userType, action)}
             </Text>
             <View style={styles.benefitsList}>
-              <Text style={styles.benefitItem}>• Enhanced profile visibility</Text>
-              <Text style={styles.benefitItem}>• Higher priority in contractor selection</Text>
-              <Text style={styles.benefitItem}>• Access to premium events</Text>
-              <Text style={styles.benefitItem}>• Increased earning potential</Text>
+              {getBenefitsList(userType).map((benefit, index) => (
+                <Text key={index} style={styles.benefitItem}>• {benefit}</Text>
+              ))}
             </View>
             <TouchableOpacity
               style={styles.primaryButton}

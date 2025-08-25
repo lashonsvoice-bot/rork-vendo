@@ -25,8 +25,9 @@ export const createVerificationSessionProcedure = protectedProcedure
         throw new Error('Profile not found');
       }
       
-      if (profile.role !== 'contractor') {
-        throw new Error('ID verification is only available for contractors');
+      // Allow verification for contractors, business owners, and event hosts
+      if (!['contractor', 'business_owner', 'event_host'].includes(profile.role)) {
+        throw new Error('ID verification is not available for this user type');
       }
       
       // Check if we should use the existing verification session

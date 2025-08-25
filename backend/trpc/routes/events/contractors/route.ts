@@ -2,6 +2,7 @@ import { z } from "zod";
 import { protectedProcedure } from "../../../create-context";
 import { eventRepo } from "../../../../db/event-repo";
 import { taxRepo } from "../../../../db/tax-repo";
+import { checkVerificationRequirement, createVerificationError } from "../../../../lib/verification-helper";
 
 export const submitContractorApplicationProcedure = protectedProcedure
   .input(z.object({
@@ -14,6 +15,12 @@ export const submitContractorApplicationProcedure = protectedProcedure
     
     if (!ctx.user?.id || !ctx.user?.name) {
       throw new Error('User not authenticated');
+    }
+    
+    // Check if contractor verification is required
+    const verificationReq = await checkVerificationRequirement(ctx.user.id, 'apply_to_job');
+    if (verificationReq.isRequired) {
+      throw createVerificationError(verificationReq);
     }
     
     const application = {
@@ -34,8 +41,18 @@ export const selectContractorsProcedure = protectedProcedure
     eventId: z.string(),
     selectedContractorIds: z.array(z.string()),
   }))
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     console.log('[Events] Selecting contractors:', input.eventId, input.selectedContractorIds);
+    
+    if (!ctx.user?.id) {
+      throw new Error('User not authenticated');
+    }
+    
+    // Check if business owner verification is required for hiring contractors
+    const verificationReq = await checkVerificationRequirement(ctx.user.id, 'hire_contractor');
+    if (verificationReq.isRequired) {
+      throw createVerificationError(verificationReq);
+    }
     
     const event = await eventRepo.findById(input.eventId);
     if (!event || !event.contractorApplications) {

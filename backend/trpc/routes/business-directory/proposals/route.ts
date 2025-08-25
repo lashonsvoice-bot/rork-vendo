@@ -5,6 +5,7 @@ import { subscriptionRepo } from "@/backend/db/subscription-repo";
 import { twilioService } from "@/backend/lib/twilio";
 import sgMail from "@sendgrid/mail";
 import { config } from "@/backend/config/env";
+import { checkVerificationRequirement, createVerificationError } from "@/backend/lib/verification-helper";
 
 const sendReverseProposalSchema = z.object({
   businessId: z.string().min(1),
@@ -47,6 +48,12 @@ export const sendReverseProposalProcedure = protectedProcedure
       throw new Error("Only event hosts can send reverse proposals");
     }
     
+    // Check if event host verification is required for sending proposals
+    const verificationReq = await checkVerificationRequirement(ctx.user.id, 'send_proposal');
+    if (verificationReq.isRequired) {
+      throw createVerificationError(verificationReq);
+    }
+    
     // Check subscription status for business owners
     if (ctx.user.role === "business_owner") {
       const subscription = await subscriptionRepo.findByUserId(ctx.user.id);
@@ -77,6 +84,12 @@ export const sendReverseProposalWithNotificationsProcedure = protectedProcedure
     
     if (ctx.user.role !== "event_host") {
       throw new Error("Only event hosts can send reverse proposals");
+    }
+    
+    // Check if event host verification is required for sending proposals
+    const verificationReq = await checkVerificationRequirement(ctx.user.id, 'send_proposal');
+    if (verificationReq.isRequired) {
+      throw createVerificationError(verificationReq);
     }
     
     // Check subscription status for business owners

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure } from "../../../create-context";
 import { eventRepo } from "../../../../db/event-repo";
+import { checkVerificationRequirement, createVerificationError } from "../../../../lib/verification-helper";
 
 export const getHostDashboardProcedure = protectedProcedure
   .input(z.object({
@@ -45,8 +46,18 @@ export const confirmPaymentReceivedProcedure = protectedProcedure
     eventId: z.string(),
     confirmationNumber: z.string().optional(),
   }))
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
     console.log('[Events] Confirming payment received:', input.eventId);
+    
+    if (!ctx.user?.id) {
+      throw new Error('User not authenticated');
+    }
+    
+    // Check if event host verification is required for accepting payments
+    const verificationReq = await checkVerificationRequirement(ctx.user.id, 'accept_payment');
+    if (verificationReq.isRequired) {
+      throw createVerificationError(verificationReq);
+    }
     
     return await eventRepo.update(input.eventId, {
       paymentReceived: true,

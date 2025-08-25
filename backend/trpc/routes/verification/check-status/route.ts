@@ -29,32 +29,47 @@ export const checkVerificationStatusProcedure = protectedProcedure
       
       const isSuccessful = isVerificationSuccessful(session);
       
-      // If verification is successful, update the contractor profile
+      // If verification is successful, update the profile
       if (isSuccessful) {
         const profile = await profileRepo.findByUserId(ctx.user?.id || '');
-        if (profile && profile.role === 'contractor') {
+        if (profile) {
           const verificationDetails = getVerificationDetails(session);
           
           if (verificationDetails) {
-            const updatedProfile: ContractorProfile = {
-              ...profile,
+            const baseVerificationData = {
               isVerified: true,
               verificationDate: verificationDetails.verifiedAt,
               verificationSessionId: session.id,
-              verifiedName: `${verificationDetails.firstName} ${verificationDetails.lastName}`,
-              verifiedAddress: verificationDetails.address,
-              verifiedDateOfBirth: verificationDetails.dateOfBirth,
-            } as ContractorProfile & {
-              isVerified: boolean;
-              verificationDate: string;
-              verificationSessionId: string;
-              verifiedName: string;
-              verifiedAddress: any;
-              verifiedDateOfBirth: any;
             };
             
-            await profileRepo.upsert(updatedProfile);
-            console.log('[verification] Updated contractor profile with verification data');
+            let updatedProfile;
+            
+            if (profile.role === 'contractor') {
+              updatedProfile = {
+                ...profile,
+                ...baseVerificationData,
+                verifiedName: `${verificationDetails.firstName} ${verificationDetails.lastName}`,
+                verifiedAddress: verificationDetails.address,
+                verifiedDateOfBirth: verificationDetails.dateOfBirth,
+              } as ContractorProfile & {
+                isVerified: boolean;
+                verificationDate: string;
+                verificationSessionId: string;
+                verifiedName: string;
+                verifiedAddress: any;
+                verifiedDateOfBirth: any;
+              };
+            } else if (profile.role === 'business_owner' || profile.role === 'event_host') {
+              updatedProfile = {
+                ...profile,
+                ...baseVerificationData,
+              };
+            }
+            
+            if (updatedProfile) {
+              await profileRepo.upsert(updatedProfile);
+              console.log(`[verification] Updated ${profile.role} profile with verification data`);
+            }
           }
         }
       }

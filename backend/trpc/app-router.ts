@@ -136,6 +136,7 @@ import {
 import initiateVoiceCallProcedure from "./routes/voice/call/route";
 import { createVerificationSessionProcedure } from "./routes/verification/create-session/route";
 import { checkVerificationStatusProcedure } from "./routes/verification/check-status/route";
+import { useDefaultVerificationSessionProcedure, getDefaultVerificationStatusProcedure } from "./routes/verification/use-default-session/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -319,6 +320,8 @@ export const appRouter = createTRPCRouter({
   verification: createTRPCRouter({
     createSession: createVerificationSessionProcedure,
     checkStatus: checkVerificationStatusProcedure,
+    useDefaultSession: useDefaultVerificationSessionProcedure,
+    getDefaultStatus: getDefaultVerificationStatusProcedure,
   }),
 });
 

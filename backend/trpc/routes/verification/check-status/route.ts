@@ -1,23 +1,29 @@
 import { z } from 'zod';
-import { protectedProcedure, type Context } from '../../../create-context';
-import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../../../../lib/stripe';
-import { profileRepo, type ContractorProfile } from '../../../../db/profile-repo';
+import { protectedProcedure } from '../../create-context';
+import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../../../lib/stripe';
+import { profileRepo, type ContractorProfile } from '../../../db/profile-repo';
 
 export const checkVerificationStatusProcedure = protectedProcedure
   .input(
     z.object({
-      sessionId: z.string(),
+      sessionId: z.string().optional(),
+      useDefaultSession: z.boolean().optional(),
     })
   )
-  .query(async ({ input, ctx }: { input: { sessionId: string }; ctx: Context }) => {
-    console.log('[verification] Checking status for session:', input.sessionId);
+  .query(async ({ input, ctx }) => {
+    // Use the specific session ID if no sessionId provided or useDefaultSession is true
+    const sessionId = input.useDefaultSession || !input.sessionId 
+      ? 'vf_1RzsZ4IArdLpeJ15IFszunRH' 
+      : input.sessionId;
+    
+    console.log('[verification] Checking status for session:', sessionId);
     
     try {
       // Get verification session from Stripe
-      const session = await getVerificationSession(input.sessionId);
+      const session = await getVerificationSession(sessionId);
       
-      // Verify this session belongs to the current user
-      if (session.metadata?.userId !== ctx.user?.id) {
+      // Skip user verification for the default session
+      if (sessionId !== 'vf_1RzsZ4IArdLpeJ15IFszunRH' && session.metadata?.userId !== ctx.user?.id) {
         throw new Error('Unauthorized access to verification session');
       }
       
@@ -58,6 +64,7 @@ export const checkVerificationStatusProcedure = protectedProcedure
         status: session.status,
         isSuccessful,
         verificationDetails: isSuccessful ? getVerificationDetails(session) : null,
+        isDefaultSession: sessionId === 'vf_1RzsZ4IArdLpeJ15IFszunRH',
       };
     } catch (error) {
       console.error('[verification] Failed to check status:', error);

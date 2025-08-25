@@ -19,6 +19,9 @@ import {
   UserPlus,
   Search,
   Building2,
+  Phone,
+  Calendar,
+  MapPin,
 } from 'lucide-react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useUser } from '@/hooks/user-store';
@@ -27,7 +30,7 @@ import { trpc, trpcClient } from '@/lib/trpc';
 export default function TestProposalsScreen() {
   const router = useRouter();
   const { currentUser, userRole } = useUser();
-  const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'lookup'>('send');
+  const [activeTab, setActiveTab] = useState<'send' | 'receive' | 'lookup' | 'events'>('send');
   const [isLoading, setIsLoading] = useState(false);
   
   // Send External Proposal Form
@@ -38,7 +41,7 @@ export default function TestProposalsScreen() {
     eventTitle: 'Spring Craft Fair 2024',
     hostName: 'Sarah Johnson',
     hostEmail: 'sarah@springfair.com',
-    hostPhone: '+1 (555) 123-4567',
+    hostPhone: '7064382148', // Using your test number
     proposedAmount: 150,
     supervisoryFee: 25,
     contractorsNeeded: 2,
@@ -66,6 +69,10 @@ export default function TestProposalsScreen() {
   });
 
   const [results, setResults] = useState<any>(null);
+  const [voiceCallResults, setVoiceCallResults] = useState<any>(null);
+  
+  // Get events for listing
+  const eventsQuery = trpc.events.getAll.useQuery({}, { enabled: !!currentUser });
 
   const handleSendExternalProposal = async () => {
     setIsLoading(true);
@@ -157,6 +164,33 @@ export default function TestProposalsScreen() {
     } catch (error) {
       console.error('Error looking up proposal:', error);
       Alert.alert('Error', 'Failed to lookup proposal');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleVoiceCall = async (phone: string, eventTitle: string, eventDate: string, eventLocation: string, businessName?: string) => {
+    setIsLoading(true);
+    try {
+      const result = await trpcClient.voice.initiateCall.mutate({
+        toPhone: phone,
+        toEmail: externalProposalForm.hostEmail,
+        eventTitle,
+        eventDate,
+        eventLocation,
+        businessName,
+      });
+      
+      setVoiceCallResults(result);
+      
+      Alert.alert(
+        result.success ? 'Voice Call Initiated!' : 'Voice Call Failed',
+        result.message,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error initiating voice call:', error);
+      Alert.alert('Error', 'Failed to initiate voice call');
     } finally {
       setIsLoading(false);
     }
@@ -395,6 +429,129 @@ export default function TestProposalsScreen() {
       </TouchableOpacity>
     </View>
   );
+  
+  const renderEventsTab = () => (
+    <View style={styles.tabContent}>
+      <Text style={styles.tabTitle}>Events & Voice Calls</Text>
+      <Text style={styles.tabDescription}>
+        View events and test voice call functionality with your phone number
+      </Text>
+      
+      {eventsQuery.isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#10B981" />
+          <Text style={styles.loadingText}>Loading events...</Text>
+        </View>
+      )}
+      
+      {eventsQuery.data && eventsQuery.data.length > 0 ? (
+        <View style={styles.eventsContainer}>
+          <Text style={styles.sectionTitle}>Your Events</Text>
+          {eventsQuery.data.map((event: any) => (
+            <View key={event.id} style={styles.eventCard}>
+              <View style={styles.eventHeader}>
+                <Calendar size={20} color="#10B981" />
+                <Text style={styles.eventTitle}>{event.title}</Text>
+              </View>
+              
+              <View style={styles.eventDetails}>
+                <View style={styles.eventDetailRow}>
+                  <Calendar size={16} color="#6B7280" />
+                  <Text style={styles.eventDetailText}>{event.date}</Text>
+                </View>
+                
+                <View style={styles.eventDetailRow}>
+                  <MapPin size={16} color="#6B7280" />
+                  <Text style={styles.eventDetailText}>{event.location}</Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity 
+                style={[styles.voiceCallButton, isLoading && styles.actionButtonDisabled]} 
+                onPress={() => handleVoiceCall(
+                  '7064382148', // Your test number
+                  event.title,
+                  event.date,
+                  event.location,
+                  'Test Business'
+                )}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Phone size={16} color="#FFFFFF" />
+                )}
+                <Text style={styles.voiceCallButtonText}>
+                  {isLoading ? 'Calling...' : 'Test Voice Call'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.noEventsContainer}>
+          <Calendar size={48} color="#9CA3AF" />
+          <Text style={styles.noEventsTitle}>No Events Found</Text>
+          <Text style={styles.noEventsText}>
+            Create some events first to test voice call functionality
+          </Text>
+        </View>
+      )}
+      
+      <View style={styles.testCallSection}>
+        <Text style={styles.sectionTitle}>Direct Voice Call Test</Text>
+        <Text style={styles.sectionDescription}>
+          Test voice call with sample event data using your phone number: 7064382148
+        </Text>
+        
+        <TouchableOpacity 
+          style={[styles.actionButton, isLoading && styles.actionButtonDisabled]} 
+          onPress={() => handleVoiceCall(
+            '7064382148',
+            'Sample Event Test',
+            'Today',
+            'Test Location',
+            'Sample Business'
+          )}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Phone size={20} color="#FFFFFF" />
+          )}
+          <Text style={styles.actionButtonText}>
+            {isLoading ? 'Initiating Call...' : 'Test Voice Call Now'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
+      {voiceCallResults && (
+        <View style={styles.resultsSection}>
+          <View style={styles.resultHeader}>
+            {voiceCallResults.success ? (
+              <CheckCircle size={24} color="#10B981" />
+            ) : (
+              <AlertCircle size={24} color="#EF4444" />
+            )}
+            <Text style={[styles.resultTitle, { color: voiceCallResults.success ? '#10B981' : '#EF4444' }]}>
+              {voiceCallResults.success ? 'Voice Call Initiated!' : 'Voice Call Failed'}
+            </Text>
+          </View>
+          
+          <Text style={styles.resultMessage}>{voiceCallResults.message}</Text>
+          
+          {voiceCallResults.callSid && (
+            <View style={styles.callSidSection}>
+              <Text style={styles.callSidLabel}>📞 Call SID:</Text>
+              <Text style={styles.callSidText}>{voiceCallResults.callSid}</Text>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
 
   const renderResults = () => {
     if (!results) return null;
@@ -493,12 +650,21 @@ export default function TestProposalsScreen() {
           <Search size={20} color={activeTab === 'lookup' ? '#10B981' : '#6B7280'} />
           <Text style={[styles.tabText, activeTab === 'lookup' && styles.activeTabText]}>Lookup</Text>
         </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'events' && styles.activeTab]}
+          onPress={() => setActiveTab('events')}
+        >
+          <Phone size={20} color={activeTab === 'events' ? '#10B981' : '#6B7280'} />
+          <Text style={[styles.tabText, activeTab === 'events' && styles.activeTabText]}>Events & Calls</Text>
+        </TouchableOpacity>
       </View>
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {activeTab === 'send' && renderSendExternalTab()}
         {activeTab === 'receive' && renderSendReverseTab()}
         {activeTab === 'lookup' && renderLookupTab()}
+        {activeTab === 'events' && renderEventsTab()}
         
         {renderResults()}
         
@@ -508,7 +674,8 @@ export default function TestProposalsScreen() {
             1. <Text style={styles.infoBold}>Send External:</Text> Test business owner sending proposal to host{'\n'}
             2. <Text style={styles.infoBold}>Send Reverse:</Text> Test host inviting business owner{'\n'}
             3. <Text style={styles.infoBold}>Lookup:</Text> Use invitation codes from sent proposals to test lookup{'\n'}
-            4. <Text style={styles.infoBold}>Check Console:</Text> View detailed logs in the console for debugging
+            4. <Text style={styles.infoBold}>Events & Calls:</Text> View events and test voice call functionality{'\n'}
+            5. <Text style={styles.infoBold}>Check Console:</Text> View detailed logs in the console for debugging
           </Text>
         </View>
       </ScrollView>
@@ -732,5 +899,118 @@ const styles = StyleSheet.create({
   },
   infoBold: {
     fontWeight: '600',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  eventsContainer: {
+    marginBottom: 20,
+  },
+  eventCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    flex: 1,
+  },
+  eventDetails: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  eventDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  eventDetailText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  voiceCallButton: {
+    backgroundColor: '#8B5CF6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  voiceCallButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  noEventsContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  noEventsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noEventsText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  testCallSection: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  callSidSection: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+  },
+  callSidLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  callSidText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontFamily: 'monospace',
   },
 });

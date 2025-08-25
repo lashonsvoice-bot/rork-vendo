@@ -133,6 +133,7 @@ import {
   sendReverseProposalSMSProcedure,
   getSMSStatusProcedure
 } from "./routes/sms/route";
+import initiateVoiceCallProcedure from "./routes/voice/call/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -309,6 +310,9 @@ export const appRouter = createTRPCRouter({
     getActivityLogs: getActivityLogsProcedure,
     checkSuspension: checkSuspensionProcedure,
     submitAppeal: submitAdminAppealProcedure,
+  }),
+  voice: createTRPCRouter({
+    initiateCall: initiateVoiceCallProcedure,
   }),
 });
 

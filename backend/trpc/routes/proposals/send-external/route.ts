@@ -229,6 +229,8 @@ const sendExternalProposalProcedure = protectedProcedure
     const results = {
       emailSent: false,
       smsSent: false,
+      voiceCallSent: false,
+      callSid: undefined as string | undefined,
       errors: [] as string[],
     };
 
@@ -339,14 +341,23 @@ const sendExternalProposalProcedure = protectedProcedure
         const res = await fetch(`${baseUrl}/voice/initiate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ toPhone: hostPhone, toEmail: hostEmail, eventTitle, eventDate }),
+          body: JSON.stringify({ 
+            toPhone: hostPhone, 
+            toEmail: hostEmail, 
+            eventTitle, 
+            eventDate,
+            eventLocation,
+            businessName
+          }),
         });
         const json = await res.json();
         if ((json as any).success) {
-          console.log('☎️ Voice call initiated', json);
+          console.log('☎️ Voice call initiated successfully:', json.sid);
+          results.voiceCallSent = true;
+          results.callSid = json.sid;
         } else {
-          console.warn('⚠️ Voice call initiation failed', json);
-          results.errors.push('Voice call initiation failed');
+          console.warn('⚠️ Voice call initiation failed:', json.error);
+          results.errors.push(`Voice call failed: ${json.error}`);
         }
       } catch (e) {
         console.warn('⚠️ Voice call initiation error', e);
@@ -417,6 +428,8 @@ const sendExternalProposalProcedure = protectedProcedure
       createdAt: new Date().toISOString(),
       emailSent: results.emailSent,
       smsSent: results.smsSent,
+      voiceCallSent: results.voiceCallSent,
+      callSid: results.callSid,
       invitationCode,
       isExternal: true,
     };
@@ -438,6 +451,8 @@ const sendExternalProposalProcedure = protectedProcedure
       invitationCode,
       emailSent: results.emailSent,
       smsSent: results.smsSent,
+      voiceCallSent: results.voiceCallSent,
+      callSid: results.callSid,
       errors: results.errors,
       message: results.errors.length > 0 
         ? `Proposal sent with some issues: ${results.errors.join(', ')}`

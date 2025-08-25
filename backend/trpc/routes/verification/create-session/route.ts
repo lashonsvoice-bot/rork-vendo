@@ -14,11 +14,12 @@ export const createVerificationSessionProcedure = protectedProcedure
       throw new Error('User not authenticated');
     }
     
-    console.log('[verification] Creating verification session for user:', ctx.user.id);
+    const user = ctx.user; // TypeScript assertion
+    console.log('[verification] Creating verification session for user:', user.id);
     
     try {
       // Get user profile to ensure they're a contractor
-      const profile = await profileRepo.findByUserId(ctx.user.id);
+      const profile = await profileRepo.findByUserId(user.id);
       if (!profile) {
         throw new Error('Profile not found');
       }
@@ -31,9 +32,9 @@ export const createVerificationSessionProcedure = protectedProcedure
       const session = await createVerificationSession({
         returnUrl: input.returnUrl,
         metadata: {
-          userId: ctx.user.id,
+          userId: user.id,
           profileId: profile.id,
-          email: ctx.user.email,
+          email: user.email,
         },
       });
       

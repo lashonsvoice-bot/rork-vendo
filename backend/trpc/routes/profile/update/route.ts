@@ -1,5 +1,5 @@
-import { protectedProcedure } from "../../create-context";
-import { profileRepo, type AnyProfile } from "../../../db/profile-repo";
+import { protectedProcedure, type Context } from "../../../create-context";
+import { profileRepo, type AnyProfile } from "../../../../db/profile-repo";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 
@@ -60,7 +60,7 @@ const AnyProfileInput = z.discriminatedUnion("role", [BusinessOwnerSchema, Contr
 
 export const updateProfileProcedure = protectedProcedure
   .input(AnyProfileInput)
-  .mutation(async ({ ctx, input }) => {
+  .mutation(async ({ ctx, input }: { ctx: Context; input: any }) => {
     if (!ctx.user) {
       throw new Error('User not authenticated');
     }

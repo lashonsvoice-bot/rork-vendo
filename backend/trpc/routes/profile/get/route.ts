@@ -1,12 +1,12 @@
-import { protectedProcedure } from "../../create-context";
-import { profileRepo } from "../../../db/profile-repo";
+import { protectedProcedure, type Context } from "../../../create-context";
+import { profileRepo } from "../../../../db/profile-repo";
 import { z } from "zod";
 
 export const profileProcedure = protectedProcedure
   .input(z.object({
     userId: z.string().optional(),
   }))
-  .query(async ({ ctx, input }) => {
+  .query(async ({ ctx, input }: { ctx: Context; input: { userId?: string } }) => {
     if (!ctx.user) {
       throw new Error('User not authenticated');
     }

@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { protectedProcedure } from "../../create-context";
-import { subscriptionRepo } from "../../../db/subscription-repo";
-import { userRepo } from "../../../db/user-repo";
+import { protectedProcedure, type Context } from "../../../create-context";
+import { subscriptionRepo } from "../../../../db/subscription-repo";
+import { userRepo } from "../../../../db/user-repo";
 import {
   createStripeCustomer,
   getStripePriceId,
@@ -9,8 +9,8 @@ import {
   getStripeSubscription,
   stripe,
   createBillingPortalSession,
-} from "../../../lib/stripe";
-import { config } from "../../../config/env";
+} from "../../../../lib/stripe";
+import { config } from "../../../../config/env";
 
 function getRequestBaseUrl(req: Request): string {
   try {
@@ -39,7 +39,7 @@ export const createStripeCheckoutProcedure = protectedProcedure
       billingCycle: z.enum(["monthly", "yearly"]),
     })
   )
-  .mutation(async ({ ctx, input }) => {
+  .mutation(async ({ ctx, input }: { ctx: Context; input: { tier: 'starter' | 'professional' | 'enterprise'; billingCycle: 'monthly' | 'yearly' } }) => {
     if (!ctx.user) {
       throw new Error("User not authenticated");
     }
@@ -94,7 +94,7 @@ export const createStripeCheckoutProcedure = protectedProcedure
     return { url: session.url };
   });
 
-export const createSetupIntentProcedure = protectedProcedure.mutation(async ({ ctx }) => {
+export const createSetupIntentProcedure = protectedProcedure.mutation(async ({ ctx }: { ctx: Context }) => {
   if (!ctx.user) {
     throw new Error("User not authenticated");
   }
@@ -114,7 +114,7 @@ export const createSetupIntentProcedure = protectedProcedure.mutation(async ({ c
   };
 });
 
-export const getStripeSubscriptionStatusProcedure = protectedProcedure.query(async ({ ctx }) => {
+export const getStripeSubscriptionStatusProcedure = protectedProcedure.query(async ({ ctx }: { ctx: Context }) => {
   if (!ctx.user) {
     throw new Error("User not authenticated");
   }
@@ -163,7 +163,7 @@ export const getStripeSubscriptionStatusProcedure = protectedProcedure.query(asy
   }
 });
 
-export const createBillingPortalSessionProcedure = protectedProcedure.mutation(async ({ ctx }) => {
+export const createBillingPortalSessionProcedure = protectedProcedure.mutation(async ({ ctx }: { ctx: Context }) => {
   if (!ctx.user) {
     throw new Error("User not authenticated");
   }
@@ -184,7 +184,7 @@ export const linkExistingStripeSubscriptionProcedure = protectedProcedure
   .input(z.object({
     stripeSubscriptionId: z.string().min(1),
   }))
-  .mutation(async ({ ctx, input }) => {
+  .mutation(async ({ ctx, input }: { ctx: Context; input: { stripeSubscriptionId: string } }) => {
     if (!ctx.user) {
       throw new Error("User not authenticated");
     }
@@ -275,7 +275,7 @@ export const linkExistingStripeSubscriptionProcedure = protectedProcedure
   });
 
 // Admin procedure to create Stripe products (run once during setup)
-export const createStripeProductsProcedure = protectedProcedure.mutation(async ({ ctx }) => {
+export const createStripeProductsProcedure = protectedProcedure.mutation(async ({ ctx }: { ctx: Context }) => {
   if (!ctx.user || ctx.user.role !== "admin") {
     throw new Error("Only admins can create Stripe products");
   }
@@ -283,7 +283,7 @@ export const createStripeProductsProcedure = protectedProcedure.mutation(async (
   console.log("Creating Stripe products for Revovend...");
 
   try {
-    const { createRevovendProducts } = await import("../../../lib/stripe");
+    const { createRevovendProducts } = await import("../../../../lib/stripe");
     const priceIds = await createRevovendProducts();
 
     return {
@@ -299,7 +299,7 @@ export const createStripeProductsProcedure = protectedProcedure.mutation(async (
 
 export const linkStripeByEmailProcedure = protectedProcedure
   .input(z.object({ email: z.string().email() }))
-  .mutation(async ({ ctx, input }) => {
+  .mutation(async ({ ctx, input }: { ctx: Context; input: { email: string } }) => {
     if (!ctx.user) {
       throw new Error("User not authenticated");
     }
@@ -318,7 +318,7 @@ export const linkStripeByEmailProcedure = protectedProcedure
 
     for (const cust of customers.data) {
       const subs = await stripe.subscriptions.list({ customer: cust.id, status: "all", limit: 10 });
-      const activeOrTrial = subs.data.find((s) => s.status === "active" || s.status === "trialing");
+      const activeOrTrial = subs.data.find((s: any) => s.status === "active" || s.status === "trialing");
       if (activeOrTrial) {
         linked = { subscriptionId: activeOrTrial.id, customerId: cust.id };
         break;

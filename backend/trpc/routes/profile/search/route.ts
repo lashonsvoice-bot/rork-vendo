@@ -1,6 +1,6 @@
-import { protectedProcedure, publicProcedure } from "../../create-context";
-import { profileRepo } from "../../../db/profile-repo";
-import { type SessionRole } from "../../../db/user-repo";
+import { protectedProcedure, publicProcedure, type Context } from "../../../create-context";
+import { profileRepo } from "../../../../db/profile-repo";
+import { type SessionRole } from "../../../../db/user-repo";
 import { z } from "zod";
 
 const searchInput = z.object({
@@ -12,7 +12,7 @@ const searchInput = z.object({
 
 export const searchProfilesProcedure = protectedProcedure
   .input(searchInput)
-  .query(async ({ ctx, input }) => {
+  .query(async ({ ctx, input }: { ctx: Context; input: { role: SessionRole; q?: string; offset?: number; limit?: number } }) => {
     if (!ctx.user) {
       throw new Error('User not authenticated');
     }
@@ -30,7 +30,7 @@ export const searchProfilesProcedure = protectedProcedure
 
 export const searchPublicProfilesProcedure = publicProcedure
   .input(searchInput)
-  .query(async ({ input }) => {
+  .query(async ({ input }: { input: { role: SessionRole; q?: string; offset?: number; limit?: number } }) => {
     console.log('[tRPC] Searching public profiles:', input);
     
     const result = await profileRepo.listPublicByRole(input.role as SessionRole, {

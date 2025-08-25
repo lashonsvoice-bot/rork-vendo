@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { protectedProcedure } from '../../create-context';
-import { createVerificationSession } from '../../../lib/stripe';
-import { profileRepo } from '../../../db/profile-repo';
+import { protectedProcedure, type Context } from '../../../create-context';
+import { createVerificationSession } from '../../../../lib/stripe';
+import { profileRepo } from '../../../../db/profile-repo';
 
 export const createVerificationSessionProcedure = protectedProcedure
   .input(
@@ -9,12 +9,12 @@ export const createVerificationSessionProcedure = protectedProcedure
       returnUrl: z.string().url(),
     })
   )
-  .mutation(async ({ input, ctx }) => {
+  .mutation(async ({ input, ctx }: { input: { returnUrl: string }; ctx: Context }) => {
     if (!ctx.user) {
       throw new Error('User not authenticated');
     }
     
-    const user = ctx.user; // TypeScript assertion
+    const user = ctx.user;
     console.log('[verification] Creating verification session for user:', user.id);
     
     try {

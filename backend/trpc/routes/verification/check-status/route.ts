@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { protectedProcedure } from '../../create-context';
-import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../../../lib/stripe';
-import { profileRepo, type ContractorProfile } from '../../../db/profile-repo';
+import { protectedProcedure, type Context } from '../../../create-context';
+import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../../../../lib/stripe';
+import { profileRepo, type ContractorProfile } from '../../../../db/profile-repo';
 
 export const checkVerificationStatusProcedure = protectedProcedure
   .input(
@@ -9,7 +9,7 @@ export const checkVerificationStatusProcedure = protectedProcedure
       sessionId: z.string(),
     })
   )
-  .query(async ({ input, ctx }) => {
+  .query(async ({ input, ctx }: { input: { sessionId: string }; ctx: Context }) => {
     console.log('[verification] Checking status for session:', input.sessionId);
     
     try {

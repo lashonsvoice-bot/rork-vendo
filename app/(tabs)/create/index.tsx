@@ -42,7 +42,7 @@ import {
   Phone,
   Send,
 } from "lucide-react-native";
-import { useEvents, TableOption } from "@/hooks/events-store";
+import { useEvents, TableOption, Event } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
 import { useSubscription } from "@/hooks/subscription-store";
 import { useRouter } from "expo-router";
@@ -359,7 +359,7 @@ export default function CreateEventScreen() {
     try {
       const totalVendorSpaces = userRole === 'event_host' ? calculateTotalVendorSpaces() : undefined;
       
-      const newEvent = {
+      const newEvent: Omit<Event, 'id' | 'status' | 'city' | 'state'> = {
         title: formData.title,
         description: formData.description,
         businessName: userRole === 'business_owner' ? formData.businessName : undefined,
@@ -374,7 +374,7 @@ export default function CreateEventScreen() {
         contractorPay: parseFloat(formData.contractorPay || '0') || 0,
         hostSupervisionFee: parseFloat(formData.hostSupervisionFee) || 0,
         flyerUrl: flyerImage,
-        createdBy: userRole === 'business_owner' ? 'business_owner' : userRole === 'event_host' ? 'event_host' : 'contractor',
+        createdBy: (userRole === 'business_owner' ? 'business_owner' : userRole === 'event_host' ? 'event_host' : 'contractor') as Event['createdBy'],
         tableOptions: userRole === 'event_host' ? tableOptions : undefined,
         totalVendorSpaces,
         hasInsurance: userRole === 'local_vendor' ? undefined : hasInsurance,

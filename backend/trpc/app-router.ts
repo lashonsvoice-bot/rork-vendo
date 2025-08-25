@@ -19,7 +19,7 @@ import { submitW9Procedure, getW9Procedure, updateW9StatusProcedure, checkW9Requ
 import { recordPaymentProcedure, getContractorPaymentsProcedure, getBusinessOwnerPaymentsProcedure } from "./routes/tax/payments/route";
 import { generate1099Procedure, update1099StatusProcedure, getBusinessOwner1099sProcedure } from "./routes/tax/1099/route";
 import { registerPushTokenProcedure, updateNotificationSettingsProcedure, getNotificationSettingsProcedure, sendPushNotificationProcedure } from "./routes/notifications/push/route";
-import sendTestEmailProcedure from "./routes/notifications/email/test";
+
 import { getSubscriptionProcedure } from "./routes/subscription/get/route";
 import { upgradeSubscriptionProcedure } from "./routes/subscription/upgrade/route";
 import { recordEventUsageProcedure, checkAndRecordEventUsageProcedure } from "./routes/subscription/record-usage/route";
@@ -188,7 +188,7 @@ export const appRouter = createTRPCRouter({
     updateSettings: updateNotificationSettingsProcedure,
     getSettings: getNotificationSettingsProcedure,
     send: sendPushNotificationProcedure,
-    sendTestEmail: sendTestEmailProcedure,
+
   }),
   subscription: createTRPCRouter({
     get: getSubscriptionProcedure,

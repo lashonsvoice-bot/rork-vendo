@@ -1,5 +1,5 @@
-import { protectedProcedure } from "@/backend/trpc/create-context";
-import { profileRepo, type AnyProfile } from "@/backend/db/profile-repo";
+import { protectedProcedure } from "../../create-context";
+import { profileRepo, type AnyProfile } from "../../../db/profile-repo";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 

@@ -1,5 +1,5 @@
 import Stripe from 'stripe';
-import { config } from '@/backend/config/env';
+import { config } from '../config/env';
 
 if (!config.stripe?.secretKey) {
   throw new Error('Stripe secret key is required. Please set STRIPE_SECRET_KEY in your environment variables.');

@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { config } from '@/backend/config/env';
-import { constructWebhookEvent, getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '@/backend/lib/stripe';
-import { subscriptionRepo } from '@/backend/db/subscription-repo';
-import { profileRepo, type ContractorProfile } from '@/backend/db/profile-repo';
+import { config } from '../config/env';
+import { constructWebhookEvent, getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../lib/stripe';
+import { subscriptionRepo } from '../db/subscription-repo';
+import { profileRepo, type ContractorProfile } from '../db/profile-repo';
 
 const webhooks = new Hono();
 

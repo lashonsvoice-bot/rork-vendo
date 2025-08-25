@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { protectedProcedure } from '@/backend/trpc/create-context';
-import { createVerificationSession } from '@/backend/lib/stripe';
-import { profileRepo } from '@/backend/db/profile-repo';
+import { protectedProcedure } from '../../create-context';
+import { createVerificationSession } from '../../../lib/stripe';
+import { profileRepo } from '../../../db/profile-repo';
 
 export const createVerificationSessionProcedure = protectedProcedure
   .input(

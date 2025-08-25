@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { protectedProcedure } from "@/backend/trpc/create-context";
-import { subscriptionRepo } from "@/backend/db/subscription-repo";
-import { userRepo } from "@/backend/db/user-repo";
+import { protectedProcedure } from "../../create-context";
+import { subscriptionRepo } from "../../../db/subscription-repo";
+import { userRepo } from "../../../db/user-repo";
 import {
   createStripeCustomer,
   getStripePriceId,
@@ -9,8 +9,8 @@ import {
   getStripeSubscription,
   stripe,
   createBillingPortalSession,
-} from "@/backend/lib/stripe";
-import { config } from "@/backend/config/env";
+} from "../../../lib/stripe";
+import { config } from "../../../config/env";
 
 function getRequestBaseUrl(req: Request): string {
   try {
@@ -283,7 +283,7 @@ export const createStripeProductsProcedure = protectedProcedure.mutation(async (
   console.log("Creating Stripe products for Revovend...");
 
   try {
-    const { createRevovendProducts } = await import("@/backend/lib/stripe");
+    const { createRevovendProducts } = await import("../../../lib/stripe");
     const priceIds = await createRevovendProducts();
 
     return {

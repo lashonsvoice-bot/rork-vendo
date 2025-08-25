@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { protectedProcedure } from '@/backend/trpc/create-context';
-import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '@/backend/lib/stripe';
-import { profileRepo, type ContractorProfile } from '@/backend/db/profile-repo';
+import { protectedProcedure } from '../../create-context';
+import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../../../lib/stripe';
+import { profileRepo, type ContractorProfile } from '../../../db/profile-repo';
 
 export const checkVerificationStatusProcedure = protectedProcedure
   .input(

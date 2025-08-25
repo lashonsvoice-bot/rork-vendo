@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import twilio from 'twilio';
-import { config } from '@/backend/config/env';
-import { sendGridService } from '@/backend/lib/sendgrid';
+import { config } from '../config/env';
+import { sendGridService } from '../lib/sendgrid';
 
 const voice = new Hono();
 

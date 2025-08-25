@@ -1,6 +1,6 @@
-import { protectedProcedure, publicProcedure } from "@/backend/trpc/create-context";
-import { profileRepo } from "@/backend/db/profile-repo";
-import { type SessionRole } from "@/backend/db/user-repo";
+import { protectedProcedure, publicProcedure } from "../../create-context";
+import { profileRepo } from "../../../db/profile-repo";
+import { type SessionRole } from "../../../db/user-repo";
 import { z } from "zod";
 
 const searchInput = z.object({

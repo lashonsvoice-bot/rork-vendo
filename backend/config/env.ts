@@ -204,7 +204,7 @@ export const config: AppConfig = {
   // Verification (only enabled in development)
   verification: {
     defaultSessionId: getEnvVar('NODE_ENV', 'development') === 'development' 
-      ? (getOptionalEnvVar('VERIFICATION_DEFAULT_SESSION_ID') || 'vf_1RzsZ4IArdLpeJ15IFszunRH')
+      ? (getOptionalEnvVar('VERIFICATION_DEFAULT_SESSION_ID') ?? 'vf_1RzsZ4IArdLpeJ15IFszunRH')
       : null,
     enableDefaultSession: getEnvVar('NODE_ENV', 'development') === 'development' && 
       getBooleanEnvVar('ENABLE_DEFAULT_VERIFICATION_SESSION', true),

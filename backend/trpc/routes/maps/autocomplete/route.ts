@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { protectedProcedure } from "@/backend/trpc/create-context";
-import { config } from "@/backend/config/env";
+import { protectedProcedure } from "../../../create-context";
+import { config } from "../../../../config/env";
 
 const inputSchema = z.object({
   query: z.string().min(1),

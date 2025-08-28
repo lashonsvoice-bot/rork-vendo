@@ -2,7 +2,7 @@ import { z } from "zod";
 import { protectedProcedure } from "../../../create-context";
 import { eventRepo } from "../../../../db/event-repo";
 import { walletRepo } from "../../../../db/wallet-repo";
-import { messageRepo } from "@/backend/db/message-repo";
+import { messageRepo } from "../../../../db/message-repo";
 
 const PLATFORM_USER_ID = "platform_fees";
 

@@ -1,15 +1,17 @@
-import { z } from 'zod';
-import { protectedProcedure } from '../../create-context';
+import { protectedProcedure } from '../../../create-context';
 import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../../../lib/stripe';
 import { profileRepo, type ContractorProfile } from '../../../db/profile-repo';
-
-// The specific verification session ID provided
-const DEFAULT_VERIFICATION_SESSION_ID = 'vf_1RzsZ4IArdLpeJ15IFszunRH';
+import { config } from '../../../config/env';
 
 export const useDefaultVerificationSessionProcedure = protectedProcedure
   .mutation(async ({ ctx }) => {
     if (!ctx.user) {
       throw new Error('User not authenticated');
+    }
+    
+    // Check if default verification session is enabled
+    if (!config.verification.enableDefaultSession || !config.verification.defaultSessionId) {
+      throw new Error('Default verification session is not available in this environment');
     }
     
     console.log('[verification] Using default verification session for user:', ctx.user.id);
@@ -26,7 +28,7 @@ export const useDefaultVerificationSessionProcedure = protectedProcedure
       }
       
       // Get the default verification session from Stripe
-      const session = await getVerificationSession(DEFAULT_VERIFICATION_SESSION_ID);
+      const session = await getVerificationSession(config.verification.defaultSessionId!);
       console.log('[verification] Retrieved default session:', session.id, 'Status:', session.status);
       
       const isSuccessful = isVerificationSuccessful(session);
@@ -78,9 +80,22 @@ export const getDefaultVerificationStatusProcedure = protectedProcedure
   .query(async ({ ctx }) => {
     console.log('[verification] Getting default verification session status');
     
+    // Check if default verification session is enabled
+    if (!config.verification.enableDefaultSession || !config.verification.defaultSessionId) {
+      return {
+        sessionId: null,
+        url: null,
+        status: 'unavailable',
+        isSuccessful: false,
+        verificationDetails: null,
+        canUseForVerification: false,
+        error: 'Default verification session is not available in this environment',
+      };
+    }
+    
     try {
       // Get the default verification session from Stripe
-      const session = await getVerificationSession(DEFAULT_VERIFICATION_SESSION_ID);
+      const session = await getVerificationSession(config.verification.defaultSessionId!);
       const isSuccessful = isVerificationSuccessful(session);
       
       return {
@@ -94,7 +109,7 @@ export const getDefaultVerificationStatusProcedure = protectedProcedure
     } catch (error) {
       console.error('[verification] Failed to get default session status:', error);
       return {
-        sessionId: DEFAULT_VERIFICATION_SESSION_ID,
+        sessionId: config.verification.defaultSessionId,
         url: null,
         status: 'error',
         isSuccessful: false,

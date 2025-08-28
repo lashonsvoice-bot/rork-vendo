@@ -85,6 +85,12 @@ export interface AppConfig {
     apiKey: string;
     apiSecret: string;
   };
+  
+  // Verification
+  verification: {
+    defaultSessionId: string | null;
+    enableDefaultSession: boolean;
+  };
 }
 
 function getEnvVar(name: string, defaultValue?: string): string {
@@ -195,6 +201,15 @@ export const config: AppConfig = {
     },
   }),
   
+  // Verification (only enabled in development)
+  verification: {
+    defaultSessionId: getEnvVar('NODE_ENV', 'development') === 'development' 
+      ? getOptionalEnvVar('VERIFICATION_DEFAULT_SESSION_ID', 'vf_1RzsZ4IArdLpeJ15IFszunRH')
+      : null,
+    enableDefaultSession: getEnvVar('NODE_ENV', 'development') === 'development' && 
+      getBooleanEnvVar('ENABLE_DEFAULT_VERIFICATION_SESSION', true),
+  },
+  
   ...(getOptionalEnvVar('COUCHBASE_CONNECTION_STRING') && {
     database: {
       connectionString: getEnvVar('COUCHBASE_CONNECTION_STRING'),
@@ -277,6 +292,7 @@ export function logConfigStatus(): void {
   console.log(`  OpenAI: ${config.openai ? '✅ Configured' : '⚪ Optional'}`);
   console.log(`  Cloudinary: ${config.cloudinary ? '✅ Configured' : '⚪ Optional'}`);
   console.log(`  Database: ${config.database ? '✅ Configured' : '⚪ Optional'}`);
+  console.log(`  Verification Default Session: ${config.verification.enableDefaultSession ? '✅ Enabled (Dev Only)' : '❌ Disabled'}`);
 }
 
 // Security utilities
@@ -296,5 +312,6 @@ export function logSecurityRecommendations(): void {
     console.log('  5. Set up proper database with connection pooling');
     console.log('  6. Configure rate limiting and request validation');
     console.log('  7. Set up monitoring and error tracking (Sentry)');
+    console.log('  8. Default verification session is automatically disabled in production');
   }
 }

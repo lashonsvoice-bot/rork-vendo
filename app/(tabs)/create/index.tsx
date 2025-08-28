@@ -374,7 +374,7 @@ export default function CreateEventScreen() {
         contractorPay: parseFloat(formData.contractorPay || '0') || 0,
         hostSupervisionFee: parseFloat(formData.hostSupervisionFee) || 0,
         flyerUrl: flyerImage,
-        createdBy: (userRole === 'business_owner' ? 'business_owner' : userRole === 'event_host' ? 'event_host' : 'contractor') as Event['createdBy'],
+        createdBy: userRole === 'business_owner' ? 'business_owner' : userRole === 'event_host' ? 'event_host' : 'contractor',
         tableOptions: userRole === 'event_host' ? tableOptions : undefined,
         totalVendorSpaces,
         hasInsurance: userRole === 'local_vendor' ? undefined : hasInsurance,
@@ -697,6 +697,7 @@ export default function CreateEventScreen() {
                   onChangeText={(t) => setFormData({ ...formData, title: t })}
                   style={styles.input}
                   placeholderTextColor="#9CA3AF"
+
                 />
               </View>
             </View>
@@ -711,6 +712,7 @@ export default function CreateEventScreen() {
                   onChangeText={(t) => setFormData({ ...formData, location: t })}
                   onSelect={(sel) => setFormData({ ...formData, location: sel.description })}
                   placeholder="Event venue address, City, State"
+
                 />
               </View>
             </View>
@@ -724,6 +726,7 @@ export default function CreateEventScreen() {
                   valueISO={formData.date ? formData.date : null}
                   onChange={(iso) => setFormData({ ...formData, date: iso })}
                   placeholder="MM/DD/YYYY"
+
                 />
               </View>
             </View>
@@ -737,6 +740,7 @@ export default function CreateEventScreen() {
                   value={formData.startTime}
                   onChange={(t) => setFormData({ ...formData, startTime: t })}
                   placeholder="e.g., 10:00 AM"
+
                 />
               </View>
             </View>
@@ -750,6 +754,7 @@ export default function CreateEventScreen() {
                   value={formData.endTime}
                   onChange={(t) => setFormData({ ...formData, endTime: t })}
                   placeholder="e.g., 6:00 PM"
+
                 />
               </View>
             </View>

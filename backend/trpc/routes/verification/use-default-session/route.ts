@@ -1,7 +1,7 @@
 import { protectedProcedure } from '../../../create-context';
-import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../../../lib/stripe';
-import { profileRepo, type ContractorProfile } from '../../../db/profile-repo';
-import { config } from '../../../config/env';
+import { getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../../../../lib/stripe';
+import { profileRepo, type ContractorProfile } from '../../../../db/profile-repo';
+import { config } from '../../../../config/env';
 
 export const useDefaultVerificationSessionProcedure = protectedProcedure
   .mutation(async ({ ctx }) => {

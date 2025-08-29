@@ -20,6 +20,8 @@ import {
   Clock,
   Plus,
   ExternalLink,
+  Trophy,
+  Briefcase,
 } from 'lucide-react-native';
 import { useReferral, ReferralProvider } from '@/hooks/referral-store';
 import { theme } from '@/constants/theme';
@@ -67,9 +69,9 @@ function ReferralScreenContent() {
     }
   };
 
-  const handleShare = async (code: any) => {
+  const handleShare = async (code: any, isBusinessShare: boolean = false) => {
     try {
-      await shareReferralCode(code);
+      await shareReferralCode(code, isBusinessShare);
     } catch {
       Alert.alert('Error', 'Failed to share referral code');
     }
@@ -111,6 +113,33 @@ function ReferralScreenContent() {
       />
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Ambassador Program Banner */}
+        {stats.businessReferrals > 0 || stats.ambassadorEarnings > 0 ? (
+          <View style={styles.ambassadorBanner}>
+            <View style={styles.ambassadorHeader}>
+              <Trophy size={24} color={theme.colors.gold[500]} />
+              <Text style={styles.ambassadorTitle}>Ambassador Program</Text>
+            </View>
+            <Text style={styles.ambassadorText}>
+              Earn 20% commission on business subscriptions!
+            </Text>
+            <View style={styles.ambassadorStats}>
+              <View style={styles.ambassadorStatItem}>
+                <Briefcase size={16} color={theme.colors.primary} />
+                <Text style={styles.ambassadorStatText}>
+                  {stats.businessReferrals} Business{stats.businessReferrals !== 1 ? 'es' : ''}
+                </Text>
+              </View>
+              <View style={styles.ambassadorStatItem}>
+                <DollarSign size={16} color={theme.colors.green[500]} />
+                <Text style={styles.ambassadorStatText}>
+                  ${stats.ambassadorEarnings.toFixed(2)} Earned
+                </Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
         {/* Stats Section */}
         <View style={styles.statsContainer}>
           <Text style={styles.sectionTitle}>Your Referral Stats</Text>
@@ -186,10 +215,18 @@ function ReferralScreenContent() {
                 <View style={styles.codeActions}>
                   <TouchableOpacity
                     style={styles.actionButton}
-                    onPress={() => handleShare(code)}
+                    onPress={() => handleShare(code, false)}
                   >
                     <Share2 size={16} color={theme.colors.primary} />
                     <Text style={styles.actionButtonText}>Share</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.businessShareButton]}
+                    onPress={() => handleShare(code, true)}
+                  >
+                    <Briefcase size={16} color={theme.colors.gold[500]} />
+                    <Text style={[styles.actionButtonText, styles.businessShareText]}>Business</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
@@ -197,7 +234,7 @@ function ReferralScreenContent() {
                     onPress={() => handleCopyCode(code)}
                   >
                     <Copy size={16} color={theme.colors.primary} />
-                    <Text style={styles.actionButtonText}>Copy Code</Text>
+                    <Text style={styles.actionButtonText}>Code</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
@@ -205,7 +242,7 @@ function ReferralScreenContent() {
                     onPress={() => handleCopyLink(code)}
                   >
                     <ExternalLink size={16} color={theme.colors.primary} />
-                    <Text style={styles.actionButtonText}>Copy Link</Text>
+                    <Text style={styles.actionButtonText}>Link</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -268,16 +305,29 @@ function ReferralScreenContent() {
             {referralUsages.slice(0, 5).map((usage) => (
               <View key={usage.id} style={styles.activityCard}>
                 <View style={styles.activityInfo}>
-                  <Text style={styles.activityType}>
-                    {usage.refereeType.replace('_', ' ')} signup
-                  </Text>
+                  <View style={styles.activityHeader}>
+                    <Text style={styles.activityType}>
+                      {usage.refereeType.replace('_', ' ')} signup
+                    </Text>
+                    {usage.isAmbassador && (
+                      <View style={styles.ambassadorBadge}>
+                        <Trophy size={12} color={theme.colors.gold[500]} />
+                        <Text style={styles.ambassadorBadgeText}>20%</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.activityDate}>
                     {new Date(usage.signupDate).toLocaleDateString()}
                   </Text>
+                  {usage.subscriptionTier && (
+                    <Text style={styles.activityTier}>
+                      {usage.subscriptionTier} plan
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.activityReward}>
                   {usage.subscriptionDate ? (
-                    <Text style={styles.rewardAmount}>
+                    <Text style={[styles.rewardAmount, usage.isAmbassador && styles.ambassadorReward]}>
                       +${usage.rewardAmount.toFixed(2)}
                     </Text>
                   ) : (
@@ -294,11 +344,21 @@ function ReferralScreenContent() {
           <Text style={styles.sectionTitle}>How It Works</Text>
           
           <View style={styles.howItWorksCard}>
+            <Text style={styles.howItWorksTitle}>Standard Referrals</Text>
             <Text style={styles.howItWorksText}>
-              1. Create and share your referral code{'\n'}
-              2. Friends sign up using your code{'\n'}
-              3. Earn 10% of their subscription (up to $50){'\n'}
-              4. Get paid when they subscribe
+              • Share your code with contractors and hosts{'\n'}
+              • Earn 10% commission on their subscriptions{'\n'}
+              • Get paid directly to your wallet
+            </Text>
+            
+            <View style={styles.divider} />
+            
+            <Text style={styles.howItWorksTitle}>🏆 Ambassador Program</Text>
+            <Text style={styles.howItWorksText}>
+              • Refer business owners to RevoVend{'\n'}
+              • Earn 20% commission on business subscriptions{'\n'}
+              • No limit on earnings - the more you refer, the more you earn!{'\n'}
+              • Perfect for event planners, venue owners, and industry professionals
             </Text>
           </View>
         </View>
@@ -576,5 +636,90 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text.primary,
     lineHeight: 20,
+  },
+  howItWorksTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginVertical: 16,
+  },
+  ambassadorBanner: {
+    backgroundColor: theme.colors.gold[50],
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: theme.colors.gold[200],
+  },
+  ambassadorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  ambassadorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  ambassadorText: {
+    fontSize: 14,
+    color: theme.colors.text.secondary,
+    marginBottom: 12,
+  },
+  ambassadorStats: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  ambassadorStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ambassadorStatText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.text.primary,
+  },
+  businessShareButton: {
+    backgroundColor: theme.colors.gold[50],
+    borderColor: theme.colors.gold[200],
+  },
+  businessShareText: {
+    color: theme.colors.gold[600],
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ambassadorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.gold[100],
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 2,
+  },
+  ambassadorBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: theme.colors.gold[600],
+  },
+  activityTier: {
+    fontSize: 12,
+    color: theme.colors.text.secondary,
+    marginTop: 2,
+    textTransform: 'capitalize',
+  },
+  ambassadorReward: {
+    color: theme.colors.gold[600],
+    fontWeight: '700',
   },
 });

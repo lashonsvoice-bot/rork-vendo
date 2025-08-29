@@ -22,9 +22,12 @@ export type ReferralUsage = {
   refereeType: 'business_owner' | 'contractor' | 'host';
   signupDate: string;
   subscriptionDate?: string;
+  subscriptionTier?: 'starter' | 'professional' | 'enterprise';
+  subscriptionAmount?: number;
   rewardAmount: number;
   rewardPaid: boolean;
   rewardPaidDate?: string;
+  isAmbassador?: boolean;
 };
 
 export type ReferralStats = {
@@ -33,6 +36,8 @@ export type ReferralStats = {
   totalEarnings: number;
   pendingEarnings: number;
   paidEarnings: number;
+  businessReferrals: number;
+  ambassadorEarnings: number;
 };
 
 export const [ReferralProvider, useReferral] = createContextHook(() => {
@@ -53,6 +58,8 @@ export const [ReferralProvider, useReferral] = createContextHook(() => {
     totalEarnings: 0,
     pendingEarnings: 0,
     paidEarnings: 0,
+    businessReferrals: 0,
+    ambassadorEarnings: 0,
   };
   
   const history = historyQuery.data || { codes: [], usages: [] };
@@ -100,9 +107,11 @@ export const [ReferralProvider, useReferral] = createContextHook(() => {
   }, [payRewardMutation, statsQuery, historyQuery]);
   
   // Share referral code
-  const shareReferralCode = useCallback(async (code: ReferralCode) => {
+  const shareReferralCode = useCallback(async (code: ReferralCode, isBusinessShare: boolean = false) => {
     const shareUrl = `https://revovend.com/signup?ref=${code.code}`;
-    const message = `Join RevoVend with my referral code ${code.code} and we both earn rewards! ${shareUrl}`;
+    const message = isBusinessShare ? 
+      `Join RevoVend as a business owner with my ambassador code ${code.code} and get exclusive benefits! ${shareUrl}` :
+      `Join RevoVend with my referral code ${code.code} and we both earn rewards! ${shareUrl}`;
     
     try {
       if (Platform.OS === 'web') {

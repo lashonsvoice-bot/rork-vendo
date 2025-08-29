@@ -16,6 +16,7 @@ const payRewardInput = z.object({
 const processSubscriptionInput = z.object({
   refereeId: z.string(),
   subscriptionAmount: z.number(),
+  subscriptionTier: z.enum(['starter', 'professional', 'enterprise']).optional(),
 });
 
 // Create referral code
@@ -26,9 +27,14 @@ const createReferralCodeProcedure = protectedProcedure
     
     console.log('[Referral] Creating referral code for user:', ctx.user?.id);
     
+    // Map user role to referrer type
+    const referrerType = ctx.user!.role === 'event_host' ? 'host' : 
+                        ctx.user!.role === 'business_owner' ? 'business_owner' :
+                        ctx.user!.role === 'contractor' ? 'contractor' : 'host';
+    
     const referralCode = await referralRepo.createReferralCode(
       ctx.user!.id,
-      ctx.user!.role === 'event_host' ? 'host' : ctx.user!.role,
+      referrerType,
       input.maxUses
     );
     
@@ -48,10 +54,15 @@ const useReferralCodeProcedure = protectedProcedure
       throw new Error('Invalid referral code');
     }
     
+    // Map user role to referee type
+    const refereeType = ctx.user!.role === 'event_host' ? 'host' : 
+                       ctx.user!.role === 'business_owner' ? 'business_owner' :
+                       ctx.user!.role === 'contractor' ? 'contractor' : 'host';
+    
     const usage = await referralRepo.recordReferralUsage(
       referralCode.id,
       ctx.user!.id,
-      ctx.user!.role === 'event_host' ? 'host' : ctx.user!.role
+      refereeType
     );
     
     return { usage, referralCode };
@@ -85,7 +96,8 @@ const processSubscriptionRewardProcedure = protectedProcedure
     
     const result = await referralRepo.processSubscriptionReward(
       input.refereeId,
-      input.subscriptionAmount
+      input.subscriptionAmount,
+      input.subscriptionTier
     );
     
     return result;

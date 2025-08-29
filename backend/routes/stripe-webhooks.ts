@@ -3,6 +3,7 @@ import { config } from '../config/env';
 import { constructWebhookEvent, getVerificationSession, isVerificationSuccessful, getVerificationDetails } from '../lib/stripe';
 import { subscriptionRepo } from '../db/subscription-repo';
 import { profileRepo, type ContractorProfile } from '../db/profile-repo';
+import { referralRepo } from '../db/referral-repo';
 
 const webhooks = new Hono();
 
@@ -35,7 +36,7 @@ webhooks.post('/stripe', async (c) => {
         console.log('Subscription updated:', subscription.id, subscription.status);
         
         // Update local subscription record
-        await subscriptionRepo.updateByStripeSubscriptionId(subscription.id, {
+        const localSub = await subscriptionRepo.updateByStripeSubscriptionId(subscription.id, {
           status: subscription.status === 'active' ? 'active' :
                  subscription.status === 'trialing' ? 'trialing' :
                  subscription.status === 'past_due' ? 'past_due' : 'canceled',
@@ -43,6 +44,36 @@ webhooks.post('/stripe', async (c) => {
           currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
           trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : undefined,
         });
+        
+        // Process referral reward if this is a new active subscription
+        if (event.type === 'customer.subscription.created' && 
+            subscription.status === 'active' && 
+            localSub) {
+          try {
+            // Get subscription amount from the first item
+            const item = subscription.items?.data?.[0];
+            const price = item?.price;
+            if (price) {
+              const amount = price.unit_amount ? price.unit_amount / 100 : 0;
+              const tierMeta = price.metadata?.tier || 'starter';
+              const tier = ['starter', 'professional', 'enterprise'].includes(tierMeta) ? 
+                          tierMeta as 'starter' | 'professional' | 'enterprise' : 'starter';
+              
+              // Process referral reward
+              const result = await referralRepo.processSubscriptionReward(
+                localSub.userId,
+                amount,
+                tier
+              );
+              
+              if (result) {
+                console.log('[Stripe Webhook] Processed referral reward:', result.rewardAmount, 'for user:', localSub.userId);
+              }
+            }
+          } catch (error) {
+            console.error('[Stripe Webhook] Error processing referral reward:', error);
+          }
+        }
         break;
       }
 

@@ -18,9 +18,12 @@ const referralUsageSchema = z.object({
   refereeType: z.enum(['business_owner', 'contractor', 'host']),
   signupDate: z.string(),
   subscriptionDate: z.string().optional(),
+  subscriptionTier: z.enum(['starter', 'professional', 'enterprise']).optional(),
+  subscriptionAmount: z.number().optional(),
   rewardAmount: z.number(),
   rewardPaid: z.boolean(),
   rewardPaidDate: z.string().optional(),
+  isAmbassador: z.boolean().default(false),
 });
 
 export type ReferralCode = z.infer<typeof referralCodeSchema>;
@@ -117,6 +120,7 @@ async function recordReferralUsage(
     signupDate: new Date().toISOString(),
     rewardAmount: 0, // Will be updated when subscription is confirmed
     rewardPaid: false,
+    isAmbassador: false, // Will be updated when subscription is confirmed
   };
 
   referralUsages.push(usage);
@@ -132,7 +136,8 @@ async function recordReferralUsage(
 // Process subscription and reward
 async function processSubscriptionReward(
   refereeId: string,
-  subscriptionAmount: number
+  subscriptionAmount: number,
+  subscriptionTier?: 'starter' | 'professional' | 'enterprise'
 ): Promise<{ usage: ReferralUsage; rewardAmount: number } | null> {
   const usage = referralUsages.find(
     ru => ru.refereeId === refereeId && !ru.subscriptionDate
@@ -142,13 +147,26 @@ async function processSubscriptionReward(
     return null; // No referral usage found
   }
 
-  // Calculate reward based on subscription amount
-  const rewardAmount = Math.min(subscriptionAmount * 0.1, 50); // 10% of subscription, max $50
+  // Get referral code to check if it's an ambassador
+  const referralCode = referralCodes.find(rc => rc.id === usage.referralCodeId);
+  const isAmbassador = referralCode?.referrerType === 'business_owner' || 
+                       referralCode?.referrerType === 'contractor' || 
+                       referralCode?.referrerType === 'host';
+  
+  // Calculate reward: 20% for ambassador program (business referrals), 10% for regular referrals
+  const rewardPercentage = isAmbassador && usage.refereeType === 'business_owner' ? 0.20 : 0.10;
+  const rewardAmount = subscriptionAmount * rewardPercentage;
   
   usage.subscriptionDate = new Date().toISOString();
+  usage.subscriptionTier = subscriptionTier;
+  usage.subscriptionAmount = subscriptionAmount;
   usage.rewardAmount = rewardAmount;
+  usage.isAmbassador = isAmbassador && usage.refereeType === 'business_owner';
   
-  console.log('[Referral] Processed subscription reward:', rewardAmount, 'for referral:', usage.id);
+  console.log('[Referral] Processed subscription reward:', rewardAmount, 
+    `(${rewardPercentage * 100}% of ${subscriptionAmount})`,
+    'for referral:', usage.id,
+    'Ambassador:', usage.isAmbassador);
   
   return { usage, rewardAmount };
 }
@@ -179,6 +197,8 @@ async function getReferralStats(userId: string): Promise<{
   totalEarnings: number;
   pendingEarnings: number;
   paidEarnings: number;
+  businessReferrals: number;
+  ambassadorEarnings: number;
 }> {
   const userCodes = await getUserReferralCodes(userId);
   const codeIds = userCodes.map(code => code.id);
@@ -188,6 +208,12 @@ async function getReferralStats(userId: string): Promise<{
   );
   
   const successfulReferrals = userUsages.filter(usage => usage.subscriptionDate).length;
+  const businessReferrals = userUsages.filter(usage => 
+    usage.refereeType === 'business_owner' && usage.subscriptionDate
+  ).length;
+  const ambassadorEarnings = userUsages
+    .filter(usage => usage.isAmbassador && usage.subscriptionDate)
+    .reduce((sum, usage) => sum + usage.rewardAmount, 0);
   const totalEarnings = userUsages.reduce((sum, usage) => sum + usage.rewardAmount, 0);
   const paidEarnings = userUsages
     .filter(usage => usage.rewardPaid)
@@ -200,6 +226,8 @@ async function getReferralStats(userId: string): Promise<{
     totalEarnings,
     pendingEarnings,
     paidEarnings,
+    businessReferrals,
+    ambassadorEarnings,
   };
 }
 

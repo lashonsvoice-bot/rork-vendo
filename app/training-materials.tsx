@@ -23,6 +23,8 @@ import {
   Save,
   AlertTriangle,
   FolderOpen,
+  Video,
+  DollarSign,
 } from 'lucide-react-native';
 import { Stack, router } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
@@ -40,7 +42,7 @@ export default function TrainingMaterialsScreen() {
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<TrainingDocument | null>(null);
-  const [formData, setFormData] = useState<Partial<TrainingDocument>>({});
+  const [formData, setFormData] = useState<Partial<TrainingDocument & { zoomLink?: string; minEventValue?: number }>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
@@ -466,6 +468,44 @@ export default function TrainingMaterialsScreen() {
                   Mark as required training
                 </Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Zoom Link for High-Value Events</Text>
+              <View style={styles.inputRow}>
+                <Video size={20} color="#6B7280" />
+                <TextInput
+                  style={styles.input}
+                  value={formData.zoomLink || ''}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, zoomLink: text }))}
+                  placeholder="https://zoom.us/j/..."
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+              </View>
+              <Text style={styles.helperText}>
+                Provide a Zoom link for virtual training sessions (recommended for high-paying events)
+              </Text>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Minimum Event Value for Zoom Training</Text>
+              <View style={styles.inputRow}>
+                <DollarSign size={20} color="#6B7280" />
+                <TextInput
+                  style={styles.input}
+                  value={formData.minEventValue?.toString() || ''}
+                  onChangeText={(text) => setFormData(prev => ({ 
+                    ...prev, 
+                    minEventValue: text ? parseFloat(text) : undefined 
+                  }))}
+                  placeholder="500.00"
+                  keyboardType="numeric"
+                />
+              </View>
+              <Text style={styles.helperText}>
+                Events with value above this amount will have access to Zoom training sessions
+              </Text>
             </View>
 
             <View style={styles.quizSection}>
@@ -1036,5 +1076,16 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
 });

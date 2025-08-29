@@ -40,6 +40,7 @@ export type ContractorProfile = ProfileBase & {
   availability?: "full_time" | "part_time" | "contract" | null;
   resumeUrl?: string | null;
   trainingMaterialsUrls?: string[] | null;
+  profilePhotos?: string[] | null;
   isVerified?: boolean;
   verificationDate?: string | null;
   verificationSessionId?: string | null;

@@ -33,6 +33,7 @@ type ContractorData = {
   availability?: 'full_time' | 'part_time' | 'contract';
   resumeUrl?: string;
   trainingMaterialsUrls?: string[];
+  profilePhotos?: string[];
 };
 
 type EventHostData = {
@@ -95,6 +96,7 @@ export default function ProfileEditScreen() {
     availability: undefined,
     resumeUrl: '',
     trainingMaterialsUrls: [],
+    profilePhotos: [],
   });
 
   const [eventHostData, setEventHostData] = useState<EventHostData>({
@@ -141,6 +143,7 @@ export default function ProfileEditScreen() {
           availability: profile.availability || undefined,
           resumeUrl: profile.resumeUrl || '',
           trainingMaterialsUrls: profile.trainingMaterialsUrls || [],
+          profilePhotos: profile.profilePhotos || [],
         });
       } else if (user.role === 'event_host' && profile.role === 'event_host') {
         setEventHostData({
@@ -750,6 +753,29 @@ function ContractorForm({
           }))}
         />
       </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Profile Photos</Text>
+        <Text style={styles.sectionSubtitle}>
+          Add photos to showcase your work and build trust with potential clients
+        </Text>
+        
+        <FileUpload
+          label="Profile Photos"
+          description="Upload photos of your work, certifications, or professional headshots (JPG, PNG, GIF)"
+          fileType="images"
+          multiple
+          currentFiles={data.profilePhotos || []}
+          onUpload={(fileUrl) => setData(prev => ({ 
+            ...prev, 
+            profilePhotos: [...(prev.profilePhotos || []), fileUrl] 
+          }))}
+          onRemove={(fileUrl) => setData(prev => ({ 
+            ...prev, 
+            profilePhotos: prev.profilePhotos?.filter(url => url !== fileUrl) || [] 
+          }))}
+        />
+      </View>
     </>
   );
 }
@@ -1168,5 +1194,12 @@ const styles = StyleSheet.create({
   },
   businessTypeTextActive: {
     color: '#10B981',
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: neonTheme.textSecondary,
+    marginTop: -8,
+    marginBottom: 12,
+    lineHeight: 20,
   },
 });

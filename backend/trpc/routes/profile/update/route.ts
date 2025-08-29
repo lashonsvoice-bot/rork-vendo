@@ -38,6 +38,7 @@ const ContractorSchema = BaseProfileSchema.extend({
   availability: z.enum(["full_time", "part_time", "contract"]).optional().nullable(),
   resumeUrl: z.string().optional().nullable(),
   trainingMaterialsUrls: z.array(z.string()).optional().nullable(),
+  profilePhotos: z.array(z.string()).optional().nullable(),
 });
 
 const EventHostSchema = BaseProfileSchema.extend({

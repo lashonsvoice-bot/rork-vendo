@@ -69,6 +69,8 @@ export interface TrainingDocument {
   completedAt?: string;
   questions?: QuizQuestion[];
   businessOwnerId?: string;
+  zoomLink?: string;
+  minEventValue?: number;
 }
 
 export interface QuizQuestion {

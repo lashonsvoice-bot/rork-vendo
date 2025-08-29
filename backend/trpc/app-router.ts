@@ -137,6 +137,9 @@ import initiateVoiceCallProcedure from "./routes/voice/call/route";
 import { createVerificationSessionProcedure } from "./routes/verification/create-session/route";
 import { checkVerificationStatusProcedure } from "./routes/verification/check-status/route";
 import { useDefaultVerificationSessionProcedure, getDefaultVerificationStatusProcedure } from "./routes/verification/use-default-session/route";
+import { getContractorProStatus, subscribeToContractorPro, cancelContractorPro } from "./routes/contractor/pro-subscription/route";
+import { applyToEvent, getMyApplications, getEventApplications, respondToApplication, withdrawApplication } from "./routes/contractor/applications/route";
+import { getCreditsBalance, useCreditsForProposal, grantReferralCredits, purchaseCredits, expireCredits } from "./routes/host/credits/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -322,6 +325,29 @@ export const appRouter = createTRPCRouter({
     checkStatus: checkVerificationStatusProcedure,
     useDefaultSession: useDefaultVerificationSessionProcedure,
     getDefaultStatus: getDefaultVerificationStatusProcedure,
+  }),
+  contractor: createTRPCRouter({
+    pro: createTRPCRouter({
+      getStatus: getContractorProStatus,
+      subscribe: subscribeToContractorPro,
+      cancel: cancelContractorPro,
+    }),
+    applications: createTRPCRouter({
+      apply: applyToEvent,
+      getMy: getMyApplications,
+      getForEvent: getEventApplications,
+      respond: respondToApplication,
+      withdraw: withdrawApplication,
+    }),
+  }),
+  host: createTRPCRouter({
+    credits: createTRPCRouter({
+      getBalance: getCreditsBalance,
+      useForProposal: useCreditsForProposal,
+      grantReferral: grantReferralCredits,
+      purchase: purchaseCredits,
+      expire: expireCredits,
+    }),
   }),
 });
 

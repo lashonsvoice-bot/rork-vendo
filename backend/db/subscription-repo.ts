@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
-export type SubscriptionTier = "free" | "starter" | "professional" | "enterprise";
+export type SubscriptionTier = "free" | "starter" | "professional" | "enterprise" | "contractor_pro";
 export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
 export type BillingCycle = "monthly" | "yearly";
 
@@ -20,6 +20,10 @@ export type Subscription = {
   totalPaid?: number;
   lastPaymentDate?: string;
   monthlyAmount?: number;
+  // Contractor Pro specific fields
+  contractorApplicationsUsed?: number;
+  contractorApplicationsLimit?: number;
+  earlyAccessEnabled?: boolean;
   // Stripe integration fields
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
@@ -157,18 +161,30 @@ async function getUsageForEvent(userId: string, eventId: string): Promise<Subscr
   return allUsage.find(u => u.userId === userId && u.eventId === eventId) || null;
 }
 
-function getSubscriptionLimits(tier: SubscriptionTier): { eventsLimit: number; pricePerMonth: number } {
+function getSubscriptionLimits(tier: SubscriptionTier): { 
+  eventsLimit: number; 
+  pricePerMonth: number;
+  contractorApplicationsLimit?: number;
+  earlyAccessEnabled?: boolean;
+} {
   switch (tier) {
     case "free":
-      return { eventsLimit: 5, pricePerMonth: 0 };
+      return { eventsLimit: 5, pricePerMonth: 0, contractorApplicationsLimit: 5 };
     case "starter":
       return { eventsLimit: 10, pricePerMonth: 29 };
     case "professional":
       return { eventsLimit: 20, pricePerMonth: 59 };
     case "enterprise":
       return { eventsLimit: -1, pricePerMonth: 99 }; // -1 means unlimited
+    case "contractor_pro":
+      return { 
+        eventsLimit: 0, 
+        pricePerMonth: 9.99, 
+        contractorApplicationsLimit: -1, // unlimited applications
+        earlyAccessEnabled: true 
+      };
     default:
-      return { eventsLimit: 5, pricePerMonth: 0 };
+      return { eventsLimit: 5, pricePerMonth: 0, contractorApplicationsLimit: 5 };
   }
 }
 

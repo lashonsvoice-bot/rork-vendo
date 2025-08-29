@@ -19,12 +19,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAmbassador } from '@/hooks/ambassador-store';
-import { theme } from '@/constants/theme';
 import { UserPlus, LogIn, DollarSign, Users, TrendingUp } from 'lucide-react-native';
 
 export default function AmbassadorLoginScreen() {
   const router = useRouter();
-  const { login, signup, isLoggingIn, isSigningUp, loginError, signupError } = useAmbassador();
+  const { login, signup, isLoggingIn, isSigningUp } = useAmbassador();
   
   const [isSignupMode, setIsSignupMode] = useState(false);
   const [email, setEmail] = useState('');
@@ -74,7 +73,7 @@ export default function AmbassadorLoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <DollarSign size={40} color={theme.colors.ambassador} />
+              <DollarSign size={40} color="#8B4513" />
             </View>
             <Text style={styles.title}>Ambassador Program</Text>
             <Text style={styles.subtitle}>
@@ -85,11 +84,11 @@ export default function AmbassadorLoginScreen() {
           {/* Benefits */}
           <View style={styles.benefitsContainer}>
             <View style={styles.benefitItem}>
-              <TrendingUp size={24} color={theme.colors.ambassador} />
+              <TrendingUp size={24} color="#8B4513" />
               <Text style={styles.benefitText}>20% Commission</Text>
             </View>
             <View style={styles.benefitItem}>
-              <Users size={24} color={theme.colors.ambassador} />
+              <Users size={24} color="#8B4513" />
               <Text style={styles.benefitText}>Unlimited Referrals</Text>
             </View>
           </View>
@@ -237,7 +236,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: `${theme.colors.ambassador}20`,
+    backgroundColor: '#8B451333',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -297,7 +296,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   submitButton: {
-    backgroundColor: theme.colors.ambassador,
+    backgroundColor: '#8B4513',
     borderRadius: 8,
     padding: 16,
     flexDirection: 'row',
@@ -321,7 +320,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchModeText: {
-    color: theme.colors.ambassador,
+    color: '#8B4513',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -346,7 +345,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: theme.colors.ambassador,
+    backgroundColor: '#8B4513',
     color: '#fff',
     textAlign: 'center',
     lineHeight: 24,

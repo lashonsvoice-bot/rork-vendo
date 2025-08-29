@@ -13,6 +13,7 @@ import { Search, MapPin, Calendar, DollarSign, Filter, Building2, Store, Chevron
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useEvents } from "@/hooks/events-store";
 import { useUser } from "@/hooks/user-store";
+import { theme } from "@/constants/theme";
 
 export default function EventsScreen() {
   const router = useRouter();
@@ -338,6 +339,10 @@ export default function EventsScreen() {
         {filteredEvents.map((event) => {
           // Determine card styling based on workflow status
           const getEventCardStyle = () => {
+            // Ambassador events get brown highlighting
+            if (event.isAmbassadorListing) {
+              return [styles.eventCard, styles.eventCardAmbassador];
+            }
             if (userRole === 'business_owner') {
               if (!event.hostConnected) {
                 return [styles.eventCard, (event.proposalSent ?? false) ? styles.eventCardAwaitingHost : styles.eventCardDraft];
@@ -862,6 +867,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFBEB",
     shadowColor: "#F59E0B",
     shadowOpacity: 0.1,
+  },
+  eventCardAmbassador: {
+    borderWidth: 2,
+    borderColor: theme.colors.ambassador,
+    backgroundColor: "#FDF5E6",
+    shadowColor: theme.colors.ambassador,
+    shadowOpacity: 0.15,
   },
   eventImage: {
     width: "100%",

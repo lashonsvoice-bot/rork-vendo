@@ -136,7 +136,11 @@ export interface Event {
   eventHostId?: string;
   eventHostName?: string;
   businessOwnerId?: string;
-  createdBy: 'business_owner' | 'event_host' | 'contractor';
+  createdBy: 'business_owner' | 'event_host' | 'contractor' | 'ambassador';
+  contactEmail: string;
+  contactPhone?: string;
+  ambassadorId?: string;
+  isAmbassadorListing?: boolean;
   status: 'draft' | 'active' | 'filled' | 'completed' | 'cancelled' | 'awaiting_host' | 'host_connected' | 'contractors_hired' | 'pending_w9_forms' | 'materials_sent' | 'ready_for_event';
   vendors?: VendorCheckIn[];
   paymentReceived?: boolean;

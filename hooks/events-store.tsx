@@ -95,7 +95,11 @@ export interface Event {
   eventHostId?: string;
   eventHostName?: string;
   businessOwnerId?: string;
-  createdBy: 'business_owner' | 'event_host' | 'contractor';
+  createdBy: 'business_owner' | 'event_host' | 'contractor' | 'ambassador';
+  contactEmail?: string;
+  contactPhone?: string;
+  ambassadorId?: string;
+  isAmbassadorListing?: boolean;
   status: 'draft' | 'active' | 'filled' | 'completed' | 'cancelled' | 'awaiting_host' | 'host_connected' | 'contractors_hired' | 'materials_sent' | 'ready_for_event';
   vendors?: VendorCheckIn[];
   paymentReceived?: boolean;
@@ -139,9 +143,6 @@ export interface Event {
   privatePremium?: boolean;
   requirements?: EventRequirements;
   listVenueInDirectory?: boolean;
-  // New event contact fields
-  contactEmail?: string;
-  contactPhone?: string;
 }
 
 const STORAGE_KEY = "vendor_events";

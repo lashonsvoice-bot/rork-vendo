@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAmbassador } from '@/hooks/ambassador-store';
-import { COLORS } from '@/constants/theme';
+import { theme } from '@/constants/theme';
 import { UserPlus, LogIn, DollarSign, Users, TrendingUp } from 'lucide-react-native';
 
 export default function AmbassadorLoginScreen() {
@@ -74,7 +74,7 @@ export default function AmbassadorLoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <DollarSign size={40} color={COLORS.primary} />
+              <DollarSign size={40} color={theme.colors.ambassador} />
             </View>
             <Text style={styles.title}>Ambassador Program</Text>
             <Text style={styles.subtitle}>
@@ -85,11 +85,11 @@ export default function AmbassadorLoginScreen() {
           {/* Benefits */}
           <View style={styles.benefitsContainer}>
             <View style={styles.benefitItem}>
-              <TrendingUp size={24} color={COLORS.primary} />
+              <TrendingUp size={24} color={theme.colors.ambassador} />
               <Text style={styles.benefitText}>20% Commission</Text>
             </View>
             <View style={styles.benefitItem}>
-              <Users size={24} color={COLORS.primary} />
+              <Users size={24} color={theme.colors.ambassador} />
               <Text style={styles.benefitText}>Unlimited Referrals</Text>
             </View>
           </View>
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: `${COLORS.primary}15`,
+    backgroundColor: `${theme.colors.ambassador}20`,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   submitButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: theme.colors.ambassador,
     borderRadius: 8,
     padding: 16,
     flexDirection: 'row',
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchModeText: {
-    color: COLORS.primary,
+    color: theme.colors.ambassador,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: COLORS.primary,
+    backgroundColor: theme.colors.ambassador,
     color: '#fff',
     textAlign: 'center',
     lineHeight: 24,

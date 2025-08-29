@@ -8,6 +8,7 @@ export type AppTheme = {
   accentPink: string;
   accentLime: string;
   accentAmber: string;
+  accentBrown: string;
   border: string;
   gradientHeader: [string, string];
   gradientCTA: [string, string];
@@ -29,6 +30,7 @@ export const lightTheme: AppTheme = {
   accentPink: "#EC4899",
   accentLime: "#65A30D",
   accentAmber: "#D97706",
+  accentBrown: "#8B4513",
   border: "#E5E7EB",
   gradientHeader: ["#F9FAFB", "#FFFFFF"],
   gradientCTA: ["#06B6D4", "#EC4899"],
@@ -50,6 +52,7 @@ export const darkTheme: AppTheme = {
   accentPink: "#FF4081",
   accentLime: "#00FF88",
   accentAmber: "#FFD700",
+  accentBrown: "#A0522D",
   border: "#4C1D95",
   gradientHeader: ["#2D1B5E", "#1A0B3D"],
   gradientCTA: ["#00E5FF", "#FF4081"],
@@ -72,6 +75,7 @@ export const revoVendTheme: AppTheme = {
   accentPink: "#FF4081", // Bright neon pink/coral from logo
   accentLime: "#00FF88", // Bright neon green from logo
   accentAmber: "#FFD700", // Bright gold accent
+  accentBrown: "#8B4513", // Brown for ambassador program
   border: "#4C1D95", // Purple border
   gradientHeader: ["#2D1B5E", "#1A0B3D"], // Purple gradient
   gradientCTA: ["#00E5FF", "#FF4081"], // Cyan to pink gradient
@@ -203,6 +207,19 @@ export const theme = {
       800: "#9A3412",
       900: "#7C2D12",
     },
+    brown: {
+      50: "#FDF5E6",
+      100: "#F5DEB3",
+      200: "#DEB887",
+      300: "#D2691E",
+      400: "#CD853F",
+      500: "#8B4513",
+      600: "#A0522D",
+      700: "#964B00",
+      800: "#654321",
+      900: "#3E2723",
+    },
+    ambassador: "#8B4513",
   },
   spacing: {
     xs: 4,

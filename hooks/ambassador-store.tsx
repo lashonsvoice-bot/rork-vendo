@@ -96,17 +96,25 @@ export const [AmbassadorProvider, useAmbassador] = createContextHook(() => {
   // Mutations
   const signupMutation = trpc.ambassador.auth.signup.useMutation({
     onSuccess: (data: any) => {
+      console.log('[AmbassadorStore] Signup success:', data);
       if (data.success && data.ambassador && data.token) {
         saveAuth(data.ambassador as Ambassador, data.token);
       }
+    },
+    onError: (error) => {
+      console.error('[AmbassadorStore] Signup error:', error);
     }
   });
 
   const loginMutation = trpc.ambassador.auth.login.useMutation({
     onSuccess: (data: any) => {
+      console.log('[AmbassadorStore] Login success:', data);
       if (data.success && data.ambassador && data.token) {
         saveAuth(data.ambassador as Ambassador, data.token);
       }
+    },
+    onError: (error) => {
+      console.error('[AmbassadorStore] Login error:', error);
     }
   });
 
@@ -148,11 +156,27 @@ export const [AmbassadorProvider, useAmbassador] = createContextHook(() => {
     name: string;
     phone?: string;
   }) => {
-    return signupMutation.mutateAsync(data);
+    console.log('[AmbassadorStore] Attempting signup with:', { ...data, password: '***' });
+    try {
+      const result = await signupMutation.mutateAsync(data);
+      console.log('[AmbassadorStore] Signup result:', result);
+      return result;
+    } catch (error) {
+      console.error('[AmbassadorStore] Signup failed:', error);
+      throw error;
+    }
   }, [signupMutation]);
 
   const login = useCallback(async (email: string, password: string) => {
-    return loginMutation.mutateAsync({ email, password });
+    console.log('[AmbassadorStore] Attempting login with:', { email, password: '***' });
+    try {
+      const result = await loginMutation.mutateAsync({ email, password });
+      console.log('[AmbassadorStore] Login result:', result);
+      return result;
+    } catch (error) {
+      console.error('[AmbassadorStore] Login failed:', error);
+      throw error;
+    }
   }, [loginMutation]);
 
   const logout = useCallback(() => {

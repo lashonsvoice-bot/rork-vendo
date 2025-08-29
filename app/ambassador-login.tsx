@@ -32,6 +32,12 @@ export default function AmbassadorLoginScreen() {
   const [phone, setPhone] = useState('');
 
   const handleSubmit = async () => {
+    console.log('[AmbassadorLogin] handleSubmit called');
+    console.log('[AmbassadorLogin] isSignupMode:', isSignupMode);
+    console.log('[AmbassadorLogin] email:', email);
+    console.log('[AmbassadorLogin] password:', password ? '***' : 'empty');
+    console.log('[AmbassadorLogin] name:', name);
+    
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
@@ -44,19 +50,28 @@ export default function AmbassadorLoginScreen() {
 
     try {
       if (isSignupMode) {
+        console.log('[AmbassadorLogin] Attempting signup...');
         const result = await signup({ email, password, name, phone: phone || undefined });
-        if (result.success) {
+        console.log('[AmbassadorLogin] Signup result:', result);
+        if (result?.success) {
           Alert.alert('Success', 'Ambassador account created successfully!');
           router.push('/ambassador-dashboard' as any);
+        } else {
+          Alert.alert('Error', 'Signup failed');
         }
       } else {
+        console.log('[AmbassadorLogin] Attempting login...');
         const result = await login(email, password);
-        if (result.success) {
+        console.log('[AmbassadorLogin] Login result:', result);
+        if (result?.success) {
           router.push('/ambassador-dashboard' as any);
+        } else {
+          Alert.alert('Error', 'Login failed');
         }
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'An error occurred');
+      console.error('[AmbassadorLogin] Error:', error);
+      Alert.alert('Error', error?.message || 'An error occurred');
     }
   };
 

@@ -17,6 +17,7 @@ import { WalletProvider } from "@/hooks/wallet-store";
 import { SplashProvider, useSplash } from "@/hooks/splash-store";
 import { VideoSplashScreen } from "@/components/VideoSplashScreen";
 import UpgradeSticker from "@/components/UpgradeSticker";
+import { AmbassadorProvider } from "@/hooks/ambassador-store";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -67,6 +68,9 @@ function RootLayoutNav() {
       <Stack.Screen name="privacy" options={{ headerShown: true, title: "Privacy Policy" }} />
       <Stack.Screen name="contact" options={{ headerShown: true, title: "Contact" }} />
       <Stack.Screen name="debug-connection" options={{ headerShown: true, title: "Connection Debug" }} />
+      <Stack.Screen name="ambassador-login" options={{ headerShown: false }} />
+      <Stack.Screen name="ambassador-dashboard" options={{ headerShown: true, title: "Ambassador Dashboard" }} />
+      <Stack.Screen name="test-ambassador" options={{ headerShown: true, title: "Test Ambassador" }} />
 
     </Stack>
   );
@@ -126,13 +130,15 @@ export default function RootLayout() {
                   <SubscriptionProvider>
                     <NotificationProvider>
                       <WalletProvider>
-                        <CommunicationProvider>
-                          <EventsProvider>
-                            <GestureHandlerRootView style={{ flex: 1 }} testID="gesture-root">
-                              <AppContent />
-                            </GestureHandlerRootView>
-                          </EventsProvider>
-                        </CommunicationProvider>
+                        <AmbassadorProvider>
+                          <CommunicationProvider>
+                            <EventsProvider>
+                              <GestureHandlerRootView style={{ flex: 1 }} testID="gesture-root">
+                                <AppContent />
+                              </GestureHandlerRootView>
+                            </EventsProvider>
+                          </CommunicationProvider>
+                        </AmbassadorProvider>
                       </WalletProvider>
                     </NotificationProvider>
                   </SubscriptionProvider>

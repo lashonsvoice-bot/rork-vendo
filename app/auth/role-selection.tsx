@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Stack } from 'expo-router';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Platform, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Building2, UserCheck, Store, Users, Mail, Key } from 'lucide-react-native';
+import { Building2, UserCheck, Store, Users, Mail, Key, DollarSign } from 'lucide-react-native';
 import { useAuth, type AuthRole } from '@/hooks/auth-store';
 import { trpcClient } from '@/lib/trpc';
+import { useRouter } from 'expo-router';
 
-type RoleKey = 'business_owner' | 'contractor' | 'event_host' | 'guest' | 'local_vendor';
+type RoleKey = 'business_owner' | 'contractor' | 'event_host' | 'guest' | 'local_vendor' | 'ambassador';
 
 interface RoleOption {
   key: RoleKey;
@@ -46,6 +47,13 @@ const roles: RoleOption[] = [
     icon: Store,
   },
   {
+    key: 'ambassador',
+    title: 'Ambassador Program',
+    subtitle: 'Earn 20% commission on successful referrals',
+    colors: ['#8B4513', '#A0522D'],
+    icon: DollarSign,
+  },
+  {
     key: 'guest',
     title: 'Browse as Guest',
     subtitle: 'View public directories with limited access',
@@ -56,6 +64,7 @@ const roles: RoleOption[] = [
 
 export default function RoleSelectionScreen() {
   const { login, isLoading } = useAuth();
+  const router = useRouter();
   const [selected, setSelected] = useState<RoleKey | null>(null);
   const [email, setEmail] = useState<string>('');
   const [invitationCode, setInvitationCode] = useState<string>('');
@@ -88,6 +97,12 @@ export default function RoleSelectionScreen() {
   const onContinue = async () => {
     if (!selected) {
       Alert.alert('Error', 'Please select a role');
+      return;
+    }
+    
+    // Handle ambassador role separately
+    if (selected === 'ambassador') {
+      router.push('/ambassador-login' as any);
       return;
     }
     
@@ -219,13 +234,13 @@ export default function RoleSelectionScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.cta, (!selected || !email.trim() || isLoading) && styles.ctaDisabled]}
+          style={[styles.cta, (!selected || (selected !== 'ambassador' && !email.trim()) || isLoading) && styles.ctaDisabled]}
           onPress={onContinue}
-          disabled={!selected || !email.trim() || isLoading}
+          disabled={!selected || (selected !== 'ambassador' && !email.trim()) || isLoading}
           testID="continue-btn"
         >
-          <LinearGradient colors={selected && email.trim() ? ["#10B981", "#34D399"] : ["#9CA3AF", "#9CA3AF"]} style={styles.ctaInner}>
-            <Text style={styles.ctaText}>{isLoading ? 'Signing in...' : 'Continue'}</Text>
+          <LinearGradient colors={selected && (selected === 'ambassador' || email.trim()) ? ["#10B981", "#34D399"] : ["#9CA3AF", "#9CA3AF"]} style={styles.ctaInner}>
+            <Text style={styles.ctaText}>{isLoading ? 'Signing in...' : selected === 'ambassador' ? 'Go to Ambassador Login' : 'Continue'}</Text>
           </LinearGradient>
         </TouchableOpacity>
 

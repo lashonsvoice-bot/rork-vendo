@@ -113,6 +113,30 @@ async function findById(id: string): Promise<AnyProfile | null> {
   return all.find((p) => p?.id === id) ?? null;
 }
 
+// Get profile with verification photos for hosts and business owners
+async function findByIdWithVerification(id: string, viewerRole?: SessionRole): Promise<AnyProfile | null> {
+  const profile = await findById(id);
+  if (!profile) return null;
+  
+  // Hosts and business owners can see contractor photos for verification
+  if (profile.role === 'contractor' && 
+      (viewerRole === 'event_host' || viewerRole === 'business_owner')) {
+    // Return full profile including photos
+    return profile;
+  }
+  
+  // For other cases, return profile without sensitive data
+  if (profile.role === 'contractor') {
+    const cp = profile as ContractorProfile;
+    return {
+      ...cp,
+      profilePhotos: undefined, // Hide photos from other contractors
+    } as ContractorProfile;
+  }
+  
+  return profile;
+}
+
 async function findPublicById(id: string): Promise<any | null> {
   const profile = await findById(id);
   if (!profile) return null;
@@ -260,6 +284,7 @@ export const profileRepo = {
   writeAll,
   findByUserId,
   findById,
+  findByIdWithVerification,
   findPublicById,
   upsert,
   listByRole,

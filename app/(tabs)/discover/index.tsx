@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Alert,
   Platform,
+  Image,
 } from 'react-native';
 import { 
   Users, 
@@ -281,6 +282,9 @@ export default function DiscoverScreen() {
 
   const renderProfileCard = (profile: any) => {
     const isPublicView = isGuest;
+    const canViewPhotos = (userRole === 'event_host' || userRole === 'business_owner') && 
+                         profile.role === 'contractor' && 
+                         profile.profilePhotos?.length > 0;
     
     return (
       <TouchableOpacity
@@ -308,7 +312,11 @@ export default function DiscoverScreen() {
               <Text style={styles.profileName} numberOfLines={1}>
                 {getProfileDisplayName(profile)}
               </Text>
-
+              {profile.isVerified && (
+                <View style={styles.verifiedBadge}>
+                  <Award size={14} color="#10B981" />
+                </View>
+              )}
             </View>
             {!isPublicView && (
               <Text style={[styles.profileRole, { color: getRoleColor(profile.role) }]}>
@@ -326,6 +334,26 @@ export default function DiscoverScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {canViewPhotos && (
+          <View style={styles.photoPreview}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {profile.profilePhotos.slice(0, 3).map((photo: string, index: number) => (
+                <Image
+                  key={index}
+                  source={{ uri: photo }}
+                  style={styles.previewPhoto}
+                />
+              ))}
+              {profile.profilePhotos.length > 3 && (
+                <View style={styles.morePhotosIndicator}>
+                  <Text style={styles.morePhotosText}>+{profile.profilePhotos.length - 3}</Text>
+                </View>
+              )}
+            </ScrollView>
+            <Text style={styles.photoLabel}>Verification Photos</Text>
+          </View>
+        )}
 
 
 
@@ -777,6 +805,39 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 32,
+  },
+  verifiedBadge: {
+    marginLeft: 4,
+  },
+  photoPreview: {
+    marginVertical: 12,
+  },
+  previewPhoto: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  morePhotosIndicator: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: neonTheme.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: neonTheme.border,
+  },
+  morePhotosText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: neonTheme.textSecondary,
+  },
+  photoLabel: {
+    fontSize: 12,
+    color: neonTheme.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   guestBadge: {
     backgroundColor: '#FEF3C7',

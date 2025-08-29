@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  Image,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { 
   ArrowLeft,
@@ -25,6 +28,10 @@ import {
   Briefcase,
   Clock,
   Users,
+  Camera,
+  X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useUser } from '@/hooks/user-store';
@@ -33,12 +40,16 @@ import { trpc, handleTRPCError } from '@/lib/trpc';
 import { neonTheme } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 
+const { width: screenWidth } = Dimensions.get('window');
+
 export default function ProfileDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { currentUser } = useUser();
+  const { currentUser, userRole } = useUser();
   const { user } = useAuth();
   const [isContacting, setIsContacting] = useState<boolean>(false);
+  const [showPhotoGallery, setShowPhotoGallery] = useState<boolean>(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState<number>(0);
 
   // Determine if user is guest
   const isGuest = user?.role === 'guest';
@@ -311,6 +322,36 @@ export default function ProfileDetailScreen() {
 
           {profile.role === 'contractor' && (
             <>
+              {!isGuest && profile.profilePhotos && profile.profilePhotos.length > 0 && 
+               (userRole === 'event_host' || userRole === 'business_owner') && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Verification Photos</Text>
+                  <Text style={styles.sectionSubtitle}>
+                    These photos are visible to hosts and business owners for verification purposes
+                  </Text>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.photosScroll}
+                  >
+                    {profile.profilePhotos.map((photo: string, index: number) => (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => {
+                          setCurrentPhotoIndex(index);
+                          setShowPhotoGallery(true);
+                        }}
+                      >
+                        <Image
+                          source={{ uri: photo }}
+                          style={styles.profilePhoto}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               {!isGuest && profile.ratePerHour && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Rate</Text>
@@ -412,6 +453,68 @@ export default function ProfileDetailScreen() {
             </LinearGradient>
           </TouchableOpacity>
         </View>
+      )}
+
+      {/* Photo Gallery Modal */}
+      {profile?.role === 'contractor' && profile.profilePhotos && (
+        <Modal
+          visible={showPhotoGallery}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowPhotoGallery(false)}
+        >
+          <View style={styles.galleryModal}>
+            <View style={styles.galleryHeader}>
+              <Text style={styles.galleryTitle}>
+                {currentPhotoIndex + 1} / {profile.profilePhotos.length}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowPhotoGallery(false)}
+                style={styles.closeButton}
+              >
+                <X size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.galleryContent}>
+              <Image
+                source={{ uri: profile.profilePhotos[currentPhotoIndex] }}
+                style={styles.galleryImage}
+                resizeMode="contain"
+              />
+              
+              {currentPhotoIndex > 0 && (
+                <TouchableOpacity
+                  style={[styles.galleryNavButton, styles.galleryNavLeft]}
+                  onPress={() => setCurrentPhotoIndex(currentPhotoIndex - 1)}
+                >
+                  <ChevronLeft size={32} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+              
+              {currentPhotoIndex < profile.profilePhotos.length - 1 && (
+                <TouchableOpacity
+                  style={[styles.galleryNavButton, styles.galleryNavRight]}
+                  onPress={() => setCurrentPhotoIndex(currentPhotoIndex + 1)}
+                >
+                  <ChevronRight size={32} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <View style={styles.galleryDots}>
+              {profile.profilePhotos.map((_: string, index: number) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.galleryDot,
+                    index === currentPhotoIndex && styles.galleryDotActive
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+        </Modal>
       )}
     </View>
   );
@@ -575,6 +678,79 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 32,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: neonTheme.textSecondary,
+    marginBottom: 12,
+    fontStyle: 'italic',
+  },
+  photosScroll: {
+    marginTop: 8,
+  },
+  profilePhoto: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 12,
+  },
+  galleryModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+  },
+  galleryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 20,
+  },
+  galleryTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  galleryContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  galleryImage: {
+    width: screenWidth,
+    height: screenWidth,
+  },
+  galleryNavButton: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    padding: 4,
+  },
+  galleryNavLeft: {
+    left: 20,
+  },
+  galleryNavRight: {
+    right: 20,
+  },
+  galleryDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 8,
+  },
+  galleryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  galleryDotActive: {
+    backgroundColor: '#FFFFFF',
   },
   guestNotice: {
     backgroundColor: '#FEF3C7',

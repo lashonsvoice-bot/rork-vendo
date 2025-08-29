@@ -17,13 +17,29 @@ export const searchProfilesProcedure = protectedProcedure
       throw new Error('User not authenticated');
     }
     
-    console.log('[tRPC] Searching profiles:', input);
+    console.log('[tRPC] Searching profiles:', input, 'Viewer role:', ctx.user.role);
     
     const result = await profileRepo.listByRole(input.role as SessionRole, {
       q: input.q,
       offset: input.offset,
       limit: input.limit,
     });
+    
+    // Filter contractor photos based on viewer role
+    if (input.role === 'contractor' && 
+        ctx.user.role !== 'event_host' && 
+        ctx.user.role !== 'business_owner') {
+      // Hide photos from other contractors
+      result.items = result.items.map(item => {
+        if (item.role === 'contractor') {
+          return {
+            ...item,
+            profilePhotos: undefined,
+          };
+        }
+        return item;
+      });
+    }
     
     return result;
   });

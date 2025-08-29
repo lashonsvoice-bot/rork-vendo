@@ -11,9 +11,10 @@ export const getProfileByIdProcedure = protectedProcedure
       throw new Error('User not authenticated');
     }
     
-    console.log('[tRPC] Getting profile by ID:', input.profileId);
+    console.log('[tRPC] Getting profile by ID:', input.profileId, 'Viewer role:', ctx.user.role);
     
-    const profile = await profileRepo.findById(input.profileId);
+    // Use the verification-aware method for hosts and business owners viewing contractors
+    const profile = await profileRepo.findByIdWithVerification(input.profileId, ctx.user.role);
     
     if (!profile) {
       throw new Error('Profile not found');

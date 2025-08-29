@@ -140,6 +140,8 @@ import { useDefaultVerificationSessionProcedure, getDefaultVerificationStatusPro
 import { getContractorProStatus, subscribeToContractorPro, cancelContractorPro } from "./routes/contractor/pro-subscription/route";
 import { applyToEvent, getMyApplications, getEventApplications, respondToApplication, withdrawApplication } from "./routes/contractor/applications/route";
 import { getCreditsBalance, useCreditsForProposal, grantReferralCredits, purchaseCredits, expireCredits } from "./routes/host/credits/route";
+import { ambassadorSignup, ambassadorLogin } from "./routes/ambassador/auth/route";
+import { createReferral, getReferrals, getAmbassadorStats, generateReferralLink, trackReferralConversion } from "./routes/ambassador/referrals/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -347,6 +349,19 @@ export const appRouter = createTRPCRouter({
       grantReferral: grantReferralCredits,
       purchase: purchaseCredits,
       expire: expireCredits,
+    }),
+  }),
+  ambassador: createTRPCRouter({
+    auth: createTRPCRouter({
+      signup: ambassadorSignup,
+      login: ambassadorLogin,
+    }),
+    referrals: createTRPCRouter({
+      create: createReferral,
+      getAll: getReferrals,
+      getStats: getAmbassadorStats,
+      generateLink: generateReferralLink,
+      trackConversion: trackReferralConversion,
     }),
   }),
 });

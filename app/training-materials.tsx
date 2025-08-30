@@ -25,6 +25,8 @@ import {
   FolderOpen,
   Video,
   DollarSign,
+  Square,
+  CheckSquare,
 } from 'lucide-react-native';
 import { Stack, router } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
@@ -45,6 +47,207 @@ export default function TrainingMaterialsScreen() {
   const [formData, setFormData] = useState<Partial<TrainingDocument & { zoomLink?: string; minEventValue?: number }>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  const [isAcknowledgmentModalVisible, setIsAcknowledgmentModalVisible] = useState(false);
+  const [acknowledgments, setAcknowledgments] = useState({
+    noShow: false,
+    notEmployee: false,
+  });
+
+  // Show acknowledgment modal for contractors
+  if (userRole === 'contractor' && !isAcknowledgmentModalVisible) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ title: 'Training & Acknowledgments' }} />
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Contractor Training & Acknowledgments</Text>
+            <Text style={styles.subtitle}>
+              Please review and acknowledge the following terms before accessing training materials.
+            </Text>
+          </View>
+
+          <View style={styles.acknowledgmentContainer}>
+            <Text style={styles.acknowledgmentTitle}>Required Acknowledgments</Text>
+            
+            {/* No-Show Policy Acknowledgment */}
+            <TouchableOpacity
+              style={styles.acknowledgmentItem}
+              onPress={() => setAcknowledgments(prev => ({ ...prev, noShow: !prev.noShow }))}
+            >
+              <View style={styles.checkboxContainer}>
+                {acknowledgments.noShow ? (
+                  <CheckSquare size={24} color="#10B981" />
+                ) : (
+                  <Square size={24} color="#EF4444" />
+                )}
+              </View>
+              <View style={styles.acknowledgmentTextContainer}>
+                <Text style={styles.acknowledgmentText}>
+                  <Text style={styles.boldText}>I acknowledge that no-shows for events will result in immediate account suspension.</Text>
+                </Text>
+                <Text style={styles.acknowledgmentSubtext}>
+                  This policy ensures reliability and professionalism for all events.
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Independent Contractor Acknowledgment */}
+            <TouchableOpacity
+              style={styles.acknowledgmentItem}
+              onPress={() => setAcknowledgments(prev => ({ ...prev, notEmployee: !prev.notEmployee }))}
+            >
+              <View style={styles.checkboxContainer}>
+                {acknowledgments.notEmployee ? (
+                  <CheckSquare size={24} color="#10B981" />
+                ) : (
+                  <Square size={24} color="#EF4444" />
+                )}
+              </View>
+              <View style={styles.acknowledgmentTextContainer}>
+                <Text style={styles.acknowledgmentText}>
+                  <Text style={styles.boldText}>I understand that I am not a RevoVend employee. I am contracting as a service provider for the hiring company I applied to.</Text>
+                </Text>
+                <Text style={styles.acknowledgmentSubtext}>
+                  You are an independent contractor working directly with event hosts and businesses.
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Warning if not all acknowledged */}
+            {(!acknowledgments.noShow || !acknowledgments.notEmployee) && (
+              <View style={styles.warningBox}>
+                <AlertTriangle size={20} color="#EF4444" />
+                <Text style={styles.warningText}>
+                  You must acknowledge all terms to proceed to training materials.
+                </Text>
+              </View>
+            )}
+
+            {/* Continue Button */}
+            <TouchableOpacity
+              style={[
+                styles.continueButton,
+                (!acknowledgments.noShow || !acknowledgments.notEmployee) && styles.continueButtonDisabled
+              ]}
+              onPress={() => {
+                if (acknowledgments.noShow && acknowledgments.notEmployee) {
+                  setIsAcknowledgmentModalVisible(true);
+                  Alert.alert(
+                    'Acknowledgments Accepted',
+                    'Thank you for acknowledging the terms. You can now access training materials.',
+                    [{ text: 'Continue', style: 'default' }]
+                  );
+                } else {
+                  Alert.alert(
+                    'Acknowledgments Required',
+                    'Please acknowledge all terms before continuing.',
+                    [{ text: 'OK', style: 'default' }]
+                  );
+                }
+              }}
+              disabled={!acknowledgments.noShow || !acknowledgments.notEmployee}
+            >
+              <Text style={styles.continueButtonText}>
+                {acknowledgments.noShow && acknowledgments.notEmployee
+                  ? 'Continue to Training Materials'
+                  : 'Please Acknowledge All Terms'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Show contractor view of training materials
+  if (userRole === 'contractor') {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ title: 'Training Materials' }} />
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Training Materials</Text>
+            <Text style={styles.subtitle}>
+              Complete all required training materials and pass the quizzes to qualify for events.
+            </Text>
+          </View>
+
+          {trainingMaterials.length === 0 ? (
+            <View style={styles.emptyState}>
+              <FileText size={48} color="#D1D5DB" />
+              <Text style={styles.emptyTitle}>No Training Materials Available</Text>
+              <Text style={styles.emptyText}>
+                Training materials will appear here once they are created by business owners.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.materialsContainer}>
+              <Text style={styles.sectionTitle}>
+                Available Training ({trainingMaterials.length})
+              </Text>
+              {trainingMaterials.map(material => {
+                const userProgress = trainingProgress.find(p => p.trainingId === material.id);
+                const isCompleted = userProgress?.completed || false;
+                const attempts = userProgress?.attempts || 0;
+                
+                return (
+                  <TouchableOpacity
+                    key={material.id}
+                    style={[styles.materialCard, isCompleted && styles.completedCard]}
+                    onPress={() => {
+                      // Navigate to training viewer
+                      Alert.alert(
+                        material.title,
+                        `${material.type === 'pdf' ? 'PDF Document' : 'Video Training'}\n\n` +
+                        `Status: ${isCompleted ? 'Completed ✅' : 'Not Completed'}\n` +
+                        `Attempts: ${attempts}/3\n\n` +
+                        `${material.required ? 'This is required training.' : 'This is optional training.'}`,
+                        [{ text: 'View Training', style: 'default' }]
+                      );
+                    }}
+                  >
+                    <View style={styles.materialHeader}>
+                      <View style={[styles.materialIcon, isCompleted && styles.completedIcon]}>
+                        {isCompleted ? (
+                          <CheckCircle size={20} color="#10B981" />
+                        ) : material.type === 'video_link' || material.type === 'video_upload' ? (
+                          <Play size={20} color="#6366F1" />
+                        ) : (
+                          <FileText size={20} color="#6366F1" />
+                        )}
+                      </View>
+                      <View style={styles.materialInfo}>
+                        <Text style={styles.materialTitle}>{material.title}</Text>
+                        <Text style={styles.materialType}>
+                          {material.type === 'pdf' && 'PDF Document'}
+                          {material.type === 'video_link' && 'Video Link'}
+                          {material.type === 'video_upload' && 'Video Upload'}
+                          {material.required && ' • Required'}
+                        </Text>
+                        <Text style={[styles.materialProgress, isCompleted && styles.completedProgress]}>
+                          {isCompleted ? 'Completed ✅' : `Attempts: ${attempts}/3`}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.quizInfo}>
+                      <Text style={styles.quizText}>
+                        Quiz: {material.questions?.length || 0} questions • Perfect score required
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+      </View>
+    );
+  }
 
   if (userRole !== 'business_owner') {
     return (
@@ -54,7 +257,7 @@ export default function TrainingMaterialsScreen() {
           <AlertTriangle size={48} color="#EF4444" />
           <Text style={styles.errorTitle}>Access Denied</Text>
           <Text style={styles.errorText}>
-            Only business owners can manage training materials.
+            Only business owners and contractors can access training materials.
           </Text>
           <TouchableOpacity 
             style={styles.backButton}
@@ -1087,5 +1290,94 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontStyle: 'italic',
     marginTop: 4,
+  },
+  acknowledgmentContainer: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  acknowledgmentTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 20,
+  },
+  acknowledgmentItem: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  checkboxContainer: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  acknowledgmentTextContainer: {
+    flex: 1,
+  },
+  acknowledgmentText: {
+    fontSize: 15,
+    color: '#111827',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  boldText: {
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  acknowledgmentSubtext: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  warningText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#991B1B',
+    fontWeight: '500',
+  },
+  continueButton: {
+    backgroundColor: '#10B981',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  continueButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  continueButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  completedCard: {
+    borderColor: '#10B981',
+    borderWidth: 1,
+  },
+  completedIcon: {
+    backgroundColor: '#F0FDF4',
+  },
+  completedProgress: {
+    color: '#10B981',
   },
 });

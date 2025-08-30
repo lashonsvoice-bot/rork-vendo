@@ -6,9 +6,9 @@ echo "=================================================="
 # Navigate to the project directory
 cd "$(dirname "$0")"
 
-# Run the setup script
-echo "📝 Creating/updating ambassador account..."
-node backend/scripts/setup-ambassador-account.js
+# Run the verification script which also creates/updates the account
+echo "📝 Verifying and setting up ambassador account..."
+node backend/scripts/verify-ambassador-login.js
 
 echo ""
 echo "✅ Setup complete!"

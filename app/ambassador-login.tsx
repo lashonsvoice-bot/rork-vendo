@@ -57,21 +57,47 @@ export default function AmbassadorLoginScreen() {
           Alert.alert('Success', 'Ambassador account created successfully!');
           router.push('/ambassador-dashboard' as any);
         } else {
-          Alert.alert('Error', 'Signup failed');
+          Alert.alert('Error', 'Signup failed. Please try again.');
         }
       } else {
-        console.log('[AmbassadorLogin] Attempting login...');
+        console.log('[AmbassadorLogin] Attempting login with email:', email);
         const result = await login(email, password);
         console.log('[AmbassadorLogin] Login result:', result);
         if (result?.success) {
+          console.log('[AmbassadorLogin] Login successful, navigating to dashboard...');
           router.push('/ambassador-dashboard' as any);
         } else {
-          Alert.alert('Error', 'Login failed');
+          console.log('[AmbassadorLogin] Login failed - result not successful');
+          Alert.alert(
+            'Login Failed', 
+            'Invalid email or password. Please check your credentials and try again.\n\nExpected credentials:\nEmail: lashonsvoice@gmail.com\nPassword: Welcome123!'
+          );
         }
       }
     } catch (error: any) {
-      console.error('[AmbassadorLogin] Error:', error);
-      Alert.alert('Error', error?.message || 'An error occurred');
+      console.error('[AmbassadorLogin] Error details:', {
+        message: error?.message,
+        code: error?.code,
+        data: error?.data,
+        stack: error?.stack
+      });
+      
+      let errorMessage = 'An error occurred while logging in.';
+      
+      if (error?.message?.includes('UNAUTHORIZED')) {
+        errorMessage = 'Invalid email or password. Please check your credentials.';
+      } else if (error?.message?.includes('FORBIDDEN')) {
+        errorMessage = 'Your ambassador account has been suspended.';
+      } else if (error?.message?.includes('fetch')) {
+        errorMessage = 'Cannot connect to server. Please ensure the backend is running.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert(
+        'Login Error',
+        `${errorMessage}\n\nIf you continue to have issues:\n1. Ensure the backend is running\n2. Run: node backend/scripts/verify-ambassador-login.js\n3. Try again with:\nEmail: lashonsvoice@gmail.com\nPassword: Welcome123!`
+      );
     }
   };
 

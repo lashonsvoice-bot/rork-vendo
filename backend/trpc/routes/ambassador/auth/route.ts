@@ -62,12 +62,15 @@ export const ambassadorLogin = publicProcedure
     password: z.string()
   }))
   .mutation(async ({ input }) => {
+    console.log('[Ambassador Auth] Login attempt for:', input.email);
+    
     const repo = getAmbassadorRepository();
     await repo.initialize();
 
     const ambassador = await repo.validateAmbassadorPassword(input.email, input.password);
     
     if (!ambassador) {
+      console.log('[Ambassador Auth] Login failed - invalid credentials for:', input.email);
       throw new TRPCError({
         code: 'UNAUTHORIZED',
         message: 'Invalid email or password'
@@ -75,11 +78,14 @@ export const ambassadorLogin = publicProcedure
     }
 
     if (ambassador.status !== 'active') {
+      console.log('[Ambassador Auth] Login failed - account suspended:', input.email);
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: 'Your ambassador account has been suspended'
       });
     }
+    
+    console.log('[Ambassador Auth] Login successful for:', input.email)
 
     // Generate JWT token
     const token = jwt.sign(
@@ -92,17 +98,20 @@ export const ambassadorLogin = publicProcedure
       { expiresIn: '30d' }
     );
 
-    return {
+    const result = {
       success: true,
       ambassador: {
         id: ambassador.id,
         email: ambassador.email,
         name: ambassador.name,
         referralCode: ambassador.referralCode,
-        totalEarnings: ambassador.totalEarnings,
-        pendingEarnings: ambassador.pendingEarnings,
-        paidEarnings: ambassador.paidEarnings
+        totalEarnings: ambassador.totalEarnings || 0,
+        pendingEarnings: ambassador.pendingEarnings || 0,
+        paidEarnings: ambassador.paidEarnings || 0
       },
       token
     };
+    
+    console.log('[Ambassador Auth] Returning result for:', ambassador.email);
+    return result;
   });

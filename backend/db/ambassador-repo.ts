@@ -148,10 +148,18 @@ class AmbassadorRepository {
   }
 
   async validateAmbassadorPassword(email: string, password: string): Promise<Ambassador | null> {
+    console.log('[AmbassadorRepo] Validating password for:', email);
+    
     const ambassador = await this.findAmbassadorByEmail(email);
-    if (!ambassador) return null;
-
+    if (!ambassador) {
+      console.log('[AmbassadorRepo] Ambassador not found:', email);
+      return null;
+    }
+    
+    console.log('[AmbassadorRepo] Ambassador found, checking password...');
     const isValid = await bcrypt.compare(password, ambassador.password);
+    console.log('[AmbassadorRepo] Password validation result:', isValid ? 'Valid' : 'Invalid');
+    
     return isValid ? ambassador : null;
   }
 

@@ -70,7 +70,14 @@ export default function AmbassadorLoginScreen() {
           console.log('[AmbassadorLogin] Login failed - result not successful');
           Alert.alert(
             'Login Failed', 
-            'Invalid email or password. Please check your credentials and try again.\n\nExpected credentials:\nEmail: lashonsvoice@gmail.com\nPassword: Welcome123!'
+            'Invalid email or password.\n\nExpected credentials:\nEmail: lashonsvoice@gmail.com\nPassword: Welcome123!\n\nIf this continues:\n1. Ensure backend is running (port 3000)\n2. Run: node backend/scripts/ensure-ambassador-account.js\n3. Try again',
+            [
+              { text: 'OK' },
+              { 
+                text: 'Test Connection', 
+                onPress: () => router.push('/test-ambassador-auth' as any) 
+              }
+            ]
           );
         }
       }
@@ -96,7 +103,14 @@ export default function AmbassadorLoginScreen() {
       
       Alert.alert(
         'Login Error',
-        `${errorMessage}\n\nIf you continue to have issues:\n1. Ensure the backend is running\n2. Run: node backend/scripts/verify-ambassador-login.js\n3. Try again with:\nEmail: lashonsvoice@gmail.com\nPassword: Welcome123!`
+        `${errorMessage}\n\nTroubleshooting:\n1. Check backend is running (port 3000)\n2. Run: node backend/scripts/ensure-ambassador-account.js\n3. Credentials:\nEmail: lashonsvoice@gmail.com\nPassword: Welcome123!`,
+        [
+          { text: 'OK' },
+          { 
+            text: 'Debug Login', 
+            onPress: () => router.push('/test-ambassador-auth' as any) 
+          }
+        ]
       );
     }
   };

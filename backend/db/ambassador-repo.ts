@@ -119,7 +119,7 @@ class AmbassadorRepository {
       pendingEarnings: 0,
       paidEarnings: 0,
       status: 'active'
-    });
+    } as any);
 
     await this.client.insert('ambassadors', ambassador);
     return ambassador;
@@ -192,7 +192,7 @@ class AmbassadorRepository {
       status: 'pending',
       commissionRate: 0.20, // 20% for ambassador program
       commissionEarned: 0
-    });
+    } as any);
 
     await this.client.insert('ambassador_referrals', referral);
     return referral;
@@ -250,7 +250,7 @@ class AmbassadorRepository {
     const payout = createEntity<AmbassadorPayout>({
       ...data,
       status: 'pending'
-    });
+    } as any);
 
     await this.client.insert('ambassador_payouts', payout);
     return payout;

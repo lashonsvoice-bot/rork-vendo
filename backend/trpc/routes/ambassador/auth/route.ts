@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { publicProcedure } from '../../../create-context';
-import { getAmbassadorRepository } from '../../../db/ambassador-repo';
+import { getAmbassadorRepository } from '../../../../db/ambassador-repo';
 import { TRPCError } from '@trpc/server';
 import * as jwt from 'jsonwebtoken';
 

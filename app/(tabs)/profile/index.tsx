@@ -67,7 +67,17 @@ export default function ProfileScreen() {
       "Are you sure you want to logout?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Logout", style: "destructive", onPress: logout },
+        { 
+          text: "Logout", 
+          style: "destructive", 
+          onPress: async () => {
+            console.log('[ProfileScreen] Logging out...');
+            await logout();
+            console.log('[ProfileScreen] Logout complete');
+            // Force navigation to role selection
+            router.replace('/auth/role-selection');
+          }
+        },
       ]
     );
   };

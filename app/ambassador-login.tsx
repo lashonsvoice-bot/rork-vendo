@@ -118,7 +118,7 @@ export default function AmbassadorLoginScreen() {
             </View>
             <Text style={styles.title}>Ambassador Program</Text>
             <Text style={styles.subtitle}>
-              Earn 20% commission on every successful referral
+              Earn commission on every successful referral
             </Text>
           </View>
 
@@ -126,7 +126,7 @@ export default function AmbassadorLoginScreen() {
           <View style={styles.benefitsContainer}>
             <View style={styles.benefitItem}>
               <TrendingUp size={24} color="#8B4513" />
-              <Text style={styles.benefitText}>20% Commission</Text>
+              <Text style={styles.benefitText}>Commission</Text>
             </View>
             <View style={styles.benefitItem}>
               <Users size={24} color="#8B4513" />
@@ -239,7 +239,7 @@ export default function AmbassadorLoginScreen() {
             <View style={styles.infoItem}>
               <Text style={styles.infoNumber}>3</Text>
               <Text style={styles.infoText}>
-                Earn up to 20% when they subscribe or pay out
+                Earn commission when they subscribe or pay out
               </Text>
             </View>
           </View>

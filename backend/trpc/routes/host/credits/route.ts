@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure } from "../../../create-context";
-import { hostCreditsRepo } from "../../../db/host-credits-repo";
+import { hostCreditsRepo } from "../../../../db/host-credits-repo";
 import { TRPCError } from "@trpc/server";
 
 // Get host credits balance
@@ -23,7 +23,7 @@ export const getCreditsBalance = protectedProcedure
     const availableCredits = await hostCreditsRepo.getAvailableCredits(ctx.user.id);
     const creditHistory = await hostCreditsRepo.getCreditHistory(ctx.user.id);
     const allCredits = await hostCreditsRepo.readAllCredits();
-    const userCredits = allCredits.filter((c: any) => c.hostId === ctx.user!.id);
+    const userCredits = allCredits.filter((c) => c.hostId === ctx.user!.id);
     
     return {
       availableCredits,

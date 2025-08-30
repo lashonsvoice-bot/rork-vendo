@@ -3,7 +3,7 @@
  * Handles all ambassador program database operations
  */
 
-import { getSQLiteClient, createEntity, BaseEntity } from './sqlite-client';
+import { getSQLiteClient, createEntity, BaseEntity } from './backend-sqlite-client';
 import * as bcrypt from 'bcryptjs';
 
 export interface Ambassador extends BaseEntity {
@@ -112,14 +112,16 @@ class AmbassadorRepository {
     const referralCode = this.generateReferralCode();
     
     const ambassador = createEntity<Ambassador>({
-      ...data,
+      email: data.email,
       password: hashedPassword,
+      name: data.name,
+      phone: data.phone,
       referralCode,
       totalEarnings: 0,
       pendingEarnings: 0,
       paidEarnings: 0,
       status: 'active'
-    } as any);
+    });
 
     await this.client.insert('ambassadors', ambassador);
     return ambassador;
@@ -188,11 +190,14 @@ class AmbassadorRepository {
     referralLink?: string;
   }): Promise<AmbassadorReferral> {
     const referral = createEntity<AmbassadorReferral>({
-      ...data,
+      ambassadorId: data.ambassadorId,
+      referredEmail: data.referredEmail,
+      referredRole: data.referredRole,
+      referralLink: data.referralLink,
       status: 'pending',
       commissionRate: 0.20, // 20% for ambassador program
       commissionEarned: 0
-    } as any);
+    });
 
     await this.client.insert('ambassador_referrals', referral);
     return referral;
@@ -248,9 +253,12 @@ class AmbassadorRepository {
     paymentDetails?: string;
   }): Promise<AmbassadorPayout> {
     const payout = createEntity<AmbassadorPayout>({
-      ...data,
+      ambassadorId: data.ambassadorId,
+      amount: data.amount,
+      paymentMethod: data.paymentMethod,
+      paymentDetails: data.paymentDetails,
       status: 'pending'
-    } as any);
+    });
 
     await this.client.insert('ambassador_payouts', payout);
     return payout;

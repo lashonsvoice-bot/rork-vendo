@@ -72,10 +72,14 @@ export default function ProfileScreen() {
           style: "destructive", 
           onPress: async () => {
             console.log('[ProfileScreen] Logging out...');
-            await logout();
-            console.log('[ProfileScreen] Logout complete');
-            // Force navigation to role selection
-            router.replace('/auth/role-selection');
+            try {
+              await logout();
+              console.log('[ProfileScreen] Logout complete');
+              // The AuthGuard will handle navigation after logout
+            } catch (error) {
+              console.error('[ProfileScreen] Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           }
         },
       ]

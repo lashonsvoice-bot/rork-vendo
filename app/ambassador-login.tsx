@@ -32,13 +32,19 @@ export default function AmbassadorLoginScreen() {
   const [phone, setPhone] = useState('');
 
   const handleSubmit = async () => {
+    // Trim inputs to remove any accidental spaces
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    
     console.log('[AmbassadorLogin] handleSubmit called');
     console.log('[AmbassadorLogin] isSignupMode:', isSignupMode);
-    console.log('[AmbassadorLogin] email:', email);
-    console.log('[AmbassadorLogin] password:', password ? '***' : 'empty');
+    console.log('[AmbassadorLogin] email:', trimmedEmail);
+    console.log('[AmbassadorLogin] email length:', trimmedEmail.length);
+    console.log('[AmbassadorLogin] password:', trimmedPassword ? '***' : 'empty');
+    console.log('[AmbassadorLogin] password length:', trimmedPassword.length);
     console.log('[AmbassadorLogin] name:', name);
     
-    if (!email || !password) {
+    if (!trimmedEmail || !trimmedPassword) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
@@ -51,7 +57,7 @@ export default function AmbassadorLoginScreen() {
     try {
       if (isSignupMode) {
         console.log('[AmbassadorLogin] Attempting signup...');
-        const result = await signup({ email, password, name, phone: phone || undefined });
+        const result = await signup({ email: trimmedEmail, password: trimmedPassword, name: name.trim(), phone: phone?.trim() || undefined });
         console.log('[AmbassadorLogin] Signup result:', result);
         if (result?.success) {
           Alert.alert('Success', 'Ambassador account created successfully!');
@@ -60,8 +66,8 @@ export default function AmbassadorLoginScreen() {
           Alert.alert('Error', 'Signup failed. Please try again.');
         }
       } else {
-        console.log('[AmbassadorLogin] Attempting login with email:', email);
-        const result = await login(email, password);
+        console.log('[AmbassadorLogin] Attempting login with email:', trimmedEmail);
+        const result = await login(trimmedEmail, trimmedPassword);
         console.log('[AmbassadorLogin] Login result:', result);
         if (result?.success) {
           console.log('[AmbassadorLogin] Login successful, navigating to dashboard...');
@@ -70,7 +76,7 @@ export default function AmbassadorLoginScreen() {
           console.log('[AmbassadorLogin] Login failed - result not successful');
           Alert.alert(
             'Login Failed', 
-            'Invalid email or password.\n\nExpected credentials:\nEmail: lashonsvoice@gmail.com\nPassword: Welcome123!\n\nIf this continues:\n1. Ensure backend is running (port 3000)\n2. Run: node backend/scripts/ensure-ambassador-account.js\n3. Try again',
+            `Invalid email or password.\n\nYou entered:\nEmail: "${trimmedEmail}" (${trimmedEmail.length} chars)\n\nExpected:\nEmail: lashonsvoice@gmail.com (no spaces!)\nPassword: Welcome123!\n\nTroubleshooting:\n1. Check for spaces in email/password\n2. Ensure backend is running\n3. Run: node backend/scripts/ensure-ambassador-account.js`,
             [
               { text: 'OK' },
               { 

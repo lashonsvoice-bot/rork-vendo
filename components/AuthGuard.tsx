@@ -16,11 +16,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const currentPath = '/' + segments.join('/');
   const isAuthRoute = currentPath.startsWith('/auth/');
   const isRootRoute = currentPath === '/' || currentPath === '';
+  const isAmbassadorRoute = currentPath.startsWith('/ambassador-');
   
   React.useEffect(() => {
     if (isLoading) return;
     
     console.log('[AuthGuard] Current path:', currentPath, '| User:', user?.email, user?.role);
+
+    // Allow ambassador routes to be handled independently
+    if (isAmbassadorRoute) {
+      console.log('[AuthGuard] Ambassador route detected, allowing access');
+      return;
+    }
 
     if (!user) {
       if (!isAuthRoute) {
@@ -43,7 +50,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       router.replace('/');
       return;
     }
-  }, [user, isLoading, currentPath, isAuthRoute, isRootRoute, router]);
+  }, [user, isLoading, currentPath, isAuthRoute, isRootRoute, isAmbassadorRoute, router]);
   
   if (isLoading) {
     return (

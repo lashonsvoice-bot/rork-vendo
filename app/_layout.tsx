@@ -71,6 +71,7 @@ function RootLayoutNav() {
       <Stack.Screen name="ambassador-login" options={{ headerShown: false }} />
       <Stack.Screen name="ambassador-dashboard" options={{ headerShown: true, title: "Ambassador Dashboard" }} />
       <Stack.Screen name="test-ambassador" options={{ headerShown: true, title: "Test Ambassador" }} />
+      <Stack.Screen name="test-ambassador-login" options={{ headerShown: true, title: "Test Ambassador Login" }} />
 
     </Stack>
   );

@@ -213,7 +213,7 @@ export default function AmbassadorLoginScreen() {
             <View style={styles.infoItem}>
               <Text style={styles.infoNumber}>3</Text>
               <Text style={styles.infoText}>
-                Earn 20% commission when they subscribe
+                Earn up to 20% when they subscribe or pay out
               </Text>
             </View>
           </View>

@@ -73,7 +73,7 @@ export default function TestAmbassadorLogin() {
     setResult(null);
     try {
       console.log('[TestAmbassadorLogin] Testing backend connection...');
-      const response = await trpcClient.example.hi.query();
+      const response = await trpcClient.example.hi.mutate({ name: 'Test' });
       console.log('[TestAmbassadorLogin] Backend response:', response);
       setResult({ type: 'connection', data: response });
       Alert.alert('Success', 'Backend is connected!');

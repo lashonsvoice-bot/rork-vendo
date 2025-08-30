@@ -95,7 +95,7 @@ export default function AmbassadorDashboard() {
   const handleGenerateLink = async (role: 'business_owner' | 'host' | 'contractor') => {
     try {
       const result = await generateReferralLink(role);
-      if (result.success && result.referralLink) {
+      if (result && result.success && result.referralLink) {
         setGeneratedLinks(prev => ({ ...prev, [role]: result.referralLink }));
         Alert.alert('Success', 'Referral link generated!');
       }

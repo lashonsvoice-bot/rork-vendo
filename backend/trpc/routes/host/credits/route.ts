@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure } from "../../../create-context";
-import { hostCreditsRepo } from "../../../../db/host-credits-repo";
+import { hostCreditsRepo } from "../../../db/host-credits-repo";
 import { TRPCError } from "@trpc/server";
 
 // Get host credits balance

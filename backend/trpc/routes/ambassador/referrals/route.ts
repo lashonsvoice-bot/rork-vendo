@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { protectedProcedure } from '../../../create-context';
-import { getAmbassadorRepository } from '../../../../db/ambassador-repo';
+import { getAmbassadorRepository } from '../../../db/ambassador-repo';
 import { TRPCError } from '@trpc/server';
 
 // Middleware to check if user is an ambassador

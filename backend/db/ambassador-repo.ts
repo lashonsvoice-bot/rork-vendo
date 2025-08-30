@@ -3,7 +3,7 @@
  * Handles all ambassador program database operations
  */
 
-import { getSQLiteClient, createEntity, updateEntity, BaseEntity } from './sqlite-client';
+import { getSQLiteClient, createEntity, BaseEntity } from './sqlite-client';
 import * as bcrypt from 'bcryptjs';
 
 export interface Ambassador extends BaseEntity {

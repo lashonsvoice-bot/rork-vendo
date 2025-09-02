@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { Platform, View, Text } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { EventsProvider } from "@/hooks/events-store";
 import { UserProvider } from "@/hooks/user-store";
@@ -120,35 +121,63 @@ export default function RootLayout() {
     SplashScreen.hideAsync();
   }, []);
 
+  // Create the app content with all providers
+  const AppWithProviders = (
+    <QueryClientProvider client={queryClient}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <ThemeProvider>
+          <SplashProvider>
+            <AuthProvider>
+              <UserProvider>
+                <SubscriptionProvider>
+                  <NotificationProvider>
+                    <WalletProvider>
+                      <AmbassadorProvider>
+                        <CommunicationProvider>
+                          <EventsProvider>
+                            <GestureHandlerRootView style={{ flex: 1 }} testID="gesture-root">
+                              <AppContent />
+                            </GestureHandlerRootView>
+                          </EventsProvider>
+                        </CommunicationProvider>
+                      </AmbassadorProvider>
+                    </WalletProvider>
+                  </NotificationProvider>
+                </SubscriptionProvider>
+              </UserProvider>
+            </AuthProvider>
+          </SplashProvider>
+        </ThemeProvider>
+      </trpc.Provider>
+    </QueryClientProvider>
+  );
+
+  // On web, we need to be careful with the ErrorBoundary
+  if (Platform.OS === 'web') {
+    // For web, we'll use a try-catch approach instead of ErrorBoundary
+    // This avoids the window.addEventListener issue during SSR
+    try {
+      return AppWithProviders;
+    } catch (error) {
+      console.error('[RootLayout] Caught error in web render:', error);
+      return (
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Something went wrong</Text>
+              <Text>Please try refreshing the page.</Text>
+            </View>
+          </ThemeProvider>
+        </QueryClientProvider>
+      );
+    }
+  }
+
+  // For native platforms, use the ErrorBoundary as before
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <trpc.Provider client={trpcClient} queryClient={queryClient}>
-          <ThemeProvider>
-            <SplashProvider>
-              <AuthProvider>
-                <UserProvider>
-                  <SubscriptionProvider>
-                    <NotificationProvider>
-                      <WalletProvider>
-                        <AmbassadorProvider>
-                          <CommunicationProvider>
-                            <EventsProvider>
-                              <GestureHandlerRootView style={{ flex: 1 }} testID="gesture-root">
-                                <AppContent />
-                              </GestureHandlerRootView>
-                            </EventsProvider>
-                          </CommunicationProvider>
-                        </AmbassadorProvider>
-                      </WalletProvider>
-                    </NotificationProvider>
-                  </SubscriptionProvider>
-                </UserProvider>
-              </AuthProvider>
-            </SplashProvider>
-          </ThemeProvider>
-        </trpc.Provider>
-      </QueryClientProvider>
+      {/* Using fragment to avoid raw text error */}
+      <>{AppWithProviders}</>
     </ErrorBoundary>
   );
 }

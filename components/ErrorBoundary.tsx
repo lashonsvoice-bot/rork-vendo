@@ -16,7 +16,22 @@ interface ErrorBoundaryProps {
   fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+// Create a functional wrapper to handle web compatibility issues
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  // Use a simple wrapper to avoid window-related errors during SSR
+  // Check if we're in a browser environment before rendering the error boundary
+  const isBrowser = typeof window !== 'undefined';
+  
+  if (!isBrowser) {
+    // In SSR, just render children without error boundary
+    console.log('[ErrorBoundary] Running in SSR mode, skipping error boundary');
+    return <>{props.children}</>;
+  }
+  
+  return <ErrorBoundaryClass {...props} />;
+}
+
+class ErrorBoundaryClass extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {

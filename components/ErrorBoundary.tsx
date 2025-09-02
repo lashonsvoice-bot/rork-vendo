@@ -20,11 +20,11 @@ interface ErrorBoundaryProps {
 export function ErrorBoundary(props: ErrorBoundaryProps) {
   // Use a simple wrapper to avoid window-related errors during SSR
   // Check if we're in a browser environment before rendering the error boundary
-  const isBrowser = typeof window !== 'undefined';
+  const isBrowser = typeof window !== 'undefined' && typeof window.addEventListener === 'function';
   
   if (!isBrowser) {
-    // In SSR, just render children without error boundary
-    console.log('[ErrorBoundary] Running in SSR mode, skipping error boundary');
+    // In SSR or environments where window.addEventListener is not available, just render children without error boundary
+    console.log('[ErrorBoundary] Running in SSR mode or window.addEventListener not available, skipping error boundary');
     return <>{props.children}</>;
   }
   

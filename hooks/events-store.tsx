@@ -32,6 +32,9 @@ export interface VendorCheckIn {
   tableLabel?: string;
   stipendReleased?: boolean;
   checkedInBy?: 'host' | 'contractor';
+  w4Completed?: boolean;
+  trainingBusinessId?: string;
+  trainingSelectedAt?: string;
 }
 
 export interface TableOption {
@@ -430,6 +433,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
       endConfirmed: false,
       eventPhotos: [],
       fundsReleased: false,
+      w4Completed: false,
     };
 
     const updatedEvents = events.map((event) => {
@@ -534,6 +538,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
           endConfirmed: false,
           eventPhotos: [],
           fundsReleased: false,
+          w4Completed: false,
         }));
 
         return {

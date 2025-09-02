@@ -264,49 +264,13 @@ export default function ProfileScreen() {
               <CheckCircle size={16} color="#10B981" />
             </View>
             <View style={styles.verificationItem}>
-              <Play size={20} color="#F59E0B" />
-              <Text style={styles.verificationText}>Training ({completedRequired}/{requiredTraining} required)</Text>
-              <Clock size={16} color="#6B7280" />
+              <Play size={20} color="#10B981" />
+              <Text style={styles.verificationText}>Training managed per event</Text>
+              <CheckCircle size={16} color="#10B981" />
             </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Training Modules</Text>
-          {mockTrainingDocuments.map((doc) => (
-            <TouchableOpacity
-              key={doc.id}
-              style={[
-                styles.trainingCard,
-                doc.completed && styles.trainingCardCompleted
-              ]}
-              onPress={() => !doc.completed && handleTrainingComplete(doc.id)}
-              disabled={doc.completed}
-            >
-              <View style={styles.trainingIcon}>
-                {doc.type === 'video' ? (
-                  <Play size={20} color={doc.completed ? "#10B981" : "#6366F1"} />
-                ) : (
-                  <FileText size={20} color={doc.completed ? "#10B981" : "#6366F1"} />
-                )}
-              </View>
-              <View style={styles.trainingContent}>
-                <Text style={styles.trainingTitle}>{doc.title}</Text>
-                <Text style={styles.trainingType}>
-                  {doc.type === 'video' ? 'Video Training' : 'Document'}
-                  {doc.required && ' • Required'}
-                </Text>
-              </View>
-              <View style={styles.trainingStatus}>
-                {doc.completed ? (
-                  <CheckCircle size={20} color="#10B981" />
-                ) : (
-                  <Clock size={20} color="#6B7280" />
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>

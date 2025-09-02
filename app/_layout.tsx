@@ -52,6 +52,7 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="auth/role-selection" options={{ headerShown: false }} />
 
       <Stack.Screen name="auth/forgot-password" options={{ headerShown: true, title: "Forgot Password" }} />
@@ -80,9 +81,29 @@ function RootLayoutNav() {
 
 function AppContent() {
   const { showSplash, isLoading, hideSplash } = useSplash();
+  const [checkedOnboarding, setCheckedOnboarding] = React.useState<boolean>(false);
+  const router = require('expo-router').useRouter();
+
+  React.useEffect(() => {
+    const checkOnboarding = async () => {
+      if (isLoading || showSplash) return;
+      try {
+        const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+        const done = await AsyncStorage.getItem('onboarding_completed');
+        if (!done) {
+          router.replace('/onboarding');
+        }
+      } catch (e) {
+        console.log('[RootLayout] Onboarding check failed:', (e as Error)?.message);
+      } finally {
+        setCheckedOnboarding(true);
+      }
+    };
+    checkOnboarding();
+  }, [isLoading, showSplash, router]);
 
   if (isLoading) {
-    return null; // Or a simple loading indicator
+    return null;
   }
 
   if (showSplash) {
@@ -92,6 +113,10 @@ function AppContent() {
         duration={6000}
       />
     );
+  }
+
+  if (!checkedOnboarding) {
+    return null;
   }
 
   return (

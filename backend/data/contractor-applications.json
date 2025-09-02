@@ -1,0 +1,44 @@
+[
+  {
+    "id": "app_1704067200000_abc123",
+    "contractorId": "contractor_001",
+    "eventId": "event_001",
+    "hostId": "host_001",
+    "status": "pending",
+    "appliedAt": "2024-01-01T10:00:00.000Z",
+    "message": "I have 3 years of experience in event management and would love to help with your corporate event. I'm available all day and can handle setup, guest management, and cleanup.",
+    "isEarlyAccess": true
+  },
+  {
+    "id": "app_1704067260000_def456",
+    "contractorId": "contractor_002",
+    "eventId": "event_001",
+    "hostId": "host_001",
+    "status": "accepted",
+    "appliedAt": "2024-01-01T10:01:00.000Z",
+    "respondedAt": "2024-01-01T11:30:00.000Z",
+    "message": "Professional event contractor with food service experience. I can work the full 8-hour shift and have my own transportation.",
+    "isEarlyAccess": false
+  },
+  {
+    "id": "app_1704067320000_ghi789",
+    "contractorId": "contractor_003",
+    "eventId": "event_001",
+    "hostId": "host_001",
+    "status": "rejected",
+    "appliedAt": "2024-01-01T10:02:00.000Z",
+    "respondedAt": "2024-01-01T12:00:00.000Z",
+    "message": "Available for weekend work. Can help with setup and guest services.",
+    "isEarlyAccess": false
+  },
+  {
+    "id": "app_1704067380000_jkl012",
+    "contractorId": "contractor_004",
+    "eventId": "event_002",
+    "hostId": "host_002",
+    "status": "pending",
+    "appliedAt": "2024-01-01T10:03:00.000Z",
+    "message": "Experienced with trade shows and corporate events. I have my own uniform and can work flexible hours.",
+    "isEarlyAccess": true
+  }
+]

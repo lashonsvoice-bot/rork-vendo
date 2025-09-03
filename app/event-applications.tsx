@@ -44,19 +44,23 @@ export default function EventApplicationsScreen() {
   const { eventId } = useLocalSearchParams();
   const [refreshing, setRefreshing] = useState(false);
 
-  const applicationsQuery = trpc.contractor.applications.getForEvent.useQuery({
-    eventId: eventId as string
-  });
+  // This screen should redirect to business directory instead
+  // Contractors don't apply directly to hosts - they work through businesses
+  React.useEffect(() => {
+    Alert.alert(
+      'Incorrect Flow',
+      'Contractors work through businesses, not directly with hosts. Please use the Business Directory to invite businesses to your event.',
+      [
+        {
+          text: 'Go to Business Directory',
+          onPress: () => router.replace('/business-directory')
+        }
+      ]
+    );
+  }, []);
 
-  const respondMutation = trpc.contractor.applications.respond.useMutation({
-    onSuccess: () => {
-      applicationsQuery.refetch();
-      Alert.alert('Success', 'Application response sent successfully');
-    },
-    onError: (error) => {
-      Alert.alert('Error', error.message);
-    }
-  });
+  const applicationsQuery = { data: [], isLoading: false, refetch: () => {} };
+  const respondMutation = { isPending: false, mutate: () => {} };
 
   const applications = applicationsQuery.data || [];
   const pendingApplications = applications.filter(app => app.status === 'pending');

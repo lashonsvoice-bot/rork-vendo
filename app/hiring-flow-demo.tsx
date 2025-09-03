@@ -97,6 +97,24 @@ const mockEvent = {
 };
 
 export default function HiringFlowDemoScreen() {
+  // This demo should show the correct flow: Host -> Business -> Contractor
+  React.useEffect(() => {
+    Alert.alert(
+      'Incorrect Workflow Demo',
+      'This demo shows contractors applying directly to hosts, which is not the correct flow. The actual workflow is:\n\n1. Host invites Business (via Business Directory)\n2. Business accepts and needs contractors\n3. Contractors work FOR the business\n4. Business manages contractor training\n\nWould you like to see the correct Business Directory flow instead?',
+      [
+        {
+          text: 'View Business Directory',
+          onPress: () => router.replace('/business-directory')
+        },
+        {
+          text: 'Stay Here (Demo Only)',
+          style: 'cancel'
+        }
+      ]
+    );
+  }, []);
+
   const [selectedTab, setSelectedTab] = useState<'pending' | 'hired' | 'all'>('pending');
   const [applications, setApplications] = useState<MockApplication[]>(mockApplications);
 

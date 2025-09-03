@@ -63,6 +63,11 @@ export default function TermsScreen() {
           'Local Vendors and Businesses may purchase event tables listed by Event Hosts directly in the app. Table purchases are subject to Host policies (availability, pricing, refund/cancellation rules) and RevoVend platform fees.'
       },
       {
+        title: 'Shipping & Deliverables Policy',
+        content:
+          '1) Signature Confirmation Required: All product shipments and deliverables sent to event Hosts must include signature confirmation. This ensures accountability and protects both Business Owners and Contractors from disputes. Hosts are required to confirm receipt inside the RevoVend app. Tracking numbers can be entered into the app for recordkeeping. RevoVend strongly recommends that Business Owners pay Hosts an additional fee for inventory verification before and after the event. 2) App Recording (Not Fulfillment): RevoVend does not handle shipping logistics directly. Business Owners are responsible for arranging their own shipping (UPS, FedEx, USPS, DHL, etc.). Tracking numbers and proof of signature are uploaded to the app by the Business Owner. The app provides a permanent log of deliveries tied to each event. 3) Liability & Risk: RevoVend is not responsible for lost or delayed packages. Responsibility rests with the chosen shipping carrier and the Business Owner. RevoVend acts only as a neutral recordkeeping platform. 4) Future Expansion: RevoVend is exploring potential partnerships with major carriers (FedEx, UPS, USPS, DHL) to offer discounted rates to Business Owners, enable optional real-time tracking API integration, and provide automated updates within the app. These features may be rolled out in later phases of development depending on scale and demand.'
+      },
+      {
         title: 'Cancellations and No‑Shows',
         content:
           'Event cancellations, contractor cancellations, and no‑show handling are managed by Event Hosts within their policies. Where supported in‑app, the relevant screen will guide the steps. Platform fees and third‑party processing fees may be non‑refundable unless required by law.'

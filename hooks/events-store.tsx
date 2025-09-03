@@ -788,6 +788,89 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     );
   }, [events]);
 
+  const requestInventoryCountReminder = useCallback((eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    if (!currentUser) return;
+    if (!event.eventHostId) return;
+    if (!(event.requiresInventoryManagement === true)) return;
+    const amount = event.inventoryManagementFee ?? 0;
+    try {
+      sendMessage({
+        fromUserId: currentUser.id,
+        fromUserName: currentUser.name,
+        fromUserRole: 'business_owner',
+        toUserId: event.eventHostId,
+        toUserName: event.eventHostName || 'Event Host',
+        toUserRole: 'event_host',
+        eventId,
+        eventTitle: event.title,
+        type: 'coordination',
+        subject: 'Inventory count required for this event',
+        content: `Inventory counting is required for "${event.title}". Please count stock at receipt and at checkout. ${amount > 0 ? `You will receive a ${amount.toFixed(2)} inventory management fee for this task.` : ''}`,
+        metadata: { requiresInventoryManagement: true, inventoryManagementFee: amount },
+      });
+      console.log('[Events] Sent inventory count reminder to host for event', eventId);
+    } catch (e) {
+      console.log('[Events] Failed to send inventory count reminder', e);
+    }
+  }, [events, currentUser, sendMessage]);
+
+  const requestInventoryFeePayment = useCallback((eventId: string) => {
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    if (!currentUser) return;
+    if (!event.eventHostId) return;
+    const amount = event.inventoryManagementFee ?? 0;
+    if (!(amount > 0)) return;
+    try {
+      sendMessage({
+        fromUserId: currentUser.id,
+        fromUserName: currentUser.name,
+        fromUserRole: 'business_owner',
+        toUserId: event.eventHostId,
+        toUserName: event.eventHostName || 'Event Host',
+        toUserRole: 'event_host',
+        eventId,
+        eventTitle: event.title,
+        type: 'payment_request',
+        subject: 'Inventory management fee payment',
+        content: `Requesting payment of ${amount.toFixed(2)} for inventory counting for "${event.title}". Please confirm and mark paid. Payment should be completed no later than 48 hours before the event.`,
+        metadata: { amount, kind: 'inventory_management_fee' },
+      });
+      console.log('[Events] Sent inventory fee payment request for event', eventId, amount);
+    } catch (e) {
+      console.log('[Events] Failed to send inventory fee payment request', e);
+    }
+  }, [events, currentUser, sendMessage]);
+
+  const enhancedConnectHostToEvent = useCallback((eventId: string, hostId: string) => {
+    connectHostToEvent(eventId, hostId);
+    const ev = events.find(e => e.id === eventId);
+    const shouldNotify = ev?.requiresInventoryManagement === true;
+    if (shouldNotify && currentUser && ev?.eventHostId) {
+      try {
+        sendMessage({
+          fromUserId: currentUser.id,
+          fromUserName: currentUser.name,
+          fromUserRole: 'business_owner',
+          toUserId: ev.eventHostId,
+          toUserName: ev.eventHostName || 'Event Host',
+          toUserRole: 'event_host',
+          eventId,
+          eventTitle: ev.title,
+          type: 'coordination',
+          subject: 'Inventory counting required',
+          content: `Please perform inventory count on receipt and at checkout for "${ev.title}". ${ev.inventoryManagementFee ? `The agreed fee is ${(ev.inventoryManagementFee ?? 0).toFixed(2)}.` : ''}`,
+          metadata: { requiresInventoryManagement: true, inventoryManagementFee: ev.inventoryManagementFee ?? 0 },
+        });
+        console.log('[Events] Auto-notified host about inventory requirement at connection', eventId);
+      } catch (e) {
+        console.log('[Events] Failed to auto-notify host on connection', e);
+      }
+    }
+  }, [events, connectHostToEvent, currentUser, sendMessage]);
+
   return useMemo(() => ({
     events,
     isLoading,
@@ -800,7 +883,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     getEventsByState,
     getAvailableStates,
     getSortedEvents,
-    connectHostToEvent,
+    connectHostToEvent: enhancedConnectHostToEvent,
     submitContractorApplication,
     selectContractors,
     sendMaterials,
@@ -812,6 +895,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     addInventoryItem,
     reportInventoryDiscrepancy,
     resolveInventoryDiscrepancy,
+    requestInventoryCountReminder,
+    requestInventoryFeePayment,
   }), [
     events,
     isLoading,
@@ -824,7 +909,7 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     getEventsByState,
     getAvailableStates,
     getSortedEvents,
-    connectHostToEvent,
+    enhancedConnectHostToEvent,
     submitContractorApplication,
     selectContractors,
     sendMaterials,
@@ -836,6 +921,8 @@ export const [EventsProvider, useEvents] = createContextHook(() => {
     addInventoryItem,
     reportInventoryDiscrepancy,
     resolveInventoryDiscrepancy,
+    requestInventoryCountReminder,
+    requestInventoryFeePayment,
   ]);
 
 });

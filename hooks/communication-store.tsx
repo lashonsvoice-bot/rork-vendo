@@ -14,7 +14,7 @@ export interface Message {
   toUserEmail?: string; // For unregistered users
   eventId?: string;
   eventTitle?: string;
-  type: 'proposal' | 'acceptance' | 'confirmation' | 'coordination' | 'payment_confirmation' | 'material_confirmation';
+  type: 'proposal' | 'acceptance' | 'confirmation' | 'coordination' | 'payment_confirmation' | 'material_confirmation' | 'payment_request';
   subject: string;
   content: string;
   attachments?: string[]; // Array of file URLs
@@ -33,6 +33,10 @@ export interface Message {
     totalDiscrepancies?: number;
     urgent?: boolean;
     discrepancyTypes?: string[];
+    requiresInventoryManagement?: boolean;
+    inventoryManagementFee?: number;
+    amount?: number;
+    kind?: string;
   };
 }
 

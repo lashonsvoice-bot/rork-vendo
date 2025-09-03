@@ -28,6 +28,8 @@ export default function EventsScreen() {
     getEventsAwaitingContractorSelection,
     getEventsAwaitingHost,
     markProposalSent,
+    requestInventoryCountReminder,
+    requestInventoryFeePayment,
   } = useEvents();
   const { userRole, currentUser } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
@@ -532,6 +534,31 @@ export default function EventsScreen() {
                   {userRole === 'business_owner' && (event.selectedContractors?.length ?? 0) > 0 && (
                     <View style={styles.workflowBadge}>
                       <Text style={styles.workflowBadgeText}>Step 3: Send Materials</Text>
+                    </View>
+                  )}
+
+                  {userRole === 'business_owner' && event.hostConnected === true && event.requiresInventoryManagement === true && (
+                    <View style={styles.inventoryActionsRow}>
+                      <TouchableOpacity
+                        testID={`remind-inventory-${event.id}`}
+                        style={styles.secondaryActionBtn}
+                        onPress={() => {
+                          try { requestInventoryCountReminder(event.id); } catch {}
+                        }}
+                      >
+                        <Text style={styles.secondaryActionText}>Remind Host to Count</Text>
+                      </TouchableOpacity>
+                      {typeof event.inventoryManagementFee === 'number' && event.inventoryManagementFee > 0 && (
+                        <TouchableOpacity
+                          testID={`request-inv-fee-${event.id}`}
+                          style={styles.primaryActionBtn}
+                          onPress={() => {
+                            try { requestInventoryFeePayment(event.id); } catch {}
+                          }}
+                        >
+                          <Text style={styles.primaryActionText}>Request ${event.inventoryManagementFee.toFixed(2)}</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -1180,6 +1207,34 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "700",
+  },
+  inventoryActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  primaryActionBtn: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  primaryActionText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  secondaryActionBtn: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  secondaryActionText: {
+    color: '#111827',
+    fontSize: 12,
+    fontWeight: '700',
   },
   fab: {
     position: "absolute",

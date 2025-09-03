@@ -191,7 +191,7 @@ export default function EventApplicationsScreen() {
             <TouchableOpacity
               style={styles.rejectButton}
               onPress={() => handleRejectApplication(application.id)}
-              disabled={respondMutation.isLoading}
+              disabled={respondMutation.isPending}
             >
               <XCircle size={16} color="#DC2626" />
               <Text style={styles.rejectButtonText}>Reject</Text>
@@ -200,7 +200,7 @@ export default function EventApplicationsScreen() {
             <TouchableOpacity
               style={styles.acceptButton}
               onPress={() => handleAcceptApplication(application.id)}
-              disabled={respondMutation.isLoading}
+              disabled={respondMutation.isPending}
             >
               <CheckCircle size={16} color="#FFFFFF" />
               <Text style={styles.acceptButtonText}>Accept & Hire</Text>

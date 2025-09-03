@@ -48,12 +48,17 @@ export default function EditEventScreen() {
     foodStipend: event?.foodStipend?.toString() || "",
     travelStipend: event?.travelStipend?.toString() || "",
     flyerUrl: event?.flyerUrl || "",
+    trackingNumber: event?.trackingNumber || "",
+    stockUnitsPlanned: (typeof event?.stockUnitsPlanned === 'number' ? String(event?.stockUnitsPlanned) : ""),
+    inventoryManagementFee: (typeof event?.inventoryManagementFee === 'number' ? String(event?.inventoryManagementFee) : ""),
   });
 
   const [tableOptions, setTableOptions] = useState<TableOption[]>(event?.tableOptions || []);
   const [tableQtyInputs, setTableQtyInputs] = useState<Record<string, string>>({});
   const [tableCPTInputs, setTableCPTInputs] = useState<Record<string, string>>({});
   const [stipendMode, setStipendMode] = useState<'gift_card' | 'in_app' | 'external'>(event?.stipendMode ?? 'in_app');
+  const [willShipProducts, setWillShipProducts] = useState<boolean | null>(event?.willShipProducts ?? null);
+  const [requiresInventoryManagement, setRequiresInventoryManagement] = useState<boolean | null>(event?.requiresInventoryManagement ?? null);
 
   if (!event) {
     return (
@@ -168,6 +173,11 @@ export default function EditEventScreen() {
       tableOptions: event?.createdBy === 'event_host' ? tableOptions : event?.tableOptions,
       totalVendorSpaces,
       stipendMode,
+      trackingNumber: formData.trackingNumber || undefined,
+      willShipProducts: willShipProducts ?? undefined,
+      requiresInventoryManagement: requiresInventoryManagement ?? undefined,
+      inventoryManagementFee: formData.inventoryManagementFee ? parseFloat(formData.inventoryManagementFee) : event.inventoryManagementFee,
+      stockUnitsPlanned: formData.stockUnitsPlanned ? parseInt(formData.stockUnitsPlanned) || 0 : event.stockUnitsPlanned,
     };
 
     const changes: string[] = [];
@@ -427,6 +437,104 @@ export default function EditEventScreen() {
               </View>
             </View>
           </View>
+
+          {/* Shipping & Deliverables for Business Owners */}
+          {event?.createdBy === 'business_owner' && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Products & Shipping</Text>
+
+              <View style={styles.inputGroup}>
+                <View style={styles.inputIcon}>
+                  <FileText size={18} color="#6B7280" />
+                </View>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Will you ship products?</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                    <TouchableOpacity style={[styles.addTableButton, willShipProducts === true && { borderColor: '#10B981', backgroundColor: '#F0FDF4' }]} onPress={() => setWillShipProducts(true)}>
+                      <Text style={{ color: '#10B981', fontWeight: '700' }}>Yes</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.addTableButton, willShipProducts === false && { borderColor: '#10B981', backgroundColor: '#F0FDF4' }]} onPress={() => setWillShipProducts(false)}>
+                      <Text style={{ color: '#10B981', fontWeight: '700' }}>No</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {willShipProducts === true && (
+                <>
+                  <View style={styles.inputGroup}>
+                    <View style={styles.inputIcon}>
+                      <FileText size={18} color="#6B7280" />
+                    </View>
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Tracking Number</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        value={formData.trackingNumber}
+                        onChangeText={(t) => setFormData({ ...formData, trackingNumber: t })}
+                        placeholder="Enter carrier tracking number"
+                        placeholderTextColor="#9CA3AF"
+                        editable={(() => { try { const eventDate = new Date(event?.date ?? ''); return (new Date(eventDate.getTime()).getTime() - Date.now()) > 48 * 3600 * 1000; } catch { return true; } })()}
+                      />
+                      {(() => { try { const eventDate = new Date(event?.date ?? ''); const hoursLeft = Math.floor(((eventDate.getTime()) - Date.now()) / 3600000); return hoursLeft <= 48 ? <Text style={{ color: '#92400E', marginTop: 6 }}>Tracking edits locked within 48 hours of the event</Text> : null; } catch { return null; } })()}
+                    </View>
+                  </View>
+
+                  <View style={styles.row}>
+                    <View style={[styles.inputGroup, styles.halfWidth]}>
+                      <View style={styles.inputIcon}>
+                        <FileText size={18} color="#6B7280" />
+                      </View>
+                      <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Stock Units Planned</Text>
+                        <TextInput
+                          style={styles.textInput}
+                          value={formData.stockUnitsPlanned}
+                          onChangeText={(t) => setFormData({ ...formData, stockUnitsPlanned: t })}
+                          placeholder="e.g., 250"
+                          placeholderTextColor="#9CA3AF"
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    </View>
+                    <View style={[styles.inputGroup, styles.halfWidth]}>
+                      <View style={styles.inputIcon}>
+                        <DollarSign size={18} color="#6B7280" />
+                      </View>
+                      <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Inventory Fee to Host ($)</Text>
+                        <TextInput
+                          style={styles.textInput}
+                          value={formData.inventoryManagementFee}
+                          onChangeText={(t) => setFormData({ ...formData, inventoryManagementFee: t })}
+                          placeholder="Required if counting"
+                          placeholderTextColor="#9CA3AF"
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <View style={styles.inputIcon}>
+                      <FileText size={18} color="#6B7280" />
+                    </View>
+                    <View style={styles.inputContainer}>
+                      <Text style={styles.inputLabel}>Require Inventory Count?</Text>
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                        <TouchableOpacity style={[styles.addTableButton, requiresInventoryManagement === true && { borderColor: '#10B981', backgroundColor: '#F0FDF4' }]} onPress={() => setRequiresInventoryManagement(true)}>
+                          <Text style={{ color: '#10B981', fontWeight: '700' }}>Yes</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.addTableButton, requiresInventoryManagement === false && { borderColor: '#10B981', backgroundColor: '#F0FDF4' }]} onPress={() => setRequiresInventoryManagement(false)}>
+                          <Text style={{ color: '#10B981', fontWeight: '700' }}>No</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
 
           {/* Stipend Mode Selection */}
           <View style={styles.section}>

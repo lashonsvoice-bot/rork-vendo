@@ -181,6 +181,11 @@ export interface Event {
   cancellation?: EventCancellation;
   createdAt?: string;
   updatedAt?: string;
+  // Shipping & inventory management
+  willShipProducts?: boolean;
+  requiresInventoryManagement?: boolean;
+  inventoryManagementFee?: number;
+  stockUnitsPlanned?: number;
 }
 
 class EventRepository {

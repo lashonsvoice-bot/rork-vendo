@@ -146,6 +146,11 @@ export interface Event {
   privatePremium?: boolean;
   requirements?: EventRequirements;
   listVenueInDirectory?: boolean;
+  // Shipping & inventory management
+  willShipProducts?: boolean;
+  requiresInventoryManagement?: boolean;
+  inventoryManagementFee?: number;
+  stockUnitsPlanned?: number;
 }
 
 const STORAGE_KEY = "vendor_events";

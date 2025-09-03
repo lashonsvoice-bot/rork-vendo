@@ -67,6 +67,9 @@ interface FormDataType {
   hostSupervisionFee: string;
   contactEmail: string;
   contactPhone: string;
+  trackingNumber?: string;
+  stockUnitsPlanned?: string;
+  inventoryManagementFee?: string;
 }
 
 export default function CreateEventScreen() {
@@ -119,8 +122,10 @@ export default function CreateEventScreen() {
   const [parkingInfo, setParkingInfo] = useState<string>("");
   const [hasMiscInfo, setHasMiscInfo] = useState<boolean>(false);
   const [miscInfo, setMiscInfo] = useState<string>("");
+  const [willShipProducts, setWillShipProducts] = useState<boolean | null>(null);
+  const [requiresInventoryManagement, setRequiresInventoryManagement] = useState<boolean | null>(null);
 
-  const [proposalForm, setProposalForm] = useState<{ hostName: string; hostEmail: string; hostPhone: string; proposedAmount: string; supervisoryFee: string; message: string; }>({ hostName: "", hostEmail: "lashonsvoice@gmail.com", hostPhone: "", proposedAmount: "", supervisoryFee: "", message: "" });
+  const [proposalForm, setProposalForm] = useState<{ hostName: string; hostEmail: string; hostPhone: string; proposedAmount: string; supervisoryFee: string; message: string; }>({ hostName: "", hostEmail: "", hostPhone: "", proposedAmount: "", supervisoryFee: "", message: "" });
   const [proposalSending, setProposalSending] = useState<boolean>(false);
 
   const { events } = useEvents();
@@ -354,6 +359,15 @@ export default function CreateEventScreen() {
       }
     }
 
+    if (userRole === 'business_owner' && willShipProducts === true && requiresInventoryManagement === true) {
+      const invFee = parseFloat(formData.inventoryManagementFee || '0');
+      if (!(invFee > 0)) {
+        Alert.alert('Inventory Fee Required', 'Please include a payment amount for host inventory counting.');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -386,6 +400,11 @@ export default function CreateEventScreen() {
         optInListings: userRole === 'event_host' ? optInListings : undefined,
         contactEmail: formData.contactEmail || undefined,
         contactPhone: formData.contactPhone || undefined,
+        trackingNumber: formData.trackingNumber || undefined,
+        willShipProducts: userRole === 'business_owner' ? (willShipProducts ?? undefined) : undefined,
+        requiresInventoryManagement: userRole === 'business_owner' ? (requiresInventoryManagement ?? undefined) : undefined,
+        inventoryManagementFee: userRole === 'business_owner' ? (formData.inventoryManagementFee ? parseFloat(formData.inventoryManagementFee) : undefined) : undefined,
+        stockUnitsPlanned: userRole === 'business_owner' ? (formData.stockUnitsPlanned ? parseInt(formData.stockUnitsPlanned) || 0 : undefined) : undefined,
         ...(userRole === 'event_host' ? {
           isPrivateEvent,
           privateNotes: isPrivateEvent ? privateNotes : undefined,
@@ -848,6 +867,101 @@ export default function CreateEventScreen() {
                 />
               </View>
             </View>
+
+            <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Products & Shipping</Text>
+
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                testID="bo-ship-products"
+                style={[styles.toggleButton, willShipProducts === true && styles.toggleButtonOn]}
+                onPress={() => setWillShipProducts(true)}
+              >
+                <View style={[styles.radioButton, willShipProducts === true && styles.radioButtonSelected]} />
+                <Text style={[styles.toggleLabel, willShipProducts === true && styles.toggleLabelOn]}>Yes, I will ship products to this event</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                testID="bo-ship-products-no"
+                style={[styles.toggleButton, willShipProducts === false && styles.toggleButtonOn]}
+                onPress={() => setWillShipProducts(false)}
+              >
+                <View style={[styles.radioButton, willShipProducts === false && styles.radioButtonSelected]} />
+                <Text style={[styles.toggleLabel, willShipProducts === false && styles.toggleLabelOn]}>No, I will not ship products</Text>
+              </TouchableOpacity>
+            </View>
+
+            {willShipProducts === true && (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Tracking Number (Optional)</Text>
+                  <View style={styles.inputContainer}>
+                    <FileText size={18} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      placeholder="Enter carrier tracking number"
+                      value={formData.trackingNumber ?? ''}
+                      onChangeText={(t) => setFormData({ ...formData, trackingNumber: t })}
+                      style={styles.input}
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Amount of Stock Being Sent (Units)</Text>
+                  <View style={styles.inputContainer}>
+                    <FileText size={18} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      placeholder="e.g., 250"
+                      value={formData.stockUnitsPlanned ?? ''}
+                      onChangeText={(t) => setFormData({ ...formData, stockUnitsPlanned: t })}
+                      style={styles.input}
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+
+                <Text style={[styles.sectionSubtitle, { marginBottom: 8 }]}>Do you require host inventory counting?</Text>
+                <View style={styles.toggleRow}>
+                  <TouchableOpacity
+                    testID="bo-require-inventory"
+                    style={[styles.toggleButton, requiresInventoryManagement === true && styles.toggleButtonOn]}
+                    onPress={() => setRequiresInventoryManagement(true)}
+                  >
+                    <View style={[styles.radioButton, requiresInventoryManagement === true && styles.radioButtonSelected]} />
+                    <Text style={[styles.toggleLabel, requiresInventoryManagement === true && styles.toggleLabelOn]}>Yes, require inventory count by host</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.toggleRow}>
+                  <TouchableOpacity
+                    testID="bo-require-inventory-no"
+                    style={[styles.toggleButton, requiresInventoryManagement === false && styles.toggleButtonOn]}
+                    onPress={() => setRequiresInventoryManagement(false)}
+                  >
+                    <View style={[styles.radioButton, requiresInventoryManagement === false && styles.radioButtonSelected]} />
+                    <Text style={[styles.toggleLabel, requiresInventoryManagement === false && styles.toggleLabelOn]}>No inventory counting needed</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {requiresInventoryManagement === true && (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Inventory Management Fee to Host ($)</Text>
+                    <View style={styles.inputContainer}>
+                      <DollarSign size={18} color="#9CA3AF" style={styles.inputIcon} />
+                      <TextInput
+                        placeholder="e.g., 25"
+                        value={formData.inventoryManagementFee ?? ''}
+                        onChangeText={(t) => setFormData({ ...formData, inventoryManagementFee: t })}
+                        style={styles.input}
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  </View>
+                )}
+              </>
+            )}
 
             <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Propose To Event Host</Text>
 

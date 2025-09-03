@@ -10,219 +10,224 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack, router } from 'expo-router';
 import {
-  User,
-  Clock,
+  Building2,
+  Users,
   CheckCircle,
   XCircle,
-  Star,
   MessageSquare,
   Calendar,
-  MapPin,
   DollarSign,
-  Shield,
-  Award,
   AlertCircle,
+  ArrowRight,
+  Briefcase,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { trpc } from '@/lib/trpc';
 
-type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+type BusinessInvitationStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
 
-interface ContractorApplication {
+interface BusinessInvitation {
   id: string;
-  contractorId: string;
+  businessId: string;
+  businessName: string;
   eventId: string;
   hostId: string;
-  status: ApplicationStatus;
-  appliedAt: string;
+  status: BusinessInvitationStatus;
+  invitedAt: string;
   respondedAt?: string;
-  message?: string;
-  isEarlyAccess?: boolean;
+  contractorsNeeded: number;
+  contractorsHired: number;
+  invitationCost: number;
 }
 
 export default function EventApplicationsScreen() {
   const { eventId } = useLocalSearchParams();
   const [refreshing, setRefreshing] = useState(false);
 
-  // This screen should redirect to business directory instead
-  // Contractors don't apply directly to hosts - they work through businesses
-  React.useEffect(() => {
+  // Mock data for business invitations - this should come from tRPC
+  const mockBusinessInvitations: BusinessInvitation[] = [
+    {
+      id: 'inv_001',
+      businessId: 'biz_001',
+      businessName: 'Elite Event Services',
+      eventId: eventId as string,
+      hostId: 'host_001',
+      status: 'accepted',
+      invitedAt: '2024-01-15T10:00:00.000Z',
+      respondedAt: '2024-01-15T11:30:00.000Z',
+      contractorsNeeded: 3,
+      contractorsHired: 2,
+      invitationCost: 1,
+    },
+    {
+      id: 'inv_002',
+      businessId: 'biz_002',
+      businessName: 'Professional Event Staff',
+      eventId: eventId as string,
+      hostId: 'host_001',
+      status: 'pending',
+      invitedAt: '2024-01-15T12:00:00.000Z',
+      contractorsNeeded: 2,
+      contractorsHired: 0,
+      invitationCost: 1,
+    },
+  ];
+
+  const businessInvitations = mockBusinessInvitations;
+  const isLoading = false;
+  
+  const refetch = () => {
+    console.log('Refetching business invitations...');
+  };
+
+  const pendingInvitations = businessInvitations.filter(inv => inv.status === 'pending');
+  const acceptedInvitations = businessInvitations.filter(inv => inv.status === 'accepted');
+  const rejectedInvitations = businessInvitations.filter(inv => inv.status === 'rejected');
+
+  const handleViewBusinessContractors = (businessId: string, businessName: string) => {
     Alert.alert(
-      'Incorrect Flow',
-      'Contractors work through businesses, not directly with hosts. Please use the Business Directory to invite businesses to your event.',
-      [
-        {
-          text: 'Go to Business Directory',
-          onPress: () => router.replace('/business-directory')
-        }
-      ]
-    );
-  }, []);
-
-  const applicationsQuery = { data: [], isLoading: false, refetch: () => {} };
-  const respondMutation = { isPending: false, mutate: () => {} };
-
-  const applications = applicationsQuery.data || [];
-  const pendingApplications = applications.filter(app => app.status === 'pending');
-  const acceptedApplications = applications.filter(app => app.status === 'accepted');
-  const rejectedApplications = applications.filter(app => app.status === 'rejected');
-
-  const handleAcceptApplication = (applicationId: string) => {
-    Alert.alert(
-      'Accept Application',
-      'Are you sure you want to hire this contractor? They will be notified and added to your event.',
+      'Business Contractor Management',
+      `View and manage contractors working for ${businessName}. This includes:\n\n• Contractor applications to the business\n• Training progress\n• Event assignments\n• Performance tracking`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Accept & Hire',
-          style: 'default',
+          text: 'View Contractors',
           onPress: () => {
-            respondMutation.mutate({
-              applicationId,
-              status: 'accepted'
-            });
+            // Navigate to business contractor management
+            console.log(`Navigate to business ${businessId} contractor management`);
           }
         }
       ]
     );
   };
 
-  const handleRejectApplication = (applicationId: string) => {
-    Alert.alert(
-      'Reject Application',
-      'Are you sure you want to reject this application? The contractor will be notified.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: () => {
-            respondMutation.mutate({
-              applicationId,
-              status: 'rejected'
-            });
-          }
-        }
-      ]
-    );
+  const handleInviteMoreBusinesses = () => {
+    router.push('/business-directory');
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await applicationsQuery.refetch();
+    await refetch();
     setRefreshing(false);
   };
 
-  const getStatusColor = (status: ApplicationStatus) => {
+  const getStatusColor = (status: BusinessInvitationStatus) => {
     switch (status) {
       case 'pending': return { bg: '#FEF3C7', text: '#92400E' };
       case 'accepted': return { bg: '#D1FAE5', text: '#065F46' };
       case 'rejected': return { bg: '#FEE2E2', text: '#DC2626' };
-      case 'withdrawn': return { bg: '#F3F4F6', text: '#6B7280' };
+      case 'expired': return { bg: '#F3F4F6', text: '#6B7280' };
       default: return { bg: '#F3F4F6', text: '#6B7280' };
     }
   };
 
-  const getStatusIcon = (status: ApplicationStatus) => {
+  const getStatusIcon = (status: BusinessInvitationStatus) => {
     switch (status) {
-      case 'pending': return <Clock size={16} color="#92400E" />;
+      case 'pending': return <MessageSquare size={16} color="#92400E" />;
       case 'accepted': return <CheckCircle size={16} color="#065F46" />;
       case 'rejected': return <XCircle size={16} color="#DC2626" />;
-      case 'withdrawn': return <XCircle size={16} color="#6B7280" />;
-      default: return <Clock size={16} color="#6B7280" />;
+      case 'expired': return <XCircle size={16} color="#6B7280" />;
+      default: return <MessageSquare size={16} color="#6B7280" />;
     }
   };
 
-  const renderApplicationCard = (application: ContractorApplication) => {
-    const statusColors = getStatusColor(application.status);
-    const isPending = application.status === 'pending';
+  const renderBusinessInvitationCard = (invitation: BusinessInvitation) => {
+    const statusColors = getStatusColor(invitation.status);
+    const isPending = invitation.status === 'pending';
+    const isAccepted = invitation.status === 'accepted';
+    const contractorProgress = invitation.contractorsHired / invitation.contractorsNeeded;
 
     return (
-      <View key={application.id} style={styles.applicationCard}>
+      <View key={invitation.id} style={styles.applicationCard}>
         <View style={styles.applicationHeader}>
           <View style={styles.contractorInfo}>
             <View style={styles.contractorAvatar}>
-              <User size={20} color="#6366F1" />
+              <Building2 size={20} color="#6366F1" />
             </View>
             <View style={styles.contractorDetails}>
               <View style={styles.contractorNameRow}>
-                <Text style={styles.contractorName}>Contractor #{application.contractorId.slice(-3)}</Text>
-                {application.isEarlyAccess && (
-                  <View style={styles.proBadge}>
-                    <Award size={12} color="#F59E0B" />
-                    <Text style={styles.proBadgeText}>PRO</Text>
-                  </View>
-                )}
+                <Text style={styles.contractorName}>{invitation.businessName}</Text>
+                <View style={styles.proBadge}>
+                  <DollarSign size={12} color="#F59E0B" />
+                  <Text style={styles.proBadgeText}>${invitation.invitationCost}</Text>
+                </View>
               </View>
               <Text style={styles.applicationDate}>
-                Applied {new Date(application.appliedAt).toLocaleDateString()}
+                Invited {new Date(invitation.invitedAt).toLocaleDateString()}
               </Text>
             </View>
           </View>
           
           <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
-            {getStatusIcon(application.status)}
+            {getStatusIcon(invitation.status)}
             <Text style={[styles.statusText, { color: statusColors.text }]}>
-              {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+              {invitation.status.charAt(0).toUpperCase() + invitation.status.slice(1)}
             </Text>
           </View>
         </View>
 
-        {application.message && (
-          <View style={styles.messageSection}>
-            <Text style={styles.messageLabel}>Application Message:</Text>
-            <Text style={styles.messageText}>{application.message}</Text>
+        {isAccepted && (
+          <View style={styles.contractorProgressSection}>
+            <Text style={styles.progressLabel}>Contractor Staffing Progress:</Text>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: `${Math.min(contractorProgress * 100, 100)}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {invitation.contractorsHired} / {invitation.contractorsNeeded} contractors hired
+              </Text>
+            </View>
           </View>
         )}
 
         <View style={styles.contractorStats}>
           <View style={styles.statItem}>
-            <Star size={14} color="#F59E0B" />
-            <Text style={styles.statText}>4.8 Rating</Text>
+            <Users size={14} color="#6366F1" />
+            <Text style={styles.statText}>Needs {invitation.contractorsNeeded} contractors</Text>
           </View>
+          {isAccepted && (
+            <View style={styles.statItem}>
+              <CheckCircle size={14} color="#10B981" />
+              <Text style={styles.statText}>{invitation.contractorsHired} hired</Text>
+            </View>
+          )}
           <View style={styles.statItem}>
-            <CheckCircle size={14} color="#10B981" />
-            <Text style={styles.statText}>12 Events</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Shield size={14} color="#6366F1" />
-            <Text style={styles.statText}>ID Verified</Text>
+            <Calendar size={14} color="#6B7280" />
+            <Text style={styles.statText}>
+              {invitation.respondedAt ? `Responded ${new Date(invitation.respondedAt).toLocaleDateString()}` : 'Awaiting response'}
+            </Text>
           </View>
         </View>
 
         {isPending && (
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.rejectButton}
-              onPress={() => handleRejectApplication(application.id)}
-              disabled={respondMutation.isPending}
-            >
-              <XCircle size={16} color="#DC2626" />
-              <Text style={styles.rejectButtonText}>Reject</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.acceptButton}
-              onPress={() => handleAcceptApplication(application.id)}
-              disabled={respondMutation.isPending}
-            >
-              <CheckCircle size={16} color="#FFFFFF" />
-              <Text style={styles.acceptButtonText}>Accept & Hire</Text>
-            </TouchableOpacity>
+          <View style={styles.pendingInfo}>
+            <MessageSquare size={16} color="#92400E" />
+            <Text style={styles.pendingText}>
+              Waiting for {invitation.businessName} to accept invitation and start hiring contractors.
+            </Text>
           </View>
         )}
 
-        {application.status === 'accepted' && (
-          <View style={styles.hiredInfo}>
-            <CheckCircle size={16} color="#10B981" />
-            <Text style={styles.hiredText}>
-              Hired on {application.respondedAt ? new Date(application.respondedAt).toLocaleDateString() : 'N/A'}
-            </Text>
+        {isAccepted && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.viewContractorsButton}
+              onPress={() => handleViewBusinessContractors(invitation.businessId, invitation.businessName)}
+            >
+              <Users size={16} color="#6366F1" />
+              <Text style={styles.viewContractorsButtonText}>View Contractors</Text>
+            </TouchableOpacity>
+            
             <TouchableOpacity
               style={styles.manageButton}
               onPress={() => router.push(`/(tabs)/events/manage/${eventId}`)}
             >
-              <Text style={styles.manageButtonText}>Manage</Text>
+              <Briefcase size={16} color="#FFFFFF" />
+              <Text style={styles.manageButtonText}>Manage Event</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -230,10 +235,10 @@ export default function EventApplicationsScreen() {
     );
   };
 
-  if (applicationsQuery.isLoading) {
+  if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading applications...</Text>
+        <Text style={styles.loadingText}>Loading business invitations...</Text>
       </View>
     );
   }
@@ -242,7 +247,7 @@ export default function EventApplicationsScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Contractor Applications',
+          title: 'Business Partnerships',
           headerStyle: { backgroundColor: '#6366F1' },
           headerTintColor: '#FFFFFF',
           headerTitleStyle: { fontWeight: 'bold' },
@@ -259,62 +264,82 @@ export default function EventApplicationsScreen() {
           colors={['#6366F1', '#4F46E5']}
           style={styles.header}
         >
-          <Text style={styles.headerTitle}>Hiring Dashboard</Text>
-          <Text style={styles.headerSubtitle}>Review and manage contractor applications</Text>
+          <Text style={styles.headerTitle}>Business Partnership Dashboard</Text>
+          <Text style={styles.headerSubtitle}>Manage businesses providing contractors for your event</Text>
           
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{pendingApplications.length}</Text>
+              <Text style={styles.statNumber}>{pendingInvitations.length}</Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{acceptedApplications.length}</Text>
-              <Text style={styles.statLabel}>Hired</Text>
+              <Text style={styles.statNumber}>{acceptedInvitations.length}</Text>
+              <Text style={styles.statLabel}>Active</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{applications.length}</Text>
+              <Text style={styles.statNumber}>{businessInvitations.length}</Text>
               <Text style={styles.statLabel}>Total</Text>
             </View>
           </View>
         </LinearGradient>
 
         <View style={styles.content}>
-          {applications.length === 0 ? (
+          {businessInvitations.length === 0 ? (
             <View style={styles.emptyState}>
-              <MessageSquare size={48} color="#9CA3AF" />
-              <Text style={styles.emptyStateTitle}>No Applications Yet</Text>
+              <Building2 size={48} color="#9CA3AF" />
+              <Text style={styles.emptyStateTitle}>No Business Partnerships Yet</Text>
               <Text style={styles.emptyStateText}>
-                Contractors will apply to your event and appear here for review.
+                Invite businesses from the directory to provide contractors for your event.
               </Text>
+              <TouchableOpacity 
+                style={styles.inviteBusinessButton}
+                onPress={handleInviteMoreBusinesses}
+              >
+                <Text style={styles.inviteBusinessButtonText}>Invite Businesses</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <>
-              {pendingApplications.length > 0 && (
+              {pendingInvitations.length > 0 && (
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Pending Applications</Text>
+                    <Text style={styles.sectionTitle}>Pending Invitations</Text>
                     <View style={styles.urgentBadge}>
                       <AlertCircle size={14} color="#DC2626" />
-                      <Text style={styles.urgentText}>Action Required</Text>
+                      <Text style={styles.urgentText}>Awaiting Response</Text>
                     </View>
                   </View>
-                  {pendingApplications.map(renderApplicationCard)}
+                  {pendingInvitations.map(renderBusinessInvitationCard)}
                 </View>
               )}
 
-              {acceptedApplications.length > 0 && (
+              {acceptedInvitations.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Hired Contractors</Text>
-                  {acceptedApplications.map(renderApplicationCard)}
+                  <Text style={styles.sectionTitle}>Active Business Partners</Text>
+                  {acceptedInvitations.map(renderBusinessInvitationCard)}
                 </View>
               )}
 
-              {rejectedApplications.length > 0 && (
+              {rejectedInvitations.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Rejected Applications</Text>
-                  {rejectedApplications.map(renderApplicationCard)}
+                  <Text style={styles.sectionTitle}>Declined Invitations</Text>
+                  {rejectedInvitations.map(renderBusinessInvitationCard)}
                 </View>
               )}
+              
+              <View style={styles.inviteMoreSection}>
+                <TouchableOpacity 
+                  style={styles.inviteMoreButton}
+                  onPress={handleInviteMoreBusinesses}
+                >
+                  <Building2 size={20} color="#6366F1" />
+                  <View style={styles.inviteMoreContent}>
+                    <Text style={styles.inviteMoreText}>Invite More Businesses</Text>
+                    <Text style={styles.inviteMoreDescription}>Browse the business directory to find more partners</Text>
+                  </View>
+                  <ArrowRight size={20} color="#6366F1" />
+                </TouchableOpacity>
+              </View>
             </>
           )}
         </View>
@@ -534,19 +559,19 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontWeight: '600',
   },
-  acceptButton: {
-    flex: 2,
+  viewContractorsButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#10B981',
+    backgroundColor: '#EDE9FE',
     paddingVertical: 12,
     borderRadius: 8,
     gap: 6,
   },
-  acceptButtonText: {
+  viewContractorsButtonText: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#6366F1',
     fontWeight: '600',
   },
   hiredInfo: {
@@ -591,5 +616,92 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 20,
+  },
+  inviteBusinessButton: {
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  inviteBusinessButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  contractorProgressSection: {
+    marginBottom: 12,
+  },
+  progressLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  progressContainer: {
+    gap: 4,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#10B981',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  pendingInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+    marginTop: 8,
+  },
+  pendingText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#92400E',
+    fontWeight: '500',
+  },
+  inviteMoreSection: {
+    marginTop: 20,
+  },
+  inviteMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 2,
+    borderColor: '#6366F1',
+    borderStyle: 'dashed',
+  },
+  inviteMoreContent: {
+    flex: 1,
+  },
+  inviteMoreText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6366F1',
+    marginBottom: 2,
+  },
+  inviteMoreDescription: {
+    fontSize: 14,
+    color: '#6B7280',
   },
 });

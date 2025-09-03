@@ -56,7 +56,7 @@ export default function EventApplicationsScreen() {
       respondedAt: '2024-01-15T11:30:00.000Z',
       contractorsNeeded: 3,
       contractorsHired: 2,
-      invitationCost: 1,
+      invitationCost: 5,
     },
     {
       id: 'inv_002',
@@ -68,7 +68,7 @@ export default function EventApplicationsScreen() {
       invitedAt: '2024-01-15T12:00:00.000Z',
       contractorsNeeded: 2,
       contractorsHired: 0,
-      invitationCost: 1,
+      invitationCost: 5,
     },
   ];
 

@@ -16,7 +16,7 @@ interface ImageSplashScreenProps {
 
 export function VideoSplashScreen({ 
   onFinish, 
-  imageUri = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/p96qhw5k0yebwv61ljko1',
+  imageUri = 'https://pub-e001eb4506b145aa938b5d3badbff6a5.r2.dev/attachments/pbjd99blhw93wmj7xgp9m',
   duration = 5000 
 }: ImageSplashScreenProps) {
   const [showSkip, setShowSkip] = useState<boolean>(false);

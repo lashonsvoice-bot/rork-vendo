@@ -97,6 +97,15 @@ export const getBaseUrl = (): string => {
     return legacyResolved;
   }
 
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const host = window.location.host;
+    const origin = window.location.origin;
+    if (host.includes('rorktest.dev') || host.includes('rork.app') || host.includes('rork.dev')) {
+      console.log('[tRPC] Detected Rork preview host. Forcing same-origin API at', origin);
+      return origin;
+    }
+  }
+
   const hostUri = (Constants as any)?.expoConfig?.hostUri as string | undefined;
   if (hostUri) {
     const host = hostUri.split(':')[0];

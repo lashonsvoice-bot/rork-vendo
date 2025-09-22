@@ -112,7 +112,8 @@ export const getBaseUrl = (): string => {
       console.warn('[tRPC] No base URL configured. Using local web fallback:', webFallback);
       return webFallback;
     }
-    throw new Error('[tRPC] Missing EXPO_PUBLIC_RORK_API_BASE_URL for web. Set it to your backend URL (e.g., http://<LAN-IP>:3000) or set localStorage key rork.apiBaseUrl.');
+    console.warn('[tRPC] Missing EXPO_PUBLIC_RORK_API_BASE_URL on web. Falling back to same-origin relative /api to avoid crash. You can override via localStorage rork.apiBaseUrl');
+    return '';
   }
 
   const fallback = 'http://localhost:3000';
@@ -227,7 +228,13 @@ export const createTRPCClient = () => {
 };
 
 export const testTRPCConnection = async (): Promise<boolean> => {
-  const baseUrl = getBaseUrl();
+  let baseUrl: string;
+  try {
+    baseUrl = getBaseUrl();
+  } catch (e) {
+    console.warn('[tRPC] Connection test aborted: getBaseUrl threw:', (e as Error)?.message);
+    return false;
+  }
   const web = Platform.OS === 'web' && typeof window !== 'undefined';
   const webOrigin = web ? window.location.origin : undefined;
   const test = async (url: string) => {
